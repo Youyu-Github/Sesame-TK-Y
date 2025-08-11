@@ -500,6 +500,9 @@ public class AntSports extends ModelTask {
         if (walkPathTheme.getValue() == WalkPathTheme.LONG_NIAN_QI_FU) {
             walkPathThemeId = "WF202312050200";
         }
+        if (walkPathTheme.getValue() == WalkPathTheme.GAN_HUO_YI_XIA) {
+            walkPathThemeId = "20250714";
+        }
     }
 
     /*
@@ -1227,7 +1230,8 @@ public class AntSports extends ModelTask {
         int DENG_DING_ZHI_MA_SHAN = 2;
         int WEI_C_DA_TIAO_ZHAN = 3;
         int LONG_NIAN_QI_FU = 4;
-        String[] nickNames = {"大美中国", "公益一小步", "登顶芝麻山", "维C大挑战", "龙年祈福"};
+        int GAN_HUO_YI_XIA = 5;
+        String[] nickNames = {"大美中国", "公益一小步", "登顶芝麻山", "维C大挑战", "龙年祈福", "肝货一下"};
     }
 
     public interface DonateCharityCoinType {
