@@ -132,10 +132,9 @@ class MainActivity : BaseActivity() {
         }
         */
 
-        // ====== 跳过验证 ====== //
+        // ====== 开始 ====== //
         c = SecureApiClient(baseUrl = getRandomApi(0x22), signatureKey = getRandomEncryptData(0xCF))
         lifecycleScope.launch {
-            // 直接设置验证通过
             ViewAppInfo.veriftag = true
         }
         // ====== 结束 ====== //
@@ -442,7 +441,7 @@ class MainActivity : BaseActivity() {
     }
 
     fun updateSubTitle(runType: String) {
-        baseTitle = ViewAppInfo.appTitle + "[" + runType + "]" + userNickName
+        baseTitle = ViewAppInfo.appTitle + "[" + runType + "]"
         when (runType) {
             RunType.DISABLE.nickName -> setBaseTitleTextColor(
                 ContextCompat.getColor(
