@@ -64,6 +64,7 @@ class MainActivity : BaseActivity() {
     private lateinit var oneWord: TextView
 
     private lateinit var c: SecureApiClient
+    private var userNickName: String = ""
 
     @SuppressLint("SetTextI18n", "UnsafeDynamicallyLoadedCode")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -123,9 +124,11 @@ class MainActivity : BaseActivity() {
 
                 101, 100 -> {
                     ViewAppInfo.veriftag = true
+                    userNickName = result.optJSONObject("data")?.optString("user").toString()
+                    updateSubTitle(RunType.LOADED.nickName)
                 }
-
             }
+
         }
         */
 
@@ -176,9 +179,8 @@ class MainActivity : BaseActivity() {
                 userEntityArray = arrayOf(null)
                 Log.printStackTrace(e)
             }
+            updateSubTitle(RunType.LOADED.nickName)
         }
-        updateSubTitle(RunType.LOADED.nickName)
-
     }
 
     fun onClick(v: View) {
@@ -222,7 +224,8 @@ class MainActivity : BaseActivity() {
             }
 
             R.id.one_word -> {
-                oneWord.text = "😡 正在获取句子，请稍后……"
+                oneWord.text = "正在获取句子，请稍后……"
+
                 lifecycleScope.launch {
                     val result = FansirsqiUtil.getOneWord()
                     oneWord.text = result
@@ -369,7 +372,8 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun showSelectionDialog(title: String?, options: Array<String>, onItemSelected: Consumer<Int>, negativeButtonText: String?, onNegativeButtonClick: Runnable, showDefaultOption: Boolean
+    private fun showSelectionDialog(
+        title: String?, options: Array<String>, onItemSelected: Consumer<Int>, negativeButtonText: String?, onNegativeButtonClick: Runnable, showDefaultOption: Boolean
     ) {
         val latch = CountDownLatch(1)
         val dialog = StringDialog.showSelectionDialog(this, title, options, { dialog1: DialogInterface, which: Int ->
@@ -438,7 +442,7 @@ class MainActivity : BaseActivity() {
     }
 
     fun updateSubTitle(runType: String) {
-        baseTitle = ViewAppInfo.appTitle + "[" + runType + "]"
+        baseTitle = ViewAppInfo.appTitle + "[" + runType + "]" + userNickName
         when (runType) {
             RunType.DISABLE.nickName -> setBaseTitleTextColor(
                 ContextCompat.getColor(
