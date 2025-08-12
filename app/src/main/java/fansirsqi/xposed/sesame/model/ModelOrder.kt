@@ -1,13 +1,14 @@
 package fansirsqi.xposed.sesame.model
 
 import fansirsqi.xposed.sesame.task.AnswerAI.AnswerAI
-import fansirsqi.xposed.sesame.task.ancientTree.AncientTree
 import fansirsqi.xposed.sesame.task.antCooperate.AntCooperate
 import fansirsqi.xposed.sesame.task.antDodo.AntDodo
 import fansirsqi.xposed.sesame.task.antFarm.AntFarm
 import fansirsqi.xposed.sesame.task.antForest.AntForest
+import fansirsqi.xposed.sesame.task.antMember.AntMember
 import fansirsqi.xposed.sesame.task.antOcean.AntOcean
 import fansirsqi.xposed.sesame.task.antSports.AntSports
+import fansirsqi.xposed.sesame.task.antStall.AntStall
 import fansirsqi.xposed.sesame.task.reserve.Reserve
 
 import fansirsqi.xposed.sesame.task.antMember.AntMember
@@ -33,8 +34,9 @@ object ModelOrder {
         AntMember::class.java,     // 会员
         AntStall::class.java,      // 蚂蚁新村
         GreenFinance::class.java,  // 绿色经营
+        Antinvoice::class.java,      // 蚂蚁发票
 //        AntBookRead::class.java,   // 读书
-//        ConsumeGold::class.java,   // 消费金
+        ConsumeGold::class.java,   // 消费金
 //        OmegakoiTown::class.java,  // 小镇
         AnswerAI::class.java         // AI答题
     )

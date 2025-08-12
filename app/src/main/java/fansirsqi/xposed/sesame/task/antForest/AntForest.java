@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -190,6 +191,9 @@ public class AntForest extends ModelTask {
     private static int totalCollected = 0;
     private static int totalHelpCollected = 0;
     private static int totalWatered = 0;
+
+    private final Map<String, AtomicInteger> forestTaskTryCount = new ConcurrentHashMap<>();
+
     @Getter
     private Set<String> dontCollectMap = new HashSet<>();
     ArrayList<String> emojiList = new ArrayList<>(Arrays.asList(
@@ -1755,7 +1759,8 @@ public class AntForest extends ModelTask {
                     "SHARETASK"//邀请好友助力
             ));
             /* 3️⃣ 失败任务集合：空文件时自动创建空 HashSet 并立即落盘 */
-            TypeReference<Set<String>> typeRef = new TypeReference<>() {};
+            TypeReference<Set<String>> typeRef = new TypeReference<>() {
+            };
             Set<String> badTaskSet = DataStore.INSTANCE.getOrCreate("badForestTaskSet", typeRef);
             /* 3️⃣ 首次运行时把预设黑名单合并进去并立即落盘 */
             if (badTaskSet.isEmpty()) {
@@ -1809,14 +1814,19 @@ public class AntForest extends ModelTask {
                         } else if (TaskStatus.TODO.name().equals(taskStatus)) {
                             if (badTaskSet.contains(taskType)) continue;
                             if (!badTaskSet.contains(taskType)) {
+                                String bizKey = sceneCode + "_" + taskType;
+                                int count = forestTaskTryCount
+                                        .computeIfAbsent(bizKey, k -> new AtomicInteger(0))
+                                        .incrementAndGet();
+
                                 JSONObject joFinishTask = new JSONObject(AntForestRpcCall.finishTask(sceneCode, taskType)); // 完成任务请求
-                                if (ResChecker.checkRes(TAG, joFinishTask)) {
-                                    Log.forest("森林任务🧾️[" + taskTitle + "]");
-                                    doubleCheck = true; // 标记需要重新检查任务
-                                } else {
-                                    Log.error(TAG, "完成任务失败，" + taskTitle); // 记录完成任务失败信息
+                                if (count > 1) {
+                                    Log.error(TAG, "完成森林任务失败超过1次" + taskTitle + "\n" + joFinishTask); // 记录完成任务失败信息
                                     badTaskSet.add(taskType);
                                     DataStore.INSTANCE.put("badForestTaskSet", badTaskSet);
+                                } else {
+                                    Log.forest("森林任务🧾️[" + taskTitle + "]");
+                                    doubleCheck = true; // 标记需要重新检查任务
                                 }
                             }
 
