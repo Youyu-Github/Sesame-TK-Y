@@ -72,7 +72,7 @@ public class AntStall extends ModelTask {
         // 去快手逛一逛
         taskTypeList.add("ANTSTALL_TASK_kuaishouhuanduan");
         // 玩一步通一关
-        taskTypeList.add("ANTSTALL_TASK_XCXYX_yibuliangbu");
+//        taskTypeList.add("ANTSTALL_TASK_XCXYX_yibuliangbu");
     }
     @Override
     public String getName() {
