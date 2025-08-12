@@ -1399,7 +1399,7 @@ public class AntFarm extends ModelTask {
                     "HEART_DONATE",//爱心捐赠
                     "SHANGOU_xiadan",//去买秋天第一杯奶茶
                     "OFFLINE_PAY",//到店付款,线下支付
-                    "ONLINE_PAY",//在线支付
+                    "ONLINE_PAY"//在线支付
 //                    "HUABEI_MAP_180"//用花呗完成一笔支付
             ));
             TypeReference<Set<String>> typeRef = new TypeReference<>() {
