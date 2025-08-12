@@ -11,11 +11,10 @@ import fansirsqi.xposed.sesame.task.antSports.AntSports
 import fansirsqi.xposed.sesame.task.antStall.AntStall
 import fansirsqi.xposed.sesame.task.reserve.Reserve
 
-import fansirsqi.xposed.sesame.task.antMember.AntMember
+import fansirsqi.xposed.sesame.task.ancientTree.AncientTree
 import fansirsqi.xposed.sesame.task.antOrchard.AntOrchard
-import fansirsqi.xposed.sesame.task.antStall.AntStall
 import fansirsqi.xposed.sesame.task.greenFinance.GreenFinance
-//import fansirsqi.xposed.sesame.task.consumeGold.ConsumeGold
+import fansirsqi.xposed.sesame.task.consumeGold.ConsumeGold
 //import fansirsqi.xposed.sesame.task.antBookRead.AntBookRead
 //import fansirsqi.xposed.sesame.task.omegakoiTown.OmegakoiTown
 
@@ -34,7 +33,7 @@ object ModelOrder {
         AntMember::class.java,     // 会员
         AntStall::class.java,      // 蚂蚁新村
         GreenFinance::class.java,  // 绿色经营
-        Antinvoice::class.java,      // 蚂蚁发票
+//        Antinvoice::class.java,      // 蚂蚁发票
 //        AntBookRead::class.java,   // 读书
         ConsumeGold::class.java,   // 消费金
 //        OmegakoiTown::class.java,  // 小镇
