@@ -261,6 +261,7 @@ public class AntFarm extends ModelTask {
     private StringModelField giftFamilyDrawFragment;
     private BooleanModelField paradiseCoinExchangeBenefit;
     private SelectModelField paradiseCoinExchangeBenefitList;
+    private BooleanModelField useBigEaterTool;
 
     // 在方法外或类中作为字段缓存当天任务次数（不持久化）
     private final Map<String, AtomicInteger> farmTaskTryCount = new ConcurrentHashMap<>();
