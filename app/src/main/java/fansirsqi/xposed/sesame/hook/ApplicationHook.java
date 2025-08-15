@@ -53,7 +53,6 @@ import fansirsqi.xposed.sesame.hook.rpc.intervallimit.RpcIntervalLimit;
 import fansirsqi.xposed.sesame.hook.server.ModuleHttpServer;
 import fansirsqi.xposed.sesame.model.BaseModel;
 import fansirsqi.xposed.sesame.model.Model;
-import fansirsqi.xposed.sesame.net.SecureApiClient;
 import fansirsqi.xposed.sesame.newutil.DataStore;
 import fansirsqi.xposed.sesame.task.BaseTask;
 import fansirsqi.xposed.sesame.task.ModelTask;
@@ -67,9 +66,10 @@ import fansirsqi.xposed.sesame.util.StringUtil;
 import fansirsqi.xposed.sesame.util.TimeUtil;
 import fansirsqi.xposed.sesame.util.maps.UserMap;
 import fi.iki.elonen.NanoHTTPD;
+import kotlin.jvm.JvmStatic;
 import lombok.Getter;
 
-public class ApplicationHook  implements IXposedHookLoadPackage {
+public class ApplicationHook implements IXposedHookLoadPackage {
     static final String TAG = ApplicationHook.class.getSimpleName();
     private ModuleHttpServer httpServer;
     private static final String modelVersion = BuildConfig.VERSION_NAME;
@@ -79,16 +79,26 @@ public class ApplicationHook  implements IXposedHookLoadPackage {
     @Getter
     private static Object microApplicationContextObject = null;
 
-    @Getter
     @SuppressLint("StaticFieldLeak")
     static Context appContext = null;
+
+    @JvmStatic
+    public static Context getAppContext() {
+        return appContext;
+    }
+
     @SuppressLint("StaticFieldLeak")
     static Context moduleContext = null;
 
     @Getter
     static AlipayVersion alipayVersion = new AlipayVersion("");
-    @Getter
     private static volatile boolean hooked = false;
+
+    @JvmStatic
+    public static boolean isHooked() {
+        return hooked;
+    }
+
     private static volatile boolean init = false;
     static volatile Calendar dayCalendar;
     @Getter
@@ -106,7 +116,6 @@ public class ApplicationHook  implements IXposedHookLoadPackage {
     private static RpcVersion rpcVersion;
     private static PowerManager.WakeLock wakeLock;
     private static PendingIntent alarm0Pi;
-    private static SecureApiClient c;
 
     public static void setOffline(boolean offline) {
         ApplicationHook.offline = offline;
@@ -212,7 +221,6 @@ public class ApplicationHook  implements IXposedHookLoadPackage {
                         Log.runtime(TAG, "handleLoadPackage alipayVersion: " + alipayVersion.getVersionString());
                         loadNativeLibs(appContext, AssetUtil.INSTANCE.getCheckerDestFile());
                         loadNativeLibs(appContext, AssetUtil.INSTANCE.getDexkitDestFile());
-                        c = new SecureApiClient(Detector.INSTANCE.getRandomApi(0x22), Detector.INSTANCE.getRandomEncryptData(0xCF));
                         HookUtil.INSTANCE.fuckAccounLimit(loadPackageParam);
                         if (BuildConfig.DEBUG) {
                             try {
@@ -287,6 +295,7 @@ public class ApplicationHook  implements IXposedHookLoadPackage {
                                 if (!General.CURRENT_USING_SERVICE.equals(appService.getClass().getCanonicalName())) {
                                     return;
                                 }
+
                                 Log.runtime(TAG, "Service onCreate");
                                 appContext = appService.getApplicationContext();
                                 boolean isok = Detector.INSTANCE.isLegitimateEnvironment(appContext);

@@ -7,6 +7,7 @@ import fansirsqi.xposed.sesame.task.antFarm.AntFarm
 import fansirsqi.xposed.sesame.task.antForest.AntForest
 import fansirsqi.xposed.sesame.task.antMember.AntMember
 import fansirsqi.xposed.sesame.task.antOcean.AntOcean
+import fansirsqi.xposed.sesame.task.antOrchard.AntOrchard
 import fansirsqi.xposed.sesame.task.antSports.AntSports
 import fansirsqi.xposed.sesame.task.antStall.AntStall
 import fansirsqi.xposed.sesame.task.reserve.Reserve
