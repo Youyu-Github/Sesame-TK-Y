@@ -94,6 +94,61 @@ class AntFarm : ModelTask() {
     private var familyGroupId: String? = null
     private var farmTools: Array<FarmTool> = emptyArray()
 
+    /*
+    static {
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        bizKeyList = new ArrayList<>();
+        bizKeyList.add("ADD_GONGGE_NEW");
+        bizKeyList.add("USER_STARVE_PUSH");
+        bizKeyList.add("YEB_PURCHASE");
+        bizKeyList.add("WIDGET_addzujian");//添加庄园小组件
+        bizKeyList.add("HIRE_LOW_ACTIVITY");//雇佣小鸡拿饲料
+        bizKeyList.add("DIANTAOHUANDUAN");//去点淘逛一逛
+        bizKeyList.add("TAO_GOLDEN_V2");//去逛一逛淘金币小镇
+        bizKeyList.add("TAOBAO_tab2gzy");// 去逛一逛淘宝视频
+        bizKeyList.add("YITAO_appgyg");// 去一淘APP逛逛
+        bizKeyList.add("ANTFARM_chouchoule");// 【抽抽乐】好运装扮来袭！
+        bizKeyList.add("TB_qiandao2023");// 去淘宝签到逛一逛
+        bizKeyList.add("BABAFARM_TB");// 去逛一逛淘宝芭芭农场
+        bizKeyList.add("TB_chongzhi");// 逛一逛小羊农场
+        bizKeyList.add("ALIPAIMAI_gygzy");// 逛一逛淘花岛
+        bizKeyList.add("BABA_FARM_SPREAD_MANURE");// 去芭芭农场给果树施肥
+        bizKeyList.add("ELM_hudong2024");// 去饿了么游乐园逛一逛
+        bizKeyList.add("2024XIANYU_huanduan");// 去闲鱼逛一逛
+        bizKeyList.add("JINGTAN_FEED_FISH");// 去鲸探喂鱼集福气
+        bizKeyList.add("UC_gygzy");// 逛一逛UC浏览器
+        bizKeyList.add("TAOBAO_renshenggyg");// 去淘宝人生逛一逛
+        bizKeyList.add("TOUTIAO_daoduan");// 去今日头条极速版逛一逛
+        bizKeyList.add("SLEEP");// 让小鸡去睡觉
+        bizKeyList.add("HUABEI2023");// 去花呗花花卡逛一逛，完成可得90g饲料
+        bizKeyList.add("XJLY_meishiqiyuji30");// 去小鸡乐园开2次宝箱，完成可得90g饲料
+        bizKeyList.add("25WFYX_xiaojinuoche");// 去小鸡乐园开2次宝箱，完成可得90g饲料
+        bizKeyList.add("25WFYX_xiaojiliaoli_v2");// 去小鸡乐园开2次宝箱，完成可得90g饲料
+        bizKeyList.add("25WFYX_shiguangzahuodian");// 去小鸡乐园开2次宝箱，完成可得90g饲料
+        bizKeyList.add("XJLYKBX1_sl90");// 去小鸡乐园开2次宝箱，完成可得90g饲料
+        bizKeyList.add("CAINIAOGUOGUO2023V2");// 去菜鸟做公益，完成可得90g饲料
+        bizKeyList.add("VIDEO_TASK");// 看庄园小视频，浏览15s可得90g饲料
+        bizKeyList.add("25WFYX_duiudipeng");// 玩对对碰乐园完成20次消除，完成得1个乐园宝箱和限时180g饲料
+        bizKeyList.add("mangheshipai");// 家庭小盲盒实拍照片来啦，通过家庭活动获得小盲盒，还可获得90g饲料
+        bizKeyList.add("25WFYX_baoweixiangrikui");// 玩向日葵通过1关主线新关卡，完成可得1个小鸡乐园宝箱和90g饲料
+        bizKeyList.add("2025618dacu");// 去淘金币618赢10亿，完成浏览可得90g饲料
+        bizKeyList.add("BBNC_gyg");// 去芭芭农场逛一逛，完成可得90g饲料
+        bizKeyList.add("COOK");// 小鸡厨房，每天做美食可得90g饲料
+        bizKeyList.add("ANTMEMBER_RICHANGQIANDAO");// 去支付宝会员签到，完成可得90g饲料
+        bizKeyList.add("tab3_gyg");// 逛一逛热门短视频，完成看视频进度最高可得240g饲料
+        bizKeyList.add("baiduditu");// 去百度地图逛一逛，完成可得90g饲料
+        //bizKeyList.add("OFFLINE_PAY");// 到店付款，完成可得180g饲料
+        //bizKeyList.add("ONLINE_PAY");// 线上支付，完成可得180g饲料
+        //bizKeyList.add("30001229221356342088142133303848");// 一起拿小鸡饲料，每天可给5位好友送饲料，7天内好友完成领取，自己可获1包饲料（不扣自己的饲料，且奖励不会过期）（注意改id2088...)
+        //bizKeyList.add("30001935487934202088142133303848");// 庄园小课堂，每天答题最高可得180g饲料（注意改id2088...)
+        bizKeyList.add("SHANGYEHUA_90_1");// 去杂货铺逛一逛，浏览15s可得90g饲料
+        bizKeyList.add("chouchoule_xiaritianqi");// 抽抽乐每日抽1次可得90g饲料
+        //bizKeyList.add("HEART_DONATION_ADVANCED_FOOD_V2");// 每天单笔捐赠1元可得爱心美食（为保证项目正常运行，禁止使用此项！）
+        //bizKeyList.add("HEART_DONATE");// 爱心捐赠（每天2次），捐任意金额可得180g饲料（为保证项目正常运行，禁止使用此项！）
+        //bizKeyList.add("SHANGOU_xiadan");// 秋天第一杯奶茶
+    }
+    */
 
     /**
      * 小鸡睡觉时间
@@ -286,10 +341,10 @@ class AntFarm : ModelTask() {
             ) { AlipayUser.getList() }.also { notifyFriendList = it })
         modelFields.addField(BooleanModelField("donation", "每日捐蛋 | 开启", false).also { donation = it })
         modelFields.addField(ChoiceModelField("donationCount", "每日捐蛋 | 次数", DonationCount.Companion.ONE, DonationCount.Companion.nickNames).also { donationCount = it })
-        modelFields.addField(BooleanModelField("useBigEaterTool", "加饭卡 | 使用", false).also { useBigEaterTool = it })
         modelFields.addField(BooleanModelField("useAccelerateTool", "加速卡 | 使用", false).also { useAccelerateTool = it })
         modelFields.addField(BooleanModelField("useAccelerateToolContinue", "加速卡 | 连续使用", false).also { useAccelerateToolContinue = it })
         modelFields.addField(BooleanModelField("useAccelerateToolWhenMaxEmotion", "加速卡 | 仅在满状态时使用", false).also { useAccelerateToolWhenMaxEmotion = it })
+        modelFields.addField(BooleanModelField("useBigEaterTool", "加饭卡 | 使用", false).also { useBigEaterTool = it })
         modelFields.addField(BooleanModelField("useSpecialFood", "使用特殊食品", false).also { useSpecialFood = it })
         modelFields.addField(BooleanModelField("useNewEggCard", "使用新蛋卡", false).also { useNewEggCard = it })
         modelFields.addField(BooleanModelField("receiveFarmTaskAward", "收取饲料奖励", false).also { receiveFarmTaskAward = it })
@@ -1345,9 +1400,9 @@ class AntFarm : ModelTask() {
                 "HEART_DONATION_ADVANCED_FOOD_V2",  //香草芒果冰糕任务
                 "HEART_DONATE",  //爱心捐赠
                 "SHANGOU_xiadan",  //去买秋天第一杯奶茶
+//                "HUABEI_MAP_180", //用花呗完成一笔支付
                 "OFFLINE_PAY",  //到店付款,线下支付
-                "ONLINE_PAY",  //在线支付
-                "HUABEI_MAP_180" //用花呗完成一笔支付
+                "ONLINE_PAY"  //在线支付
             )
 
             val badTaskSet = DataStore.getOrCreate<MutableSet<String>>("badFarmTaskSet")
