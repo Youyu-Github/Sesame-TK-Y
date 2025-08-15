@@ -140,8 +140,8 @@ class AntFarm : ModelTask() {
         bizKeyList.add("baiduditu");// 去百度地图逛一逛，完成可得90g饲料
         //bizKeyList.add("OFFLINE_PAY");// 到店付款，完成可得180g饲料
         //bizKeyList.add("ONLINE_PAY");// 线上支付，完成可得180g饲料
-        //bizKeyList.add("30001229221356342088142133303848");// 一起拿小鸡饲料，每天可给5位好友送饲料，7天内好友完成领取，自己可获1包饲料（不扣自己的饲料，且奖励不会过期）（注意改id2088...)
-        //bizKeyList.add("30001935487934202088142133303848");// 庄园小课堂，每天答题最高可得180g饲料（注意改id2088...)
+        //bizKeyList.add("30001229221356342088142133303848");// 一起拿小鸡饲料，每天可给5位好友送饲料，7天内好友完成领取，自己可获1包饲料（不扣自己的饲料，且奖励不会过期）（注意改id2088...）
+        //bizKeyList.add("30001935487934202088142133303848");// 庄园小课堂，每天答题最高可得180g饲料（注意改id2088...）
         bizKeyList.add("SHANGYEHUA_90_1");// 去杂货铺逛一逛，浏览15s可得90g饲料
         bizKeyList.add("chouchoule_xiaritianqi");// 抽抽乐每日抽1次可得90g饲料
         //bizKeyList.add("HEART_DONATION_ADVANCED_FOOD_V2");// 每天单笔捐赠1元可得爱心美食（为保证项目正常运行，禁止使用此项！）
@@ -801,11 +801,11 @@ class AntFarm : ModelTask() {
         if (useBigEaterTool!!.value && AnimalFeedStatus.EATING.name == ownerAnimal.animalFeedStatus) {
             val result = useFarmTool(ownerFarmId, ToolType.BIG_EATER_TOOL)
             if (result) {
-                Log.farm("使用道具🎭[加饭卡]！")
+                Log.farm("追加使用🍚「加饭卡」🥣成功#剩余饲料" + foodStock + "g")
                 GlobalThreadPools.sleep(1000)
                 needReload = true
             } else {
-                Log.record("⚠️使用道具🎭[加饭卡]失败，可能卡片不足或状态异常~")
+                Log.record("⚠️使用🍚「加饭卡」失败（卡片饲料不足或已在使用中～）")
             }
         }
 
