@@ -31,9 +31,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.lang.reflect.Method;
+import java.lang.reflect.Member;
+import java.lang.reflect.InvocationTargetException;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 import fansirsqi.xposed.sesame.BuildConfig;
@@ -135,6 +139,28 @@ public class ApplicationHook implements IXposedHookLoadPackage {
     }
 
 
+    private final static Method deoptimizeMethod;
+
+    static {
+        Method m = null;
+        try {
+            m = XposedBridge.class.getDeclaredMethod("deoptimizeMethod", Member.class);
+        } catch (Throwable t) {
+            XposedBridge.log("E/" + TAG + " " + android.util.Log.getStackTraceString(t));
+        }
+        deoptimizeMethod = m;
+    }
+
+    static void deoptimizeMethod(Class<?> c, String n) throws InvocationTargetException, IllegalAccessException {
+        for (Method m : c.getDeclaredMethods()) {
+            if (deoptimizeMethod != null && m.getName().equals(n)) {
+                deoptimizeMethod.invoke(null, m);
+                if (BuildConfig.DEBUG)
+                    XposedBridge.log("D/" + TAG + " Deoptimized " + m.getName());
+            }
+        }
+    }
+
     /**
      * 调度定时执行
      *
@@ -210,6 +236,14 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                 if (hooked) return;
                 appLloadPackageParam = loadPackageParam;
                 classLoader = appLloadPackageParam.classLoader;
+                // 在Hook Application.attach 之前，先 deoptimize LoadedApk.makeApplicationInner
+                try {
+                    Class<?> loadedApkClass = classLoader.loadClass("android.app.LoadedApk");
+                    deoptimizeMethod(loadedApkClass, "makeApplicationInner");
+                } catch (Throwable t) {
+                    Log.runtime(TAG, "deoptimize makeApplicationInner err:");
+                    Log.printStackTrace(TAG, t);
+                }
                 XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
