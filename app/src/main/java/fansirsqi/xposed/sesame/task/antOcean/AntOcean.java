@@ -272,7 +272,7 @@ public class AntOcean extends ModelTask {
             JSONObject jo = new JSONObject(AntOceanRpcCall.queryOceanStatus());
             if (ResChecker.checkRes(TAG, jo)) {
                 if (!jo.getBoolean("opened")) {
-                    getEnableField().setValue(false);
+                    getEnableField().setValue(0);
                     Log.record("请先开启神奇海洋，并完成引导教程");
                     return false;
                 }

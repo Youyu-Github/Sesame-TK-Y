@@ -24,6 +24,7 @@ public abstract class ModelTask extends Model {
     private static final ThreadPoolExecutor MAIN_THREAD_POOL = new ThreadPoolExecutor(getModelArray().length, Integer.MAX_VALUE, 30L, TimeUnit.SECONDS, new SynchronousQueue<>(), new ThreadPoolExecutor.CallerRunsPolicy());
     private final Map<String, ChildModelTask> childTaskMap = new ConcurrentHashMap<>();
     private ChildTaskExecutor childTaskExecutor;
+    private int run_cnts = 0;
     @Getter
     private final Runnable mainRunnable = new Runnable() {
         private final ModelTask task = ModelTask.this;
@@ -47,6 +48,14 @@ public abstract class ModelTask extends Model {
     };
 
     public ModelTask() {
+    }
+
+    public void addRunCnts() {
+        run_cnts += 1;
+    }
+
+    public int getRunCnts() {
+        return run_cnts;
     }
 
     /**
@@ -102,7 +111,7 @@ public abstract class ModelTask extends Model {
      * @return Boolean值，表示是否为同步任务
      */
     public Boolean isSync() {
-        return false;
+        return true;
     }
 
     /**
@@ -220,8 +229,10 @@ public abstract class ModelTask extends Model {
         try {
             if (isEnable() && check()) {
                 if (isSync()) {
+                    // Log.record("run task sync");
                     mainRunnable.run();
                 } else {
+                    Log.record("add task to thread pool");
                     MAIN_THREAD_POOL.execute(mainRunnable);
                 }
                 return true;
@@ -265,14 +276,25 @@ public abstract class ModelTask extends Model {
      */
     public static void startAllTask(Boolean force) {
         Notify.setStatusTextExec();
-        for (Model model : getModelArray()) {
-            if (model != null) {
-                if (ModelType.TASK == model.getType()) {
-                    if (((ModelTask) model).startTask(force)) {
-                        GlobalThreadPools.sleep(10);
+        for (int run_cnt=1;run_cnt<=2;run_cnt++) {
+            Log.record("第"+run_cnt+"轮开始");
+            for (Model model : getModelArray()) {
+                if (model != null) {
+                    if (ModelType.TASK == model.getType()) {
+                        ((ModelTask) model).addRunCnts();
+                         int model_priority = ((ModelTask) model).getPriority();
+                        if (run_cnt < model_priority) {
+                            Log.record("模块["+((ModelTask) model).getName()+"]优先级:"+model_priority+" 第"+run_cnt+"轮跳过");
+                            continue;
+                        }
+                        if (((ModelTask) model).startTask(force)) {
+                            GlobalThreadPools.sleep(750);
+                            Notify.updateNextExecText(-1);
+                        }
                     }
                 }
             }
+            Log.record("第"+run_cnt+"轮结束");
         }
     }
 

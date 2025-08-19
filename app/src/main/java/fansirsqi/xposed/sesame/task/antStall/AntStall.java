@@ -597,11 +597,13 @@ public class AntStall extends ModelTask {
                             if (jsonArray == null || jsonArray.length() == 0) {
                                 continue;
                             }
-                            GlobalThreadPools.sleep(5000);
+                            // Log.record("延时5S 木兰市集");
+                            // GlobalThreadPools.sleep(5000);
                             for (int j = 0; j < jsonArray.length(); j++) {
                                 try{
                                     JSONObject jsonObject = jsonArray.getJSONObject(j);
                                     s = AntStallRpcCall.finish(pid, jsonObject);
+                                    Log.record("延时5S 木兰市集");
                                     GlobalThreadPools.sleep(5000);
                                     jo = new JSONObject(s);
                                     if (!jo.optBoolean("success")) {

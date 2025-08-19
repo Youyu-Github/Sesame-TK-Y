@@ -118,6 +118,42 @@ public class HtmlViewerActivity extends BaseActivity {
                 });
     }
 
+    private static String toJsString(String s) {
+        if (s == null) return "''";
+        StringBuilder sb = new StringBuilder(s.length() + 16);
+        sb.append('\'');
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '\'': sb.append("\\'"); break;
+                case '\\': sb.append("\\\\"); break;
+                case '\n': sb.append("\\n"); break;
+                case '\r': sb.append("\\r"); break;
+                case '\t': sb.append("\\t"); break;
+                case '\f': sb.append("\\f"); break;
+                case '\b': sb.append("\\b"); break;
+                default:
+                    if (c < 0x20) {
+                        sb.append(String.format("\\u%04x", (int)c));
+                    } else {
+                        sb.append(c);
+                    }
+            }
+        }
+        sb.append('\'');
+        return sb.toString();
+    }
+
+    private static String readAllTextSafe(String path) {
+        try {
+            java.nio.charset.Charset cs = java.nio.charset.StandardCharsets.UTF_8;
+            byte[] data = java.nio.file.Files.readAllBytes(new File(path).toPath());
+            return new String(data, cs);
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -146,6 +182,45 @@ public class HtmlViewerActivity extends BaseActivity {
                 uri = intent.getData();
                 if (uri != null) {
                     mWebView.loadUrl(uri.toString());
+// 1) 允许 JS（仅在你要显示日志时启用） 
+                    settings.setJavaScriptEnabled(true);
+                    settings.setDomStorageEnabled(true); // 可选
+
+// 2) 先加载模板页面
+                    mWebView.loadUrl("file:///android_asset/log_viewer.html");
+
+// 3) 等模板加载完成后，读入文件内容 -> setFullText()
+//    然后启动你的增量监听（RandomAccessFile + FileObserver/Poll），新增内容用 appendLog()
+//    这里演示用一个最简单的“页面加载完成回调 + 首次读全量”的写法：
+                    mWebView.setWebChromeClient(new WebChromeClient() {
+                        @Override
+                        public void onProgressChanged(WebView view, int progress) {
+                            progressBar.setProgress(progress);
+                            if (progress < 100) {
+                                setBaseSubtitle("Loading...");
+                                progressBar.setVisibility(View.VISIBLE);
+                            } else {
+                                setBaseSubtitle(mWebView.getTitle());
+                                progressBar.setVisibility(View.GONE);
+
+                                // ★★ 页面已就绪：把现有文件一次性灌入 ★★
+                                if (uri != null && "file".equalsIgnoreCase(uri.getScheme())) {
+                                    String path = uri.getPath();
+                                    if (path != null && path.endsWith(".log")) {
+                                        String all = readAllTextSafe(path); // 你实现的文件读取
+                                        String jsArg = toJsString(all);     // 下面给了帮助方法
+                                        mWebView.evaluateJavascript("setFullText(" + jsArg + ")", null);
+
+                                        // 然后启动增量监听（你在 MyWebView 里实现的）
+                                        if (mWebView instanceof MyWebView) {
+                                            ((MyWebView) mWebView).startWatchingIncremental(path);
+                                            // 或者 ((MyWebView) mWebView).startWatchingWithObserver(path);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
                 }
                 canClear = intent.getBooleanExtra("canClear", false);
             }
@@ -288,5 +363,38 @@ public class HtmlViewerActivity extends BaseActivity {
             clipboardManager.setPrimaryClip(ClipData.newPlainText(null, mWebView.getUrl()));
             ToastUtil.makeText(this, getString(R.string.copy_success), Toast.LENGTH_SHORT).show();
         }
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mWebView instanceof MyWebView) {
+            ((MyWebView) mWebView).stopWatchingIncremental();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (mWebView instanceof MyWebView) {
+            ((MyWebView) mWebView).stopWatchingIncremental();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        // 先停止文件监听，再做 WebView 清理，最后再 super
+        if (mWebView instanceof MyWebView) {
+            ((MyWebView) mWebView).stopWatchingIncremental();
+        }
+        if (mWebView != null) {
+            try {
+                mWebView.loadUrl("about:blank");
+                mWebView.stopLoading();
+                mWebView.setWebChromeClient(null);
+                mWebView.setWebViewClient(null);
+                mWebView.destroy();
+            } catch (Throwable ignore) {}
+        }
+        super.onDestroy();
     }
 }

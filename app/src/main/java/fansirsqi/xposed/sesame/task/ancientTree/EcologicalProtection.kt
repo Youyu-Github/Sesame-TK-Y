@@ -57,7 +57,7 @@ class EcologicalProtection : ModelTask() {
 
     override fun run() {
         try {
-            Log.record(TAG, "开始执行" + getName())
+            Log.record(TAG,"开始执行"+getName())
             ancientTree(ancientTreeCityCodeList!!.value)
         } catch (t: Throwable) {
             Log.runtime(TAG, "start.run err:")

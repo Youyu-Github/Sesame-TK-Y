@@ -70,6 +70,11 @@ public class AntSports extends ModelTask {
     }
 
     @Override
+    public int getPriority() {
+        return 1;
+    }
+
+    @Override
     public ModelFields getFields() {
         ModelFields modelFields = new ModelFields();
         modelFields.addField(walk = new BooleanModelField("walk", "行走路线 | 开启", false));
