@@ -356,7 +356,7 @@ class AntFarm : ModelTask() {
         modelFields.addField(PriorityModelField("receiveFarmTaskAward", "收取饲料奖励", priorityType.PRIORITY_2, priorityType.nickNames).also { receiveFarmTaskAward = it })
         modelFields.addField(PriorityModelField("receiveFarmToolReward", "收取道具奖励", priorityType.PRIORITY_2, priorityType.nickNames).also { receiveFarmToolReward = it })
         modelFields.addField(BooleanModelField("harvestProduce", "收获爱心鸡蛋", false).also { harvestProduce = it })
-        modelFields.addField(BPriorityModelField("kitchen", "小鸡厨房", priorityType.PRIORITY_2, priorityType.nickNames).also { kitchen = it })
+        modelFields.addField(PriorityModelField("kitchen", "小鸡厨房", priorityType.PRIORITY_2, priorityType.nickNames).also { kitchen = it })
         modelFields.addField(PriorityModelField("chickenDiary", "小鸡日记", priorityType.PRIORITY_2, priorityType.nickNames).also { chickenDiary = it })
         modelFields.addField(BooleanModelField("diaryTietie", "小鸡日记 | 贴贴", false).also { diaryTietie = it })
         modelFields.addField(
@@ -408,6 +408,7 @@ class AntFarm : ModelTask() {
 
     override fun run() {
         try {
+            val tc = TimeCounter(TAG)
             val userId = UserMap.currentUid
             Log.record(TAG, "执行开始-蚂蚁" + getName())
             if (enterFarm() == null) {
@@ -1818,7 +1819,7 @@ class AntFarm : ModelTask() {
                                 jo = jo.getJSONObject("farmVO").getJSONObject("subFarmVO")
                                 val friendFarmId = jo.getString("farmId")
                                 val jaAnimals = jo.getJSONArray("animals")
-                                var notified = !notifyFriend!!.value
+                                var notified = 0 == notifyFriend!!.value
                                 for (j in 0..<jaAnimals.length()) {
                                     jo = jaAnimals.getJSONObject(j)
                                     val animalId = jo.getString("animalId")
@@ -2757,7 +2758,7 @@ class AntFarm : ModelTask() {
     }
 
     enum class AnimalFeedStatus {
-        HUNGRY, EATING, SLEEPY, NONE
+        HUNGRY, EATING, SLEEPY
     }
 
     enum class AnimalInteractStatus {
