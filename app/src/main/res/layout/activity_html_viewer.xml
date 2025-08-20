@@ -20,7 +20,7 @@
             android:layout_height="match_parent"
             android:layout_above="@id/pgb_webview"
             android:background="@color/background"
-            android:layout_marginBottom="5dp" />
+             />
 
         <ProgressBar
             android:id="@+id/pgb_webview"
