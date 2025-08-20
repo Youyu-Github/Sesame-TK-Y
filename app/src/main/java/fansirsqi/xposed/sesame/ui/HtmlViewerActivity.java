@@ -182,16 +182,11 @@ public class HtmlViewerActivity extends BaseActivity {
                 uri = intent.getData();
                 if (uri != null) {
                     mWebView.loadUrl(uri.toString());
-// 1) 允许 JS（仅在你要显示日志时启用） 
+/// 日志实时显示 begin
                     settings.setJavaScriptEnabled(true);
                     settings.setDomStorageEnabled(true); // 可选
 
-// 2) 先加载模板页面
                     mWebView.loadUrl("file:///android_asset/log_viewer.html");
-
-// 3) 等模板加载完成后，读入文件内容 -> setFullText()
-//    然后启动你的增量监听（RandomAccessFile + FileObserver/Poll），新增内容用 appendLog()
-//    这里演示用一个最简单的“页面加载完成回调 + 首次读全量”的写法：
                     mWebView.setWebChromeClient(new WebChromeClient() {
                         @Override
                         public void onProgressChanged(WebView view, int progress) {
@@ -221,6 +216,7 @@ public class HtmlViewerActivity extends BaseActivity {
                             }
                         }
                     });
+/// 日志实时显示 end
                 }
                 canClear = intent.getBooleanExtra("canClear", false);
             }

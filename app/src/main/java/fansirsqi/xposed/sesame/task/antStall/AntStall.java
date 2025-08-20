@@ -30,6 +30,7 @@ import fansirsqi.xposed.sesame.util.ResChecker;
 import fansirsqi.xposed.sesame.data.Status;
 import fansirsqi.xposed.sesame.util.StringUtil;
 import fansirsqi.xposed.sesame.util.TimeUtil;
+import fansirsqi.xposed.sesame.util.TimeCounter;
 /**
  * @author Constanline
  * @since 2023/08/22
@@ -162,6 +163,7 @@ public class AntStall extends ModelTask {
     @Override
     public void run() {
         try {
+            TimeCounter tc = new TimeCounter(TAG);
             Log.record(TAG,"执行开始-" + getName());
             String s = AntStallRpcCall.home();
             JSONObject jo = new JSONObject(s);
@@ -173,34 +175,47 @@ public class AntStall extends ModelTask {
                 JSONObject astReceivableCoinVO = jo.getJSONObject("astReceivableCoinVO");
                 if (astReceivableCoinVO.optBoolean("hasCoin")) {
                     settleReceivable();
+                    tc.countDebug("收金币");
                 }
                 if (stallThrowManure.getValue()) {
                     throwManure();
+                    tc.countDebug("丢肥料");
                 }
                 JSONObject seatsMap = jo.getJSONObject("seatsMap");
                 settle(seatsMap);
+                tc.countDebug("收取金币");
                 collectManure();
+                tc.countDebug("收肥料");
                 sendBack(seatsMap);
+                tc.countDebug("请走");
                 if (stallAutoClose.getValue()) {
                     closeShop();
+                    tc.countDebug("收摊");
                 }
                 if (stallAutoOpen.getValue()) {
                     openShop();
+                    tc.countDebug("摆摊");
                 }
                 if (stallAutoTask.getValue()) {
                     taskList();
+                    tc.countDebug("自动任务第一次");
                     GlobalThreadPools.sleep(500);
                     taskList();
+                    tc.countDebug("自动任务第二次");
                 }
                 assistFriend();
+                tc.countDebug("新村助力");
                 if (stallDonate.getValue() && Status.canStallDonateToday()) {
                     donate();
+                    tc.countDebug("自动捐赠");
                 }
                 if (roadmap.getValue()) {
                     roadmap();
+                    tc.countDebug("自动进入下一村");
                 }
                 if (stallAutoTicket.getValue()) {
                     pasteTicket();
+                    tc.countDebug("贴罚单");
                 }
             } else {
                 Log.record(TAG,"home err:" + " " + s);
@@ -764,6 +779,7 @@ public class AntStall extends ModelTask {
                     continue;
                 }
                 Log.farm("新村助力🎉成功[" + name + "]");
+                GlobalThreadPools.sleep(5000);
             }
             //暂时一天只做一次
             Status.antStallAssistFriendToday();

@@ -30,6 +30,7 @@ public class ForestChouChouLe {
             do {
                 doublecheck = false;
                 if (System.currentTimeMillis() > startTime && System.currentTimeMillis() < endTime) {// 时间范围内
+                    Log.record("延时1S");
                     GlobalThreadPools.sleep(1000L);
                     JSONObject listTaskopengreen = new JSONObject(AntForestRpcCall.listTaskopengreen(activityId, listSceneCode, source));
                     if (ResChecker.checkRes(TAG, listTaskopengreen)) {
@@ -49,11 +50,15 @@ public class ForestChouChouLe {
                             int rightsTimes = taskRights.getInt("rightsTimes");//当完成行次数
                             int rightsTimesLimit = taskRights.getInt("rightsTimesLimit");//可完成行次数
 
-                            GlobalThreadPools.sleep(1000L * 3);
+                            // GlobalThreadPools.sleep(1000L * 3);
 
                             //注意这里的 taskSceneCode=listSceneCode = ANTFOREST_NORMAL_DRAW_TASK， sceneCode = ANTFOREST_NORMAL_DRAW
 
                             if (taskStatus.equals(TaskStatus.TODO.name())) { //适配签到任务
+                                if(!("邀请好友助力得机会".equals(taskName))) {
+                                    Log.record("任务延时3S:"+taskName);
+                                    GlobalThreadPools.sleep(1000L * 3);
+                                }
                                 if (taskType.equals("NORMAL_DRAW_EXCHANGE_VITALITY")) {//活力值兑换次数
                                     String sginRes = AntForestRpcCall.exchangeTimesFromTaskopengreen(activityId, sceneCode, source, taskSceneCode, taskType);
                                     if (ResChecker.checkRes(TAG, sginRes)) {
@@ -92,6 +97,8 @@ public class ForestChouChouLe {
                             }
 
                             if (taskStatus.equals(TaskStatus.FINISHED.name())) {// 领取奖励
+                                Log.record("奖励延时3S:"+taskName);
+                                GlobalThreadPools.sleep(1000L * 3);
                                 String sginRes = AntForestRpcCall.receiveTaskAwardopengreen(source, taskSceneCode, taskType);
                                 if (ResChecker.checkRes(TAG, sginRes)) {
                                     Log.forest( "森林寻宝🧾：" + taskName);

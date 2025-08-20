@@ -576,6 +576,7 @@ public class ApplicationHook implements IXposedHookLoadPackage {
                         PowerManager pm = (PowerManager) service.getSystemService(Context.POWER_SERVICE);
                         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, service.getClass().getName());
                         wakeLock.acquire(); // 确保唤醒锁在前台服务启动前
+                        Log.record(TAG, "唤醒锁申请成功:");
                     } catch (Throwable t) {
                         Log.record(TAG, "唤醒锁申请失败:");
                         Log.printStackTrace(t);
@@ -659,11 +660,12 @@ public class ApplicationHook implements IXposedHookLoadPackage {
      * @param delayMillis 延迟执行的毫秒数
      */
     static void execDelayedHandler(long delayMillis) {
-        if (mainHandler == null) {
-
-            return;
+        if(mainHandler != null) {
+            mainHandler.postDelayed(
+                    () -> mainTask.startTask(true), delayMillis);
+        } else {
+            Log.runtime("mainHandler is null");
         }
-        mainHandler.postDelayed(() -> mainTask.startTask(true), delayMillis);
         try {
             long nextExecTime = System.currentTimeMillis() + delayMillis;
             String nt = nextExecTime > 0 ? "⏰ 下次执行 " + TimeUtil.getTimeStr(nextExecTime) : "";

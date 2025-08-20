@@ -6,7 +6,6 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 //import android.util.Log
-import android.os.FileObserver
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
@@ -18,14 +17,11 @@ import java.nio.charset.CodingErrorAction
  * 自定义 WebView 类，提供默认的初始化设置和滚动到底部的功能。
  */
 class MyWebView : WebView {
-    private var fileObserver: FileObserver? = null
-    private var observedFilePath: String? = null
-    private var filePath: String? = null
-    private var lastModifiedTime: Long = 0L
+    /// 日志实时显示 begin
     private var pollRunnable: Runnable? = null
     private var logFile: RandomAccessFile? = null
-    private var raf: RandomAccessFile? = null
     private var watchingFile: File? = null
+    /// 日志实时显示 end
 
     /**
      * 构造函数，用于当没有 AttributeSet 参数时。
@@ -118,6 +114,7 @@ class MyWebView : WebView {
         // 计算垂直滚动范围并滚动到底部
         scrollTo(0, computeVerticalScrollRange())
     }
+    /// 日志实时显示 begin
     // 持久化的 UTF-8 增量解码器 + 未解码尾巴
     private val utf8Decoder: CharsetDecoder = Charsets.UTF_8
         .newDecoder()
@@ -159,7 +156,7 @@ class MyWebView : WebView {
                 } catch (_: Throwable) {
                     // 需要可加你的日志打印
                 } finally {
-                    postDelayed(this, 500) // 500ms/次 更顺滑；可按需调
+                    postDelayed(this, 1000) // 500ms/次 更顺滑；可按需调
                 }
             }
         }
@@ -238,4 +235,5 @@ class MyWebView : WebView {
         sb.append('\'')
         return sb.toString()
     }
+    /// 日志实时显示 end
 }

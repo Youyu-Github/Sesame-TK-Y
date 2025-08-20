@@ -288,8 +288,7 @@ public abstract class ModelTask extends Model {
                             continue;
                         }
                         if (((ModelTask) model).startTask(force)) {
-                            GlobalThreadPools.sleep(750);
-                            Notify.updateNextExecText(-1);
+                            GlobalThreadPools.sleep(10);
                         }
                     }
                 }

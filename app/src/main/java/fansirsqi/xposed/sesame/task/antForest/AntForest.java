@@ -179,7 +179,6 @@ public class AntForest extends ModelTask {
 
     private ChoiceModelField robExpandCard;//1.1倍能量卡
     private ListModelField robExpandCardTime; //1.1倍能量卡时间
-    private PriorityModelField collectEnergy;
     private BooleanModelField pkEnergy; // PK能量
     
     /**

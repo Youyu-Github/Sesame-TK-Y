@@ -22,6 +22,7 @@ import fansirsqi.xposed.sesame.util.maps.UserMap;
 import fansirsqi.xposed.sesame.util.ResChecker;
 import fansirsqi.xposed.sesame.data.Status;
 import fansirsqi.xposed.sesame.util.TimeUtil;
+import fansirsqi.xposed.sesame.util.TimeCounter;
 public class AntMember extends ModelTask {
   private static final String TAG = AntMember.class.getSimpleName();
   @Override
@@ -86,38 +87,49 @@ public class AntMember extends ModelTask {
   @Override
   public void run() {
     try {
+      TimeCounter tc = new TimeCounter(TAG);
       Log.record(TAG,"执行开始-" + getName());
       if (memberSign.getValue()) {
         doMemberSign();
+        tc.countDebug("会员签到");
       }
       if (memberTask.getValue()) {
         doAllMemberAvailableTask();
+        tc.countDebug("会员任务");
       }
       if (memberPointExchangeBenefit.getValue()) {
         memberPointExchangeBenefit();
+        tc.countDebug("会员积分 | 兑换权益");
       }
       if ((sesameTask.getValue() || collectSesame.getValue()) && checkSesameCanRun()) {
         if (sesameTask.getValue()) {
           doAllAvailableSesameTask();
+          tc.countDebug("芝麻信用|芝麻粒信用任务");
         }
         if (collectSesame.getValue()) {
           collectSesame(collectSesameWithOneClick.getValue());
+          tc.countDebug("芝麻信用|芝麻粒领取");
         }
       }
       if (collectInsuredGold.getValue()) {
         collectInsuredGold();
+        tc.countDebug("蚂蚁保|保障金领取");
       }
       if (enableGoldTicket.getValue()) {
         goldTicket();
+        tc.countDebug("黄金票签到");
       }
       if (enableGameCenter.getValue()) {
         enableGameCenter();
+        tc.countDebug("游戏中心签到");
       }
       if (beanSignIn.getValue()) {
         beanSignIn();
+        tc.countDebug("安心豆签到");
       }
       if (beanExchangeBubbleBoost.getValue()) {
         beanExchangeBubbleBoost();
+        tc.countDebug("安心豆兑换时光加速器");
       }
       if (merchantSign.getValue() || merchantKmdk.getValue() || merchantMoreTask.getValue()) {
         JSONObject jo = new JSONObject(AntMemberRpcCall.transcodeCheck());
@@ -132,16 +144,21 @@ public class AntMember extends ModelTask {
         if (merchantKmdk.getValue()) {
           if (TimeUtil.isNowAfterTimeStr("0600") && TimeUtil.isNowBeforeTimeStr("1200")) {
             kmdkSignIn();
+            tc.countDebug("商家服务|开门打卡");
           }
           kmdkSignUp();
+          tc.countDebug("开门打卡报名");
         }
         if (merchantSign.getValue()) {
           doMerchantSign();
+          tc.countDebug("商家服务|签到");
         }
         if (merchantMoreTask.getValue()) {
           doMerchantMoreTask();
+          tc.countDebug("商家服务|积分任务");
         }
       }
+      tc.stop();
     } catch (Throwable t) {
       Log.printStackTrace(TAG, t);
     }finally {
@@ -218,7 +235,7 @@ public class AntMember extends ModelTask {
     try {
       if (Status.canMemberSignInToday(UserMap.getCurrentUid())) {
         String s = AntMemberRpcCall.queryMemberSigninCalendar();
-        GlobalThreadPools.sleep(500);
+        // GlobalThreadPools.sleep(500);
         JSONObject jo = new JSONObject(s);
         if (ResChecker.checkRes(TAG,jo)) {
           Log.other("会员签到📅[" + jo.getString("signinPoint") + "积分]#已签到" + jo.getString("signinSumDay") + "天");
@@ -240,7 +257,7 @@ public class AntMember extends ModelTask {
   private void doAllMemberAvailableTask() {
     try {
       String str = AntMemberRpcCall.queryAllStatusTaskList();
-      GlobalThreadPools.sleep(500);
+      // GlobalThreadPools.sleep(500);
       JSONObject jsonObject = new JSONObject(str);
       if (!ResChecker.checkRes(TAG, jsonObject)) {
         Log.error(TAG + ".doAllMemberAvailableTask", "会员任务响应失败: " + jsonObject.getString("resultDesc"));
@@ -267,7 +284,7 @@ public class AntMember extends ModelTask {
   private static void queryPointCert(int page, int pageSize) {
     try {
       String s = AntMemberRpcCall.queryPointCert(page, pageSize);
-      GlobalThreadPools.sleep(500);
+      // GlobalThreadPools.sleep(500);
       JSONObject jo = new JSONObject(s);
       if (ResChecker.checkRes(TAG,jo)) {
         boolean hasNextPage = jo.getBoolean("hasNextPage");
@@ -328,7 +345,7 @@ public class AntMember extends ModelTask {
   private static void doAllAvailableSesameTask() {
     try {
       String s = AntMemberRpcCall.queryAvailableSesameTask();
-      GlobalThreadPools.sleep(500);
+      // GlobalThreadPools.sleep(500);
       JSONObject jo = new JSONObject(s);
       if (jo.has("resData")) {
         jo = jo.getJSONObject("resData");
@@ -381,7 +398,7 @@ public class AntMember extends ModelTask {
       if (!task.has("todayFinish")) {
         // 领取任务
         s = AntMemberRpcCall.joinSesameTask(taskTemplateId);
-        GlobalThreadPools.sleep(200);
+        // GlobalThreadPools.sleep(200);
         responseObj = new JSONObject(s);
         if (!responseObj.optBoolean("success")) {
           Log.other(TAG, "芝麻信用💳[领取任务" + taskTitle + "失败]#" + s);
@@ -398,7 +415,7 @@ public class AntMember extends ModelTask {
         recordId = task.getString("recordId");
       }
       s = AntMemberRpcCall.feedBackSesameTask(taskTemplateId);
-      GlobalThreadPools.sleep(200);
+      // GlobalThreadPools.sleep(200);
       responseObj = new JSONObject(s);
       if (!responseObj.optBoolean("success")) {
         Log.other(TAG, "芝麻信用💳[任务" + taskTitle + "回调失败]#" + responseObj.getString("errorMessage"));
@@ -428,7 +445,7 @@ public class AntMember extends ModelTask {
   private void collectSesame(Boolean withOneClick) {
     try {
       JSONObject jo = new JSONObject(AntMemberRpcCall.queryCreditFeedback());
-      GlobalThreadPools.sleep(500);
+      // GlobalThreadPools.sleep(500);
       if (!jo.optBoolean("success")) {
         Log.other(TAG, "芝麻信用💳[查询未领取芝麻粒响应失败]#" + jo.getString("resultView"));
         Log.error(TAG + ".collectSesame.queryCreditFeedback", "芝麻信用💳[查询未领取芝麻粒响应失败]#" + jo);
@@ -436,9 +453,11 @@ public class AntMember extends ModelTask {
       }
       JSONArray availableCollectList = jo.getJSONArray("creditFeedbackVOS");
       if (withOneClick) {
-        GlobalThreadPools.sleep(2000);
+        // Log.record("延时2S 1");
+        // GlobalThreadPools.sleep(2000);
         jo = new JSONObject(AntMemberRpcCall.collectAllCreditFeedback());
-        GlobalThreadPools.sleep(2000);
+        // Log.record("延时2S 1");
+        // GlobalThreadPools.sleep(2000);
         if (!jo.optBoolean("success")) {
           Log.other(TAG, "芝麻信用💳[一键收取芝麻粒响应失败]#" + jo);
           Log.error(TAG + ".collectSesame.collectAllCreditFeedback", "芝麻信用💳[一键收取芝麻粒响应失败]#" + jo);
@@ -455,6 +474,7 @@ public class AntMember extends ModelTask {
         String potentialSize = jo.getString("potentialSize");
         if (!withOneClick) {
           jo = new JSONObject(AntMemberRpcCall.collectCreditFeedback(creditFeedbackId));
+          Log.record("延时2S 3");
           GlobalThreadPools.sleep(2000);
           if (!jo.optBoolean("success")) {
             Log.other(TAG, "芝麻信用💳[查询未领取芝麻粒响应失败]#" + jo.getString("resultView"));
@@ -522,8 +542,9 @@ public class AntMember extends ModelTask {
           }
         } else {
           Log.record(TAG,"queryActivity");
-          Log.runtime(jo.toString());
+          // Log.runtime(jo.toString());
         }
+        // Log.record("延时500ms 1");
         GlobalThreadPools.sleep(500);
       }
     } catch (Throwable t) {
@@ -664,6 +685,7 @@ public class AntMember extends ModelTask {
       String s = AntMemberRpcCall.taskReceive(taskCode);
       JSONObject jo = new JSONObject(s);
       if (jo.optBoolean("success")) {
+        Log.record("延时500 2");
         GlobalThreadPools.sleep(500);
         jo = new JSONObject(AntMemberRpcCall.actioncode(actionCode));
         if (jo.optBoolean("success")) {
@@ -687,7 +709,7 @@ public class AntMember extends ModelTask {
   private void collectInsuredGold() {
     try {
       String s = AntMemberRpcCall.queryAvailableCollectInsuredGold();
-      GlobalThreadPools.sleep(200);
+      // GlobalThreadPools.sleep(200);
       JSONObject jo = new JSONObject(s);
       if (!jo.optBoolean("success")) {
         Log.other(TAG + ".collectInsuredGold.queryInsuredHome", "保障金🏥[响应失败]#" + s);
@@ -698,6 +720,7 @@ public class AntMember extends ModelTask {
       JSONArray otherBallList = jo.getJSONArray("eventToWaitDTOList");
       if (1 == signInBall.getInt("sendFlowStatus") && 1 == signInBall.getInt("sendType")) {
         s = AntMemberRpcCall.collectInsuredGold(signInBall);
+        Log.record("延时2s 4");
         GlobalThreadPools.sleep(2000);
         jo = new JSONObject(s);
         if (!jo.optBoolean("success")) {
@@ -710,6 +733,7 @@ public class AntMember extends ModelTask {
       for (int i = 0; i <otherBallList.length(); i++) {
         JSONObject anotherBall = otherBallList.getJSONObject(i);
         s = AntMemberRpcCall.collectInsuredGold(anotherBall);
+        Log.record("延时2s 5");
         GlobalThreadPools.sleep(2000);
         jo = new JSONObject(s);
         if (!jo.optBoolean("success")) {
@@ -730,6 +754,10 @@ public class AntMember extends ModelTask {
   private void processTask(JSONObject task) throws JSONException {
     JSONObject taskConfigInfo = task.getJSONObject("taskConfigInfo");
     String name = taskConfigInfo.getString("name");
+    // Log.record("task name:"+name);
+    if((name.equals("逛15秒赚积分"))) { ///做不成功
+      return;
+    }
     long id = taskConfigInfo.getLong("id");
     String awardParamPoint = taskConfigInfo.getJSONObject("awardParam").getString("awardParamPoint");
     String targetBusiness = taskConfigInfo.getJSONArray("targetBusiness").getString(0);
@@ -760,7 +788,7 @@ public class AntMember extends ModelTask {
   private boolean checkMemberTaskFinished(long taskId) {
     try {
       String str = AntMemberRpcCall.queryAllStatusTaskList();
-      GlobalThreadPools.sleep(500);
+      // GlobalThreadPools.sleep(500);
       JSONObject jsonObject = new JSONObject(str);
       if (!ResChecker.checkRes(TAG, jsonObject)) {
         Log.error(TAG + ".checkMemberTaskFinished", "会员任务响应失败: " + jsonObject.getString("resultDesc"));
@@ -850,7 +878,7 @@ public class AntMember extends ModelTask {
           return;
         }
         str = AntMemberRpcCall.continueSignIn();
-        GlobalThreadPools.sleep(300);
+        // GlobalThreadPools.sleep(300);
         jsonObject = new JSONObject(str);
         if (!jsonObject.optBoolean("success")) {
           Log.runtime(TAG + ".signIn.continueSignIn", jsonObject.optString("resultDesc"));

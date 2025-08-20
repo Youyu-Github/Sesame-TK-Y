@@ -72,6 +72,7 @@ class ChouChouLe {
                     GlobalThreadPools.sleep(5 * 1000L)
                     if (TaskStatus.FINISHED.name == task.taskStatus) {
                         if (receiveTaskAward(drawType, task.taskId)) { //领取奖励
+                            Thread.sleep(5000L)
                             doubleCheck = true
                         }
                     } else if (TaskStatus.TODO.name == task.taskStatus) {
