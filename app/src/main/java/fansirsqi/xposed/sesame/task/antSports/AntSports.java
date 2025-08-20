@@ -167,7 +167,6 @@ public class AntSports extends ModelTask {
         TimeCounter tc = new TimeCounter(TAG);
         Log.record(TAG, "执行开始-" + getName());
         try {
-
             if (!Status.hasFlagToday("sport::syncStep") && TimeUtil.isNowAfterOrCompareTimeStr("0600")) {
                 addChildTask(new ChildModelTask("syncStep", () -> {
                     int step = tmpStepCount();
@@ -189,7 +188,6 @@ public class AntSports extends ModelTask {
                 sportsTasks();                
                 tc.countDebug("运动任务");
             }
-
 
             ClassLoader loader = ApplicationHook.getClassLoader();
             if (walk.getValue()) {
@@ -231,6 +229,9 @@ public class AntSports extends ModelTask {
             }
             if (receiveCoinAsset.getValue()) {
                 receiveCoinAsset();
+                tc.countDebug("收运动币");
+            }
+            tc.stop();
         } catch (Throwable t) {
             Log.runtime(TAG, "start.run err:");
             Log.printStackTrace(TAG, t);
