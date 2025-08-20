@@ -51,10 +51,7 @@ public class PriorityModelField extends ModelField<Integer> {
         btn.setMaxHeight(180);
         btn.setPaddingRelative(40, 0, 40, 0);
         btn.setAllCaps(false);
-        // btn.setOnClickListener(v -> ChoiceDialog.show(v.getContext(), ((Button) v).getText(), this));
-        btn.setOnClickListener(v -> {
-            ChoiceDialog.show(v.getContext(), ((Button) v).getText(), createChoiceModelField());
-        });
+        btn.setOnClickListener(v -> ChoiceDialog.show(v.getContext(), ((Button) v).getText(), this));
         return btn;
     }
 }
