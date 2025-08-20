@@ -217,7 +217,7 @@ public class AntMember extends ModelTask {
   private Boolean exchangeBenefit(String benefitId, String itemId) {
     try {
       JSONObject jo = new JSONObject(AntMemberRpcCall.exchangeBenefit(benefitId, itemId));
-      if (ResChecker.checkRes(TAG, jo)) {
+      if (ResChecker.checkRes(TAG + "会员权益兑换失败:", jo)) {
         Status.memberPointExchangeBenefitToday(benefitId);
         return true;
       }
@@ -237,7 +237,7 @@ public class AntMember extends ModelTask {
         String s = AntMemberRpcCall.queryMemberSigninCalendar();
         // GlobalThreadPools.sleep(500);
         JSONObject jo = new JSONObject(s);
-        if (ResChecker.checkRes(TAG,jo)) {
+        if (ResChecker.checkRes(TAG + "会员签到失败:", jo)) {
           Log.other("会员签到📅[" + jo.getString("signinPoint") + "积分]#已签到" + jo.getString("signinSumDay") + "天");
           Status.memberSignInToday(UserMap.getCurrentUid());
         } else {
@@ -286,8 +286,8 @@ public class AntMember extends ModelTask {
       String s = AntMemberRpcCall.queryPointCert(page, pageSize);
       // GlobalThreadPools.sleep(500);
       JSONObject jo = new JSONObject(s);
-      if (ResChecker.checkRes(TAG,jo)) {
-        boolean hasNextPage = jo.getBoolean("hasNextPage");
+              if (ResChecker.checkRes(TAG + "查询会员积分证书失败:", jo)) {
+          boolean hasNextPage = jo.getBoolean("hasNextPage");
         JSONArray jaCertList = jo.getJSONArray("certList");
         for (int i = 0; i < jaCertList.length(); i++) {
           jo = jaCertList.getJSONObject(i);
@@ -296,7 +296,7 @@ public class AntMember extends ModelTask {
           int pointAmount = jo.getInt("pointAmount");
           s = AntMemberRpcCall.receivePointByUser(id);
           jo = new JSONObject(s);
-          if (ResChecker.checkRes(TAG,jo)) {
+          if (ResChecker.checkRes(TAG + "会员积分领取失败:", jo)) {
             Log.other("会员积分🎖️[领取" + bizTitle + "]#" + pointAmount + "积分");
           } else {
             Log.record(jo.getString("resultDesc"));
@@ -772,7 +772,7 @@ public class AntMember extends ModelTask {
     GlobalThreadPools.sleep(16000);
     String str = AntMemberRpcCall.executeTask(bizParam, bizSubType, bizType, id);
     JSONObject jo = new JSONObject(str);
-    if (!ResChecker.checkRes(TAG,jo)) {
+    if (!ResChecker.checkRes(TAG + "执行会员任务失败:", jo)) {
       Log.runtime(TAG, "执行任务失败:" + jo.optString("resultDesc"));
       return;
     }
@@ -790,7 +790,7 @@ public class AntMember extends ModelTask {
       String str = AntMemberRpcCall.queryAllStatusTaskList();
       // GlobalThreadPools.sleep(500);
       JSONObject jsonObject = new JSONObject(str);
-      if (!ResChecker.checkRes(TAG, jsonObject)) {
+      if (!ResChecker.checkRes(TAG + "查询会员任务状态失败:", jsonObject)) {
         Log.error(TAG + ".checkMemberTaskFinished", "会员任务响应失败: " + jsonObject.getString("resultDesc"));
       }
       if (!jsonObject.has("availableTaskList")) {
