@@ -2765,7 +2765,7 @@ class AntFarm : ModelTask() {
     }
 
     enum class AnimalFeedStatus {
-        HUNGRY, EATING, SLEEPY
+        HUNGRY, EATING, SLEEPY, NONE
     }
 
     enum class AnimalInteractStatus {
