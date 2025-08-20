@@ -243,7 +243,7 @@ public class AntSports extends ModelTask {
     private void coinExchangeItem(String itemId) {
         try {
             JSONObject jo = new JSONObject(AntSportsRpcCall.queryItemDetail(itemId));
-            if (!ResChecker.checkRes(TAG + "查询商品详情失败:", jo)) {
+            if (!ResChecker.checkRes(TAG,  jo)) {
                 return;
             }
             jo = jo.getJSONObject("data");
@@ -254,14 +254,13 @@ public class AntSports extends ModelTask {
             String itemTitle = jo.getString("itemTitle");
             int valueCoinCount = jo.getInt("valueCoinCount");
             jo = new JSONObject(AntSportsRpcCall.exchangeItem(itemId, valueCoinCount));
-            if (!ResChecker.checkRes(TAG + "兑换商品失败:", jo)) {
+            if (!ResChecker.checkRes(TAG,  jo)) {
                 return;
             }
             jo = jo.getJSONObject("data");
             if (jo.optBoolean("exgSuccess")) {
                 Log.other(TAG, "运动好礼🎐兑换[" + itemTitle + "]花费" + valueCoinCount + "运动币");
             }
-            tc.stop();
         } catch (Throwable t) {
             Log.error(TAG, "trainMember err:");
             Log.printStackTrace(TAG, t);

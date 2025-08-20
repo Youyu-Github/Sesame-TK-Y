@@ -973,7 +973,7 @@ public class AntForest extends ModelTask {
             } //该次已缓存，标记为已收取
             Log.record(TAG, "进入[" + userName + "]的蚂蚁森林");
             // 3. 判断是否允许收取能量
-            if (!collectEnergy.getValue() || dontCollectMap.contains(userId)) {
+            if ((collectEnergy.getValue() <= 0) || dontCollectMap.contains(userId)) {
                 return userHomeObj;
             }
 
@@ -1212,7 +1212,7 @@ public class AntForest extends ModelTask {
             String userId = obj.getString("userId");
             if (flag.equals("pk")) {
                 if (Objects.equals(userId, selfId)) return;//如果是自己，则跳过
-                boolean needCollectEnergy = collectEnergy.getValue() && pkEnergy.getValue();
+                boolean needCollectEnergy = (collectEnergy.getValue() > 0) && pkEnergy.getValue();
                 boolean canCollect = false;
                 if (!needCollectEnergy) {
                     return;
@@ -1230,8 +1230,8 @@ public class AntForest extends ModelTask {
                 }
             } else {
                 if (Objects.equals(userId, selfId)) return;//如果是自己，则跳过
-                boolean needCollectEnergy = collectEnergy.getValue() && !dontCollectMap.contains(userId); //开启了收能量功能并且不在排除名单中
-                boolean needHelpProtect = helpFriendCollectType.getValue() != HelpFriendCollectType.NONE && friendObj.optBoolean("canProtectBubble") && Status.canProtectBubbleToday(selfId);
+                boolean needCollectEnergy = (collectEnergy.getValue() > 0 ) && !dontCollectMap.contains(userId); //开启了收能量功能并且不在排除名单中
+                boolean needHelpProtect = helpFriendCollectType.getValue() != HelpFriendCollectType.NONE && obj.optBoolean("canProtectBubble") && Status.canProtectBubbleToday(selfId);
                 // Log.forest("needHelpProtect:"+needHelpProtect+" value:"+helpFriendCollectType.getValue()+" can:"+friendObj.optBoolean("canProtectBubble")+" has:" + Status.canProtectBubbleToday(selfId));
                 boolean needCollectGiftBox = collectGiftBox.getValue() && obj.optBoolean("canCollectGiftBox");
                 if (!needCollectEnergy && !needHelpProtect && !needCollectGiftBox) {
@@ -2702,7 +2702,6 @@ public class AntForest extends ModelTask {
             JSONArray jaBubbles = jo.getJSONArray("bubbles");
             JSONObject bubble = jaBubbles.getJSONObject(0);
             collected += bubble.getInt("collectedEnergy");
-            FriendWatch.friendWatch(userId, collected);
             if (collected > 0) {
                 int randomIndex = random.nextInt(emojiList.size());
                 String randomEmoji = emojiList.get(randomIndex);
