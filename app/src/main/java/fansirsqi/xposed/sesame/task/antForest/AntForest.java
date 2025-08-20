@@ -135,7 +135,7 @@ public class AntForest extends ModelTask {
     private BooleanModelField batchRobEnergy;
     private BooleanModelField balanceNetworkDelay;
     private BooleanModelField closeWhackMole;
-    private BooleanModelField collectProp;
+    // private BooleanModelField collectProp;
     private StringModelField queryInterval;
     private StringModelField collectInterval;
     private StringModelField doubleCollectInterval;
@@ -180,6 +180,7 @@ public class AntForest extends ModelTask {
     private ChoiceModelField robExpandCard;//1.1倍能量卡
     private ListModelField robExpandCardTime; //1.1倍能量卡时间
     private BooleanModelField pkEnergy; // PK能量
+    private PriorityModelField collectProp;
     
     /**
      * 异常返回检测开关
@@ -198,7 +199,8 @@ public class AntForest extends ModelTask {
      */
     private ListModelField.ListJoinCommaToStringModelField bubbleBoostTime;
 
-    private BooleanModelField forestChouChouLe;//森林抽抽乐
+    // private BooleanModelField forestChouChouLe;//森林抽抽乐
+    private PriorityModelField forestChouChouLe;
     
     private static boolean canConsumeAnimalProp;
     private static int totalCollected = 0;
