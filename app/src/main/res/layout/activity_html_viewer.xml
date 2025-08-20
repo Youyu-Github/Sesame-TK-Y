@@ -13,13 +13,14 @@
         android:background="@color/background"
         android:paddingBottom="20dp">
 
+        <!-- 注释掉底部 android:layout_marginBottom="32dp" -->
         <fansirsqi.xposed.sesame.ui.MyWebView
             android:id="@+id/mwv_webview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_above="@id/pgb_webview"
             android:background="@color/background"
-            android:layout_marginBottom="32dp" />
+            android:layout_marginBottom="5dp" />
 
         <ProgressBar
             android:id="@+id/pgb_webview"
