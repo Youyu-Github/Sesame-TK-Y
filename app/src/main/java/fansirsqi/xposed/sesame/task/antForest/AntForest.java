@@ -1797,7 +1797,7 @@ public class AntForest extends ModelTask {
         return Vitality.VitalityExchange(spuId, skuId, "隐身卡");
     }
 
-
+/*
     private int dailyTask(JSONArray forestSignVOList) {
         try {
             JSONObject forestSignVO = forestSignVOList.getJSONObject(0);
@@ -1819,6 +1819,66 @@ public class AntForest extends ModelTask {
             }
             return 0; // 如果没有签到，则返回 0
         } catch (Exception e) {
+            Log.printStackTrace(e);
+            return 0;
+        }
+    }
+*/
+    private int dailyTask(JSONArray forestSignVOList) {
+        final String TAG = "ForestVitality";
+        final String SUCCESS_PREFIX = "森林签到📆拯救[第";
+
+        try {
+            if (forestSignVOList == null || forestSignVOList.length() == 0) {
+                return 0;
+            }
+
+            JSONObject forestSignVO = forestSignVOList.getJSONObject(0);
+            String currentSignKey = forestSignVO.optString("currentSignKey", ""); // 当前签到的 key
+            JSONArray signRecords = forestSignVO.optJSONArray("signRecords"); // 签到记录
+            if (signRecords == null) {
+                return 0;
+            }
+
+            for (int i = 0; i < signRecords.length(); i++) {
+                JSONObject signRecord = signRecords.getJSONObject(i);
+                String signKey = signRecord.optString("signKey", "");
+                boolean signed = signRecord.optBoolean("signed", false);
+                int awardCount = signRecord.optInt("awardCount", 0);
+
+                if (signKey.equals(currentSignKey) && !signed) {
+                    // 执行签到请求（AntForestRpcCall.vitalitySign() 应返回 JSON 字符串）
+                    JSONObject joSign = new JSONObject(AntForestRpcCall.vitalitySign());
+                    GlobalThreadPools.sleep(300); // 等待300毫秒，模拟原有节奏
+
+                    // 使用项目中已有的 ResChecker 进行检查（返回 true 表示成功）
+                    if (ResChecker.checkRes(TAG + "森林签到失败:", joSign)) {
+                        // 解析连续签到天数与奖励（以服务器返回为准）
+                        int continuousDays = joSign.optInt("continuousCount", 0);
+                        int energyReward = 0;
+                        JSONObject signModel = joSign.optJSONObject("signModel");
+                        if (signModel != null) {
+                            JSONObject signAward = signModel.optJSONObject("signAward");
+                            if (signAward != null) {
+                                energyReward = signAward.optInt("count", 0);
+                            }
+                        }
+
+                        // 使用项目现有的日志类记录成功（替换掉不存在的 LogHelper）
+                        Log.forest(SUCCESS_PREFIX + continuousDays + "天]#复活[" + energyReward + "g能量]");
+
+                        return energyReward;
+                    } else {
+                        // ResChecker 已经会输出失败信息，这里保持原先行为
+                    }
+
+                    break; // 找到当前签到项后跳出
+                }
+            }
+
+            return 0; // 如果没有可签到项或未成功，则返回 0
+        } catch (Exception e) {
+            // 使用项目已有的打印函数而不是不存在的 LogHelper
             Log.printStackTrace(e);
             return 0;
         }
