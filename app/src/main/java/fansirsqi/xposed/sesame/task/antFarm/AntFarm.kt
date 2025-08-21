@@ -210,7 +210,8 @@ class AntFarm : ModelTask() {
     /**
      * 游戏改分
      */
-    private var recordFarmGame: PriorityModelField? = null
+    // private var recordFarmGame: PriorityModelField? = null
+    private var recordFarmGame: BooleanModelField? = null
 
     /**
      * 小鸡游戏时间
@@ -374,7 +375,8 @@ class AntFarm : ModelTask() {
         modelFields.addField(PriorityModelField("enableChouchoule", "开启小鸡抽抽乐", priorityType.PRIORITY_2, priorityType.nickNames).also { enableChouchoule = it })
         modelFields.addField(BooleanModelField("listOrnaments", "小鸡每日换装", false).also { listOrnaments = it })
         modelFields.addField(PriorityModelField("enableDdrawGameCenterAward", "开宝箱", priorityType.PRIORITY_2, priorityType.nickNames).also { enableDdrawGameCenterAward = it })
-        modelFields.addField(PriorityModelField("recordFarmGame", "游戏改分(星星球、登山赛、飞行赛、揍小鸡)", priorityType.PRIORITY_2, priorityType.nickNames).also { recordFarmGame = it })
+        // modelFields.addField(PriorityModelField("recordFarmGame", "游戏改分(星星球、登山赛、飞行赛、揍小鸡)", priorityType.PRIORITY_2, priorityType.nickNames).also { recordFarmGame = it })
+        modelFields.addField(BooleanModelField("recordFarmGame", "游戏改分(星星球、登山赛、飞行赛、揍小鸡)", false).also { recordFarmGame = it })
         modelFields.addField(ListJoinCommaToStringModelField("farmGameTime", "小鸡游戏时间(范围)", ListUtil.newArrayList<String?>("2200-2400")).also { farmGameTime = it })
         modelFields.addField(BooleanModelField("family", "家庭 | 开启", false).also { family = it })
         modelFields.addField(SelectModelField("familyOptions", "家庭 | 选项", LinkedHashSet<String?>(), farmFamilyOption()).also { familyOptions = it })
@@ -435,7 +437,8 @@ class AntFarm : ModelTask() {
                 receiveToolTaskReward()
                 tc.countDebug("收取道具奖励")
             }
-            if (getRunCnts() >= recordFarmGame!!.value) {
+            // if (getRunCnts() >= recordFarmGame!!.value) {
+            if (recordFarmGame!!.value) {
                 for (time in farmGameTime!!.value) {
                     if (TimeUtil.checkNowInTimeRange(time)) {
                         recordFarmGame(GameType.StarGame)
@@ -445,7 +448,7 @@ class AntFarm : ModelTask() {
                         break
                     }
                 }
-                tc.countDebug("游戏改分(星星球、登山赛、飞行赛、揍小鸡)");
+                // tc.countDebug("游戏改分(星星球、登山赛、飞行赛、揍小鸡)");
             }
             if (getRunCnts() >= kitchen!!.value) {
                 collectDailyFoodMaterial()
