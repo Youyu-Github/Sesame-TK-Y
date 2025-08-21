@@ -505,12 +505,12 @@ public class AntForest extends ModelTask {
                 //青春特权森林道具领取
                 if (getRunCnts() >= youthPrivilege.getValue()) {
                     Privilege.INSTANCE.youthPrivilege();
-                    tc.countDebug("青春特权森林道具领取");
+                    // tc.countDebug("青春特权森林道具领取");
                 }
                 //青春特权每日签到红包
                 if (getRunCnts() >= dailyCheckIn.getValue()) {
                     Privilege.INSTANCE.studentSignInRedEnvelope();
-                    tc.countDebug("青春特权每日签到红包");
+                    // tc.countDebug("青春特权每日签到红包");
                 }
                  if (getRunCnts() >= forestChouChouLe.getValue()) {
                     ForestChouChouLe chouChouLe = new ForestChouChouLe();
@@ -1299,7 +1299,7 @@ public class AntForest extends ModelTask {
     public static boolean isMonday() {
         SimpleDateFormat sdf_week = new SimpleDateFormat("EEEE", Locale.getDefault());
         String week = sdf_week.format(new Date());
-        Log.forest("today is:" + week);
+        // Log.forest("today is:" + week);
         return "星期一".equals(week);
     }
     /// lzw add end
