@@ -421,7 +421,8 @@ class AntFarm : ModelTask() {
             }
             listFarmTool() //装载道具信息
 
-            if (getRunCnts() >= rewardFriend!!.value) {
+            // if (getRunCnts() >= rewardFriend!!.value) {
+            if (rewardFriend!!.value) {
                 rewardFriend()
                 // tc.countDebug("打赏好友")
             }
@@ -510,7 +511,8 @@ class AntFarm : ModelTask() {
             }
 
             // 雇佣小鸡
-            if (getRunCnts() >= hireAnimal!!.value) {
+            // if (getRunCnts() >= hireAnimal!!.value) {
+            if (hireAnimal!!.value) {
                 hireAnimal()
                 // tc.countDebug("雇佣小鸡")
             }
