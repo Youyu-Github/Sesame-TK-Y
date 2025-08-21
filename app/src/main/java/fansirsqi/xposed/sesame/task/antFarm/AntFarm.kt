@@ -572,7 +572,7 @@ class AntFarm : ModelTask() {
                             SubAnimalType.NORMAL -> Log.record(TAG, "小鸡太饿，离家出走了")
                             SubAnimalType.PIRATE -> Log.record(TAG, "小鸡外出探险了")
                             SubAnimalType.WORK -> Log.record(TAG, "小鸡出去工作啦")
-                            SubAnimalType.NONE -> Log.record(TAG, "小鸡状态未知")
+                            // SubAnimalType.NONE -> Log.record(TAG, "小鸡状态未知")
                         }
                     }
 
@@ -587,7 +587,7 @@ class AntFarm : ModelTask() {
 
                             AnimalFeedStatus.EATING -> Log.record(TAG, "小鸡在[$userName]的庄园里吃得津津有味")
                             AnimalFeedStatus.SLEEPY -> Log.record(TAG, "小鸡在[$userName]的庄园")
-                            AnimalFeedStatus.NONE -> Log.record(TAG, "小鸡在[$userName]的庄园状态未知")
+                            // AnimalFeedStatus.NONE -> Log.record(TAG, "小鸡在[$userName]的庄园状态未知")
                         }
                     }
                     // 2. 优化recall变量的赋值方式，并简化Companion object的调用
@@ -2773,7 +2773,8 @@ class AntFarm : ModelTask() {
     }
 
     enum class AnimalFeedStatus {
-        HUNGRY, EATING, SLEEPY, NONE
+        HUNGRY, EATING, SLEEPY
+        // HUNGRY, EATING, SLEEPY, NONE
     }
 
     enum class AnimalInteractStatus {
