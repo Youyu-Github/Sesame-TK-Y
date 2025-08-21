@@ -178,7 +178,7 @@ android {
         val variant = this
         variant.outputs.all {
             val flavorName = variant.flavorName.replaceFirstChar { it.uppercase() }
-            val fileName = "Sesame-TK-$flavorName-${variant.versionName}.apk"
+            val fileName = "Sesame-TK-Y-$flavorName-${variant.versionName}.apk"
             (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName = fileName
         }
     }

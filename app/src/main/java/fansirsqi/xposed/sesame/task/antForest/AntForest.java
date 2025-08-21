@@ -135,7 +135,6 @@ public class AntForest extends ModelTask {
     private BooleanModelField batchRobEnergy;
     private BooleanModelField balanceNetworkDelay;
     private BooleanModelField closeWhackMole;
-    // private BooleanModelField collectProp;
     private StringModelField queryInterval;
     private StringModelField collectInterval;
     private StringModelField doubleCollectInterval;
@@ -170,9 +169,11 @@ public class AntForest extends ModelTask {
     private PriorityModelField combineAnimalPiece;
     private PriorityModelField consumeAnimalProp;
     private SelectModelField whoYouWantToGiveTo;
-    private PriorityModelField dailyCheckIn;//青春特权签到
+    // private PriorityModelField dailyCheckIn;//青春特权签到
+    private BooleanModelField dailyCheckIn;//青春特权签到
+    // private PriorityModelField youthPrivilege;//青春特权 森林道具
+    private BooleanModelField youthPrivilege;//青春特权 森林道具
     private ChoiceModelField bubbleBoostCard;//加速卡
-    private PriorityModelField youthPrivilege;//青春特权 森林道具
     public static SelectModelField ecoLifeOption;
     private PriorityModelField ecoLife;
     private PriorityModelField giveProp;
@@ -181,6 +182,7 @@ public class AntForest extends ModelTask {
     private ListModelField robExpandCardTime; //1.1倍能量卡时间
     private BooleanModelField pkEnergy; // PK能量
     private PriorityModelField collectProp;
+    // private BooleanModelField collectProp;
     
     /**
      * 异常返回检测开关
@@ -319,8 +321,10 @@ public class AntForest extends ModelTask {
         modelFields.addField(medicalHealthOption = new SelectModelField("medicalHealthOption", "健康医疗 | 选项", new LinkedHashSet<>(), OtherEntityProvider.listHealthcareOptions(), "医疗健康需要先完成一次医疗打卡"));
 
         modelFields.addField(ForestMarket = new PriorityModelField("ForestMarket", "森林集市", priorityType.PRIORITY_2, priorityType.nickNames));
-        modelFields.addField(youthPrivilege = new PriorityModelField("youthPrivilege", "青春特权 | 森林道具", priorityType.PRIORITY_2, priorityType.nickNames));
-        modelFields.addField(dailyCheckIn = new PriorityModelField("studentCheckIn", "青春特权 | 签到红包", priorityType.PRIORITY_2, priorityType.nickNames));
+        // modelFields.addField(youthPrivilege = new PriorityModelField("youthPrivilege", "青春特权 | 森林道具", priorityType.PRIORITY_2, priorityType.nickNames));
+        modelFields.addField(youthPrivilege = new BooleanModelField("youthPrivilege", "青春特权 | 森林道具", false));
+        // modelFields.addField(dailyCheckIn = new PriorityModelField("studentCheckIn", "青春特权 | 签到红包", priorityType.PRIORITY_2, priorityType.nickNames));
+        modelFields.addField(dailyCheckIn = new BooleanModelField("studentCheckIn", "青春特权 | 签到红包", false));
 
         modelFields.addField(ecoLife = new PriorityModelField("ecoLife", "绿色行动 | 开关", priorityType.PRIORITY_2, priorityType.nickNames));
         modelFields.addField(ecoLifeOpen = new BooleanModelField("ecoLifeOpen", "绿色任务 |  自动开通", false));

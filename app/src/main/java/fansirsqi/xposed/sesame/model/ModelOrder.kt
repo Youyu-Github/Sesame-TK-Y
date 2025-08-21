@@ -21,17 +21,17 @@ object ModelOrder {
         BaseModel::class.java,       // 基础设置
         AntForest::class.java,       // 森林
         AntFarm::class.java,         // 庄园
+        AntStall::class.java,      // 蚂蚁新村
         AntOrchard::class.java,    // 农场
         AntOcean::class.java,        // 海洋
         AntDodo::class.java,       // 神奇物种
+        GreenFinance::class.java,  // 绿色经营
+        AntSports::class.java,       // 运动
         EcologicalProtection::class.java,     // 古树
         AntCooperate::class.java,    // 合种
         Reserve::class.java,       // 保护地
-        AntSports::class.java,       // 运动
-        AntMember::class.java,     // 会员
-        AntStall::class.java,      // 蚂蚁新村
-        GreenFinance::class.java,  // 绿色经营
 //        Antinvoice::class.java,      // 蚂蚁发票
+        AntMember::class.java,     // 会员
         ConsumeGold::class.java,   // 消费金
         AnswerAI::class.java         // AI答题
     )

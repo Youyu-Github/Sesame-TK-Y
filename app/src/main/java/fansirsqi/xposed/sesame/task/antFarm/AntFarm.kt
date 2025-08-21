@@ -174,7 +174,8 @@ class AntFarm : ModelTask() {
     /**
      * 打赏好友
      */
-    private var rewardFriend: PriorityModelField? = null
+    // private var rewardFriend: PriorityModelField? = null
+    private var rewardFriend: BooleanModelField? = null
 
     /**
      * 遣返小鸡
@@ -253,7 +254,8 @@ class AntFarm : ModelTask() {
     private var collectChickenDiary: ChoiceModelField? = null
     private var enableChouchoule: PriorityModelField? = null
     private var listOrnaments: BooleanModelField? = null
-    private var hireAnimal: PriorityModelField? = null
+    //private var hireAnimal: PriorityModelField? = null
+    private var hireAnimal: BooleanModelField? = null
     private var hireAnimalType: ChoiceModelField? = null
     private var hireAnimalList: SelectModelField? = null
     private var enableDdrawGameCenterAward: PriorityModelField? = null
@@ -278,7 +280,8 @@ class AntFarm : ModelTask() {
         modelFields.addField(ChoiceModelField("recallAnimalType", "召回小鸡", RecallAnimalType.Companion.ALWAYS, RecallAnimalType.Companion.nickNames).also {
             recallAnimalType = it
         })
-        modelFields.addField(PriorityModelField("rewardFriend", "打赏好友", priorityType.PRIORITY_2, priorityType.nickNames).also { rewardFriend = it })
+        // modelFields.addField(PriorityModelField("rewardFriend", "打赏好友", priorityType.PRIORITY_2, priorityType.nickNames).also { rewardFriend = it })
+        modelFields.addField(BooleanModelField("rewardFriend", "打赏好友", false).also { rewardFriend = it })
         modelFields.addField(BooleanModelField("feedAnimal", "自动喂小鸡", false).also { feedAnimal = it })
         modelFields.addField(
             SelectAndCountModelField(
@@ -301,7 +304,8 @@ class AntFarm : ModelTask() {
                 "送麦子好友列表",
                 LinkedHashMap<String?, Int?>()
             ) { AlipayUser.getList() }.also { visitFriendList = it })
-        modelFields.addField(PriorityModelField("hireAnimal", "雇佣小鸡 | 开启", priorityType.PRIORITY_2, priorityType.nickNames).also { hireAnimal = it })
+        // modelFields.addField(PriorityModelField("hireAnimal", "雇佣小鸡 | 开启", priorityType.PRIORITY_2, priorityType.nickNames).also { hireAnimal = it })
+        modelFields.addField(BooleanModelField("hireAnimal", "雇佣小鸡 | 开启", false).also { hireAnimal = it })
         modelFields.addField(ChoiceModelField("hireAnimalType", "雇佣小鸡 | 动作", HireAnimalType.Companion.DONT_HIRE, HireAnimalType.Companion.nickNames).also {
             hireAnimalType = it
         })
