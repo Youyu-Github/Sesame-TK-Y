@@ -209,7 +209,7 @@ public class AntOrchard extends ModelTask {
           int wateringCost = accountInfo.getInt("wateringCost");
           int wateringLeftTimes = accountInfo.getInt("wateringLeftTimes");
           if (happyPoint > wateringCost && wateringLeftTimes > 0 && (200 - wateringLeftTimes < orchardSpreadManureCount.getValue())) {
-            jString wua_content = getWua();
+            String wua_content = getWua();
             if (wua_content.equals("null") || wua_content.equals("")) {
               Log.record("get wua is null or empty:"+wua_content);
 //              return;

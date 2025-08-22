@@ -151,6 +151,7 @@ public class AntForest extends ModelTask {
     private SelectModelField helpFriendCollectList;
     /// lzw add begin	
     private SelectModelField alternativeAccountList;
+    private BooleanModelField showBagList;
     /// lzw add end
     private SelectAndCountModelField vitalityExchangeList;
     private IntegerModelField returnWater33;
