@@ -209,6 +209,9 @@ public class AntForestRpcCall {
     /**
      * 森林签到
      */
+    public static String energySign() {
+        return RequestManager.requestString("alipay.antforest.forest.h5.energySign", "[{\"source\":\"chInfo_ch_appcenter__chsub_9patch\"}]");
+    }
     public static String vitalitySign() {
         return RequestManager.requestString("alipay.antforest.forest.h5.vitalitySign", "[{\"source\":\"chInfo_ch_appcenter__chsub_9patch\"}]");
     }
