@@ -171,8 +171,8 @@ public class AntForest extends ModelTask {
     private SelectModelField whoYouWantToGiveTo;
     // private PriorityModelField dailyCheckIn;//青春特权签到
     private BooleanModelField dailyCheckIn;//青春特权签到
-    // private PriorityModelField youthPrivilege;//青春特权 森林道具
-    private BooleanModelField youthPrivilege;//青春特权 森林道具
+    private PriorityModelField youthPrivilege;//青春特权 森林道具
+    // private BooleanModelField youthPrivilege;//青春特权 森林道具
     private ChoiceModelField bubbleBoostCard;//加速卡
     public static SelectModelField ecoLifeOption;
     private PriorityModelField ecoLife;
@@ -321,8 +321,8 @@ public class AntForest extends ModelTask {
         modelFields.addField(medicalHealthOption = new SelectModelField("medicalHealthOption", "健康医疗 | 选项", new LinkedHashSet<>(), OtherEntityProvider.listHealthcareOptions(), "医疗健康需要先完成一次医疗打卡"));
 
         modelFields.addField(ForestMarket = new PriorityModelField("ForestMarket", "森林集市", priorityType.PRIORITY_2, priorityType.nickNames));
-        // modelFields.addField(youthPrivilege = new PriorityModelField("youthPrivilege", "青春特权 | 森林道具", priorityType.PRIORITY_2, priorityType.nickNames));
-        modelFields.addField(youthPrivilege = new BooleanModelField("youthPrivilege", "青春特权 | 森林道具", false));
+        modelFields.addField(youthPrivilege = new PriorityModelField("youthPrivilege", "青春特权 | 森林道具", priorityType.PRIORITY_2, priorityType.nickNames));
+        // modelFields.addField(youthPrivilege = new BooleanModelField("youthPrivilege", "青春特权 | 森林道具", false));
         // modelFields.addField(dailyCheckIn = new PriorityModelField("studentCheckIn", "青春特权 | 签到红包", priorityType.PRIORITY_2, priorityType.nickNames));
         modelFields.addField(dailyCheckIn = new BooleanModelField("studentCheckIn", "青春特权 | 签到红包", false));
 
@@ -338,6 +338,7 @@ public class AntForest extends ModelTask {
         modelFields.addField(advanceTime = new IntegerModelField("advanceTime", "提前时间(毫秒)", 0, Integer.MIN_VALUE, 500));
         modelFields.addField(tryCount = new IntegerModelField("tryCount", "尝试收取(次数)", 1, 0, 5));
         modelFields.addField(retryInterval = new IntegerModelField("retryInterval", "重试间隔(毫秒)", 1200, 0, 10000));
+        modelFields.addField(showBagList = new BooleanModelField("showBagList", "显示背包内容", false));
         return modelFields;
     }
 
@@ -393,6 +394,9 @@ public class AntForest extends ModelTask {
                 _is_monday = true;
             }
             TimeCounter tc = new TimeCounter(TAG);
+            if(showBagList.getValue()) {
+                showBag();
+            }
             /// lzw add end
             Log.record(TAG, "执行开始-蚂蚁" + getName());
             Statistics.load();
@@ -480,7 +484,6 @@ public class AntForest extends ModelTask {
                         useEnergyRainChanceCard();
                         tc.countDebug("使用能量雨卡");
                     }
-                    EnergyRain.energyRain();
                     tc.countDebug("能量雨");
                 }
                 // 森林集市
@@ -503,10 +506,10 @@ public class AntForest extends ModelTask {
                     }
                 }
                 //青春特权森林道具领取
-                // if (getRunCnts() >= youthPrivilege.getValue()) {
-                if (youthPrivilege.getValue()) {
+                if (getRunCnts() >= youthPrivilege.getValue()) {
+                //if (youthPrivilege.getValue()) {
                     Privilege.INSTANCE.youthPrivilege();
-                    // tc.countDebug("青春特权森林道具领取");
+                    tc.countDebug("青春特权森林道具领取");
                 }
                 //青春特权每日签到红包
                 // if (getRunCnts() >= dailyCheckIn.getValue()) {
@@ -1825,57 +1828,36 @@ public class AntForest extends ModelTask {
     }
 */
     private int dailyTask(JSONArray forestSignVOList) {
-        final String TAG = "ForestVitality";
-        final String SUCCESS_PREFIX = "森林签到📆拯救[第";
-
         try {
-            if (forestSignVOList == null || forestSignVOList.length() == 0) {
-                return 0;
-            }
-
             JSONObject forestSignVO = forestSignVOList.getJSONObject(0);
-            String currentSignKey = forestSignVO.optString("currentSignKey", ""); // 当前签到的 key
-            JSONArray signRecords = forestSignVO.optJSONArray("signRecords"); // 签到记录
-            if (signRecords == null) {
-                return 0;
-            }
-
+            String currentSignKey = forestSignVO.getString("currentSignKey"); // 当前签到的 key
+            JSONArray signRecords = forestSignVO.getJSONArray("signRecords"); // 签到记录
             for (int i = 0; i < signRecords.length(); i++) {
                 JSONObject signRecord = signRecords.getJSONObject(i);
-                String signKey = signRecord.optString("signKey", "");
-                boolean signed = signRecord.optBoolean("signed", false);
+                String signKey = signRecord.getString("signKey");
                 int awardCount = signRecord.optInt("awardCount", 0);
-
-                if (signKey.equals(currentSignKey) && !signed) {
-                    JSONObject joSign = null;
-                    int energyReward = 0;
-                    
-                    // 优先执行 energySign
-                    joSign = new JSONObject(AntForestRpcCall.energySign());
-                    if (ResChecker.checkRes(TAG + "森林签到[energySign]失败:", joSign)) {
-                        // 解析奖励
-                        energyReward = parseEnergyReward(joSign);
-                        Log.forest(SUCCESS_PREFIX + joSign.optInt("continuousCount", 0) + 
-                                "天]#复活[" + energyReward + "g能量]");
-                        return energyReward;
+                if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
+                    // 先尝试energySign签到
+                    JSONObject joSign = new JSONObject(AntForestRpcCall.energySign());
+                    GlobalThreadPools.sleep(300);
+                    if (ResChecker.checkRes(TAG + "能量签到失败:", joSign)) {
+                        Log.forest("能量签到成功");
+                        return awardCount;
                     }
                     
-                    GlobalThreadPools.sleep(300); // 等待300毫秒
-                    
-                    // energySign 失败后执行 vitalitySign
+                    // energySign失败后尝试vitalitySign
                     joSign = new JSONObject(AntForestRpcCall.vitalitySign());
-                    if (ResChecker.checkRes(TAG + "森林签到[vitalitySign]失败:", joSign)) {
-                        // 解析奖励
-                        energyReward = parseEnergyReward(joSign);
-                        Log.forest("森林签到📆成功");
-                        return energyReward;
+                    GlobalThreadPools.sleep(300);
+                    if (ResChecker.checkRes(TAG + "活力签到失败:", joSign)) {
+                        Log.forest("活力签到成功");
+                        return awardCount;
                     }
                     
-                    break; // 找到当前签到项后跳出
+                    Log.forest("森林签到失败");
+                    break;
                 }
             }
-
-            return 0; // 如果没有可签到项或未成功，则返回 0
+            return 0; // 如果没有签到，则返回 0
         } catch (Exception e) {
             Log.printStackTrace(e);
             return 0;
@@ -2491,6 +2473,28 @@ public class AntForest extends ModelTask {
         return null; // 未找到或出错时返回 null
     }
 
+    private JSONObject showBag() {
+        JSONObject bagObject = queryPropList();
+        if (Objects.isNull(bagObject)) {
+            return null;
+        }
+        try {
+            JSONArray forestPropVOList = bagObject.getJSONArray("forestPropVOList");
+            for (int i = 0; i < forestPropVOList.length(); i++) {
+                JSONObject forestPropVO = forestPropVOList.getJSONObject(i);
+                JSONObject propConfigVO = forestPropVO.getJSONObject("propConfigVO");
+                String currentPropType = propConfigVO.getString("propType");
+                String propName = propConfigVO.getString("propName");
+                Log.record("propName:"+propName+",propType:"+currentPropType);
+            }
+        } catch (Exception e) {
+            Log.error(TAG, "查找背包道具出错:");
+            Log.printStackTrace(TAG, e);
+        }
+
+        return null; // 未找到或出错时返回 null
+    }
+
     /**
      * 使用背包道具
      *
@@ -2606,8 +2610,8 @@ public class AntForest extends ModelTask {
             // 在背包中查询限时保护罩
             JSONObject jo = findPropBag(bagObject, "LIMIT_TIME_ENERGY_SHIELD_TREE");
             if (jo == null) {
-                // if (youthPrivilege.getValue() > 0) {
-                if (youthPrivilege.getValue()) {
+                if (youthPrivilege.getValue() > 0) {
+                //if (youthPrivilege.getValue()) {
                     if (Privilege.INSTANCE.youthPrivilege()) {
                         jo = findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD_TREE");
                     } // 重新查找
@@ -2685,6 +2689,10 @@ public class AntForest extends ModelTask {
     private void userobExpandCard(JSONObject bag) {
         try {
             JSONObject jo = findPropBag(bag, "VITALITY_ROB_EXPAND_CARD_1.1_3DAYS");
+            if (jo != null && usePropBag(jo)) {
+                robExpandCardEndTime = System.currentTimeMillis() + 1000 * 60 * 5;
+            }
+            jo = findPropBag(bag, "SHAMO_ROB_EXPAND_CARD_1.5_1DAYS");
             if (jo != null && usePropBag(jo)) {
                 robExpandCardEndTime = System.currentTimeMillis() + 1000 * 60 * 5;
             }

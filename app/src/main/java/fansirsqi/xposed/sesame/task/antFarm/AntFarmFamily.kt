@@ -66,6 +66,10 @@ data object AntFarmFamily {
         try {
             val enterRes = JSONObject(AntFarmRpcCall.enterFamily());
             if (ResChecker.checkRes(TAG, enterRes)) {
+                if (!enterRes.has("groupId")) {
+                    Log.farm("请先开通小鸡家庭");
+                    return;
+                }
                 groupId = enterRes.getString("groupId")
                 groupName = enterRes.getString("groupName")
                 val familyAwardNum: Int = enterRes.optInt("familyAwardNum", 0)//奖励数量

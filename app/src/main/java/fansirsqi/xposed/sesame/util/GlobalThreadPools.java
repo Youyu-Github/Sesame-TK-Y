@@ -21,6 +21,7 @@ public class GlobalThreadPools {
      */
     public static void sleep(long millis) {
         try {
+            Log.record("延时:"+millis+" ms");
             Thread.sleep(millis);
         } catch (InterruptedException e) {
             Log.error(TAG, "Thread sleep interrupted " + e.getMessage());

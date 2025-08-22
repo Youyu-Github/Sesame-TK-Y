@@ -53,27 +53,28 @@ public class AntStall extends ModelTask {
         // 添加首页
         taskTypeList.add("tianjiashouye");
         // 【木兰市集】逛精选好物
-        taskTypeList.add("ANTSTALL_XLIGHT_VARIABLE_AWARD");
+        // taskTypeList.add("ANTSTALL_XLIGHT_VARIABLE_AWARD");
         // 去饿了么果园逛一逛
         taskTypeList.add("ANTSTALL_ELEME_VISIT");
         // 去点淘赚元宝提现
         taskTypeList.add("ANTSTALL_TASK_diantao202311");
         // 去玩解压小游戏
         taskTypeList.add("ANTSTALL_TASK_nongchangleyuan");
+
         // 去支付宝会员签到
         taskTypeList.add("ANTSTALL_TASK_huiyuanjifen1");
         // 逛羊舍喂小羊
         taskTypeList.add("ANTSTALL_NORMAL_TBchongzhi");
         // 职业小知识问答
-        taskTypeList.add("ANTSTALL_NORMAL_DAILY_QA");
+        // taskTypeList.add("ANTSTALL_NORMAL_DAILY_QA");
         // 从支付宝首页应用进入新村
         taskTypeList.add("ANTSTALL_APP_CENTER_VISIT1");
         // 进入淘宝芭芭农场领免费水果
-        taskTypeList.add("ANTSTALL_TASK_taojinbihuanduan");
+        //taskTypeList.add("ANTSTALL_TASK_taojinbihuanduan");
         // 去快手逛一逛
-        taskTypeList.add("ANTSTALL_TASK_kuaishouhuanduan");
+        // taskTypeList.add("ANTSTALL_TASK_kuaishouhuanduan");
         // 玩一步通一关
-//        taskTypeList.add("ANTSTALL_TASK_XCXYX_yibuliangbu");
+        // taskTypeList.add("ANTSTALL_TASK_XCXYX_yibuliangbu");
     }
     @Override
     public String getName() {
@@ -571,6 +572,7 @@ public class AntStall extends ModelTask {
                         case "ANTSTALL_NORMAL_DAILY_QA":
                             if (ReadingDada.answerQuestion(bizInfo)) {
                                 receiveTaskAward(taskType);
+                                GlobalThreadPools.sleep(200L);
                             }
                             break;
                         case "ANTSTALL_NORMAL_INVITE_REGISTER":
@@ -584,6 +586,8 @@ public class AntStall extends ModelTask {
                             break;
                         case "ANTSTALL_TASK_taojinbihuanduan":
                             //进入淘宝芭芭农场
+                            /* 
+                            //没用，暂时先不做
                             String sceneCode = JsonUtil.getValueByPath(task, "bizInfo.targetUrl")
                                     .replaceAll(".*sceneCode%3D([^&]+).*", "$1");
                             if (sceneCode.isEmpty()) {
@@ -597,6 +601,7 @@ public class AntStall extends ModelTask {
                             GlobalThreadPools.sleep(5000);
                             AntStallRpcCall.home();
                             AntStallRpcCall.taskList();
+                            */
                             break;
                         case "ANTSTALL_XLIGHT_VARIABLE_AWARD":
                             //【木兰市集】逛精选好物
@@ -612,8 +617,7 @@ public class AntStall extends ModelTask {
                             if (jsonArray == null || jsonArray.length() == 0) {
                                 continue;
                             }
-                            // Log.record("延时5S 木兰市集");
-                            // GlobalThreadPools.sleep(5000);
+                            Log.record("木兰市集开始");
                             for (int j = 0; j < jsonArray.length(); j++) {
                                 try{
                                     JSONObject jsonObject = jsonArray.getJSONObject(j);
@@ -629,6 +633,7 @@ public class AntStall extends ModelTask {
                                     Log.printStackTrace(TAG, t);
                                 }
                             }
+                            Log.record("木兰市集结束");
                             break;
                     }
                     GlobalThreadPools.sleep(200L);

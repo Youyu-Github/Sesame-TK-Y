@@ -148,15 +148,19 @@ public class AntOrchard extends ModelTask {
   private String getWua() {
     if (wuaList == null) {
       try {
+//        Log.record("get wuaList path:"+Files.getWuaFile());
         String content = Files.readFromFile(Files.getWuaFile());
         wuaList = content.split("\n");
+//        Log.record("get wuaList:"+wuaList.length);
       } catch (Throwable ignored) {
+//        Log.record("get wuaList error:");
         wuaList = new String[0];
       }
     }
     if (wuaList.length > 0) {
       return wuaList[RandomUtil.nextInt(0, wuaList.length - 1)];
     }
+    Log.record("get wuaList return null");
     return "null";
   }
   private boolean canSpreadManureContinue(int stageBefore, int stageAfter) {
@@ -205,7 +209,12 @@ public class AntOrchard extends ModelTask {
           int wateringCost = accountInfo.getInt("wateringCost");
           int wateringLeftTimes = accountInfo.getInt("wateringLeftTimes");
           if (happyPoint > wateringCost && wateringLeftTimes > 0 && (200 - wateringLeftTimes < orchardSpreadManureCount.getValue())) {
-            jo = new JSONObject(AntOrchardRpcCall.orchardSpreadManure(getWua()));
+            jString wua_content = getWua();
+            if (wua_content.equals("null") || wua_content.equals("")) {
+              Log.record("get wua is null or empty:"+wua_content);
+//              return;
+            }
+            jo = new JSONObject(AntOrchardRpcCall.orchardSpreadManure(wua_content));
             if (!"100".equals(jo.getString("resultCode"))) {
               Log.record(jo.getString("resultDesc"));
               Log.runtime(jo.toString());

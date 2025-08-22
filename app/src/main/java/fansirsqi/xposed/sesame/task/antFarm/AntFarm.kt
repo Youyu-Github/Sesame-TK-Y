@@ -210,8 +210,8 @@ class AntFarm : ModelTask() {
     /**
      * 游戏改分
      */
-    // private var recordFarmGame: PriorityModelField? = null
-    private var recordFarmGame: BooleanModelField? = null
+    private var recordFarmGame: PriorityModelField? = null
+    // private var recordFarmGame: BooleanModelField? = null
 
     /**
      * 小鸡游戏时间
@@ -375,8 +375,8 @@ class AntFarm : ModelTask() {
         modelFields.addField(PriorityModelField("enableChouchoule", "开启小鸡抽抽乐", priorityType.PRIORITY_2, priorityType.nickNames).also { enableChouchoule = it })
         modelFields.addField(BooleanModelField("listOrnaments", "小鸡每日换装", false).also { listOrnaments = it })
         modelFields.addField(PriorityModelField("enableDdrawGameCenterAward", "开宝箱", priorityType.PRIORITY_2, priorityType.nickNames).also { enableDdrawGameCenterAward = it })
-        // modelFields.addField(PriorityModelField("recordFarmGame", "游戏改分(星星球、登山赛、飞行赛、揍小鸡)", priorityType.PRIORITY_2, priorityType.nickNames).also { recordFarmGame = it })
-        modelFields.addField(BooleanModelField("recordFarmGame", "游戏改分(星星球、登山赛、飞行赛、揍小鸡)", false).also { recordFarmGame = it })
+        modelFields.addField(PriorityModelField("recordFarmGame", "游戏改分(星星球、登山赛、飞行赛、揍小鸡)", priorityType.PRIORITY_2, priorityType.nickNames).also { recordFarmGame = it })
+        // modelFields.addField(BooleanModelField("recordFarmGame", "游戏改分(星星球、登山赛、飞行赛、揍小鸡)", false).also { recordFarmGame = it })
         modelFields.addField(ListJoinCommaToStringModelField("farmGameTime", "小鸡游戏时间(范围)", ListUtil.newArrayList<String?>("2200-2400")).also { farmGameTime = it })
         modelFields.addField(BooleanModelField("family", "家庭 | 开启", false).also { family = it })
         modelFields.addField(SelectModelField("familyOptions", "家庭 | 选项", LinkedHashSet<String?>(), farmFamilyOption()).also { familyOptions = it })
@@ -422,6 +422,7 @@ class AntFarm : ModelTask() {
                 return
             }
             listFarmTool() //装载道具信息
+            tc.countDebug("装载道具信息")
 
             // if (getRunCnts() >= rewardFriend!!.value) {
             if (rewardFriend!!.value) {
@@ -437,8 +438,9 @@ class AntFarm : ModelTask() {
                 receiveToolTaskReward()
                 tc.countDebug("收取道具奖励")
             }
-            // if (getRunCnts() >= recordFarmGame!!.value) {
-            if (recordFarmGame!!.value) {
+
+            // if (recordFarmGame!!.value) {
+            if (getRunCnts() >= recordFarmGame!!.value) {
                 for (time in farmGameTime!!.value) {
                     if (TimeUtil.checkNowInTimeRange(time)) {
                         recordFarmGame(GameType.StarGame)
@@ -448,8 +450,9 @@ class AntFarm : ModelTask() {
                         break
                     }
                 }
-                // tc.countDebug("游戏改分(星星球、登山赛、飞行赛、揍小鸡)");
+                tc.countDebug("游戏改分(星星球、登山赛、飞行赛、揍小鸡)")
             }
+
             if (getRunCnts() >= kitchen!!.value) {
                 collectDailyFoodMaterial()
                 collectDailyLimitedFoodMaterial()
@@ -575,7 +578,7 @@ class AntFarm : ModelTask() {
                             SubAnimalType.NORMAL -> Log.record(TAG, "小鸡太饿，离家出走了")
                             SubAnimalType.PIRATE -> Log.record(TAG, "小鸡外出探险了")
                             SubAnimalType.WORK -> Log.record(TAG, "小鸡出去工作啦")
-                            // SubAnimalType.NONE -> Log.record(TAG, "小鸡状态未知")
+                            SubAnimalType.NONE -> Log.record(TAG, "小鸡不知道在干嘛")
                         }
                     }
 
@@ -590,7 +593,7 @@ class AntFarm : ModelTask() {
 
                             AnimalFeedStatus.EATING -> Log.record(TAG, "小鸡在[$userName]的庄园里吃得津津有味")
                             AnimalFeedStatus.SLEEPY -> Log.record(TAG, "小鸡在[$userName]的庄园")
-                            // AnimalFeedStatus.NONE -> Log.record(TAG, "小鸡在[$userName]的庄园状态未知")
+                            AnimalFeedStatus.NONE -> Log.record(TAG, "小鸡[$userName]不知道在干嘛")
                         }
                     }
                     // 2. 优化recall变量的赋值方式，并简化Companion object的调用
@@ -1477,7 +1480,7 @@ class AntFarm : ModelTask() {
                 "HEART_DONATION_ADVANCED_FOOD_V2",  //香草芒果冰糕任务
                 "HEART_DONATE",  //爱心捐赠
                 "SHANGOU_xiadan",  //去买秋天第一杯奶茶
-//                "HUABEI_MAP_180", //用花呗完成一笔支付
+                "HUABEI_MAP_180", //用花呗完成一笔支付
                 "OFFLINE_PAY",  //到店付款,线下支付
                 "ONLINE_PAY"  //在线支付
             )
@@ -2776,8 +2779,8 @@ class AntFarm : ModelTask() {
     }
 
     enum class AnimalFeedStatus {
-        HUNGRY, EATING, SLEEPY
-        // HUNGRY, EATING, SLEEPY, NONE
+        // HUNGRY, EATING, SLEEPY
+        HUNGRY, EATING, SLEEPY, NONE
     }
 
     enum class AnimalInteractStatus {
