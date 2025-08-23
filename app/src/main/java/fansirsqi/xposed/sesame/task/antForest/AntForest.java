@@ -1838,16 +1838,16 @@ public class AntForest extends ModelTask {
                 String signKey = signRecord.getString("signKey");
                 int awardCount = signRecord.optInt("awardCount", 0);
                 if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
-                    // 使用 antiepSign 签到（根据抓包数据，这是实际的签到方法）
+                    // 使用 energySign 签到（根据抓包数据，这是实际的签到方法）
                     // String userId = UserMap.getCurrentUid(); // 获取当前用户ID
-                    JSONObject joSign = new JSONObject(AntForestRpcCall.antiepSign(userId));
+                    JSONObject joSign = new JSONObject(AntForestRpcCall.energySign(userId));
                     GlobalThreadPools.sleep(300);
                     if (ResChecker.checkRes(TAG + "能量签到失败:", joSign)) {
                         Log.forest("能量签到成功");
                         return awardCount;
                     }
                     
-                    // antiepSign 失败后尝试 vitalitySign
+                    // aenergySign 失败后尝试 vitalitySign
                     joSign = new JSONObject(AntForestRpcCall.vitalitySign());
                     GlobalThreadPools.sleep(300);
                     if (ResChecker.checkRes(TAG + "活力签到失败:", joSign)) {

@@ -208,7 +208,7 @@ public class AntForestRpcCall {
     /**
      * 森林签到
      */
-    public static String antiepSign(String entityId, String userId) {
+    public static String aenergySign(String entityId, String userId) {
         try {
             JSONObject params = new JSONObject();
             params.put("__apiCallStartTime", System.currentTimeMillis());
