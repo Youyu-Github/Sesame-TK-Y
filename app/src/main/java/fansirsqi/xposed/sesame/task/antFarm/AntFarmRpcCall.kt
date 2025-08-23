@@ -322,27 +322,28 @@ object AntFarmRpcCall {
     */
 
     fun initFarmGame(gameType: String): String {
-        if ("flyGame" == gameType) {
-            return RequestManager.requestString("com.alipay.antfarm.initFarmGame",
-                    "[{\"gameType\":\"flyGame\",\"requestType\":\"RPC\",\"sceneCode\":\"FLAYGAME\"," +
-                            "\"source\":\"FARM_game_yundongfly\",\"toolTypes\":\"ACCELERATETOOL,SHARETOOL,NONE\",\"version\":\"\"}]")
+        return if ("flyGame" == gameType) {
+            RequestManager.requestString(
+                "com.alipay.antfarm.initFarmGame",
+                "[{\"gameType\":\"flyGame\",\"requestType\":\"RPC\",\"sceneCode\":\"FLAYGAME\"," +
+                        "\"source\":\"FARM_game_yundongfly\",\"toolTypes\":\"ACCELERATETOOL,SHARETOOL,NONE\",\"version\":\"\"}]"
+            )
+        } else {
+            RequestManager.requestString(
+                "com.alipay.antfarm.initFarmGame",
+                "[{\"gameType\":\"$gameType\"," +
+                        "\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\"}]"
+            )
         }
-        return RequestManager.requestString("com.alipay.antfarm.initFarmGame",
-                "[{\"gameType\":\"" + gameType
-                        + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\"}]")
     }
 
     fun RandomScore(str: String): Int {
-        if ("starGame" == str) {
-            return RandomUtil.nextInt(300, 400)
-        } else if ("jumpGame" == str) {
-            return RandomUtil.nextInt(250, 270) * 10
-        } else if ("flyGame" == str) {
-            return RandomUtil.nextInt(4000, 8000)
-        } else if ("hitGame" == str) {
-            return RandomUtil.nextInt(80, 120)
-        } else {
-            return 210
+        return when (str) {
+            "starGame" -> RandomUtil.nextInt(300, 400)
+            "jumpGame" -> RandomUtil.nextInt(250, 270) * 10
+            "flyGame" -> RandomUtil.nextInt(4000, 8000)
+            "hitGame" -> RandomUtil.nextInt(80, 120)
+            else -> 210
         }
     }
 
@@ -350,19 +351,24 @@ object AntFarmRpcCall {
         val uuid = getUuid()
         val md5String = getMD5(uuid)
         val score = RandomScore(gameType)
-        if ("flyGame" == gameType) {
+        
+        return if ("flyGame" == gameType) {
             val foodCount = score / 50
-            return RequestManager.requestString("com.alipay.antfarm.recordFarmGame",
-                    "[{\"foodCount\":" + foodCount + ",\"gameType\":\"flyGame\",\"md5\":\"" + md5String
-                            + "\",\"requestType\":\"RPC\",\"sceneCode\":\"FLAYGAME\",\"score\":" + score
-                            + ",\"source\":\"ANTFARM\",\"toolTypes\":\"ACCELERATETOOL,SHARETOOL,NONE\",\"uuid\":\"" + uuid
-                            + "\",\"version\":\"\"}]")
+            RequestManager.requestString(
+                "com.alipay.antfarm.recordFarmGame",
+                "[{\"foodCount\":$foodCount,\"gameType\":\"flyGame\",\"md5\":\"$md5String\"," +
+                        "\"requestType\":\"RPC\",\"sceneCode\":\"FLAYGAME\",\"score\":$score" +
+                        ",\"source\":\"ANTFARM\",\"toolTypes\":\"ACCELERATETOOL,SHARETOOL,NONE\",\"uuid\":\"$uuid\"," +
+                        "\"version\":\"\"}]"
+            )
+        } else {
+            RequestManager.requestString(
+                "com.alipay.antfarm.recordFarmGame",
+                "[{\"gameType\":\"$gameType\",\"md5\":\"$md5String\"," +
+                        "\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"score\":$score" +
+                        ",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\",\"uuid\":\"$uuid\"}]"
+            )
         }
-        return RequestManager.requestString("com.alipay.antfarm.recordFarmGame",
-                "[{\"gameType\":\"" + gameType + "\",\"md5\":\"" + md5String
-                        + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"score\":" + score
-                        + ",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\",\"uuid\":\"" + uuid
-                        + "\"}]")
     }
 
     private val uuid: String
