@@ -1848,7 +1848,7 @@ public class AntForest extends ModelTask {
                 
                 if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
                     // 使用动态获取的entityId
-                    JSONObject joSign = new JSONObject(AntForestRpcCall.antiepSign(
+                    JSONObject joSign = new JSONObject(AntForestRpcCall.energySign(
                         Config.getUserId(), 
                         entityId
                     ));
