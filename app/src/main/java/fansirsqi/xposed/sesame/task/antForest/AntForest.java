@@ -1840,9 +1840,9 @@ public class AntForest extends ModelTask {
                 if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
                     // 获取当前用户ID
                     String userId = UserMap.getCurrentUid();
-                    Log.forest("尝试能量签到 : entityId=" + entityId + ", rpc=" + rpc + ", userId=" + userId);
                     // 使用 energySign 发起签名请求
-                    JSONObject joSign = new JSONObject(AntForestRpcCall.energySign(entityId, rpc, ANTFOREST_ENERGY_TASK_SIGN, ANTFOREST, userId));
+                    JSONObject joSign = new JSONObject(AntForestRpcCall.energySign(entityId, userId));
+                    Log.forest("尝试能量签到 : entityId=" + entityId + ", userId=" + userId);
                     GlobalThreadPools.sleep(300);
                     if (ResChecker.checkRes(TAG + "能量签到失败:", joSign)) {
                         Log.forest("能量签到成功");
