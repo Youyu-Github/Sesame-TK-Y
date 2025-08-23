@@ -74,8 +74,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 /// lzw add end
 
-import fansirsqi.xposed.sesame.data.Config;
-
 import static fansirsqi.xposed.sesame.task.antForest.ForestUtil.hasBombCard;
 import static fansirsqi.xposed.sesame.task.antForest.ForestUtil.hasShield;
 import java.util.HashMap;
@@ -1841,7 +1839,7 @@ public class AntForest extends ModelTask {
                 int awardCount = signRecord.optInt("awardCount", 0);
                 if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
                     // 使用 antiepSign 签到（根据抓包数据，这是实际的签到方法）
-                    String userId = Config.getUserInfo().getUserId(); // 获取当前用户ID
+                    String userId = UserMap.getUserInfo().getUserId(); // 获取当前用户ID
                     JSONObject joSign = new JSONObject(AntForestRpcCall.antiepSign(userId));
                     GlobalThreadPools.sleep(300);
                     if (ResChecker.checkRes(TAG + "能量签到失败:", joSign)) {
