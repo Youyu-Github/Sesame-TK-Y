@@ -16,9 +16,6 @@ import fansirsqi.xposed.sesame.util.Log;
 import fansirsqi.xposed.sesame.util.RandomUtil;
 import fansirsqi.xposed.sesame.util.StringUtil;
 
-import fansirsqi.xposed.sesame.entity.UserEntity;
-import fansirsqi.xposed.sesame.util.maps.UserMap;
-
 /**
  * 森林 RPC 调用类
  */
@@ -214,21 +211,6 @@ public class AntForestRpcCall {
      */
     public static String antiepSign(String userId) {
         try {
-            // 从 UserMap 获取用户实体
-            UserEntity userEntity = UserMap.get(userId);
-            if (userEntity == null) {
-                Log.record(TAG, "用户实体不存在，userId: " + userId);
-                return "";
-            }
-            
-            // 获取实体ID - 这里假设 UserEntity 有 getEntityId() 方法
-            // 如果 UserEntity 中没有 entityId 字段，可能需要根据实际情况调整
-            String entityId = userEntity.getEntityId();
-            if (entityId == null || entityId.isEmpty()) {
-                Log.record(TAG, "实体ID为空，userId: " + userId);
-                return "";
-            }
-            
             JSONObject params = new JSONObject();
             params.put("__apiCallStartTime", System.currentTimeMillis());
             params.put("__apiNativeCallId", "native_" + System.currentTimeMillis());
@@ -244,7 +226,6 @@ public class AntForestRpcCall {
             
             JSONArray requestData = new JSONArray();
             JSONObject requestItem = new JSONObject();
-            // 使用动态获取的 entityId
             requestItem.put("entityId", entityId);
             requestItem.put("requestType", "rpc");
             requestItem.put("sceneCode", "ANTFOREST_ENERGY_TASK_SIGN");
