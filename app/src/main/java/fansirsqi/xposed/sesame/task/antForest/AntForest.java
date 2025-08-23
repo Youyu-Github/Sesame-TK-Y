@@ -74,6 +74,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 /// lzw add end
 
+import fansirsqi.xposed.sesame.data.Config;
+
 import static fansirsqi.xposed.sesame.task.antForest.ForestUtil.hasBombCard;
 import static fansirsqi.xposed.sesame.task.antForest.ForestUtil.hasShield;
 import java.util.HashMap;
