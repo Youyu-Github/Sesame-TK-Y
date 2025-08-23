@@ -2438,18 +2438,18 @@ class AntFarm : ModelTask() {
                     val beHiredEndTime = joo.getLong("beHiredEndTime")
                     if (!hasChildTask(taskId)) {
                         addChildTask(ChildModelTask(taskId, "HIRE", Runnable {
-                            if (hireAnimal!!.value) {
-                                hireAnimal()
-                            }
-                            //hireAnimal()
+                            //if (hireAnimal!!.value) {
+                            //    hireAnimal()
+                            //}
+                            hireAnimal()
                         }, beHiredEndTime))
                         Log.record(TAG, "添加蹲点雇佣👷在[" + TimeUtil.getCommonDate(beHiredEndTime) + "]执行")
                     } else {
                         addChildTask(ChildModelTask(taskId, "HIRE", Runnable {
-                            if (hireAnimal!!.value) {
-                                hireAnimal()
-                            }
-                            //hireAnimal()
+                            //if (hireAnimal!!.value) {
+                            //    hireAnimal()
+                            //}
+                            hireAnimal()
                         }, beHiredEndTime))
                     }
                 }
