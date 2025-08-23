@@ -349,7 +349,7 @@ object AntFarmRpcCall {
     }
 
     fun recordFarmGame(gameType: String): String {
-        val uuid = getUuid()
+        val uuid: String = uuid
         val md5String = getMD5(uuid)
         val score = RandomScore(gameType)
         
