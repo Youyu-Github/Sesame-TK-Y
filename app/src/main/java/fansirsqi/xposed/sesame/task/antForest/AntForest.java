@@ -1801,7 +1801,6 @@ public class AntForest extends ModelTask {
         return Vitality.VitalityExchange(spuId, skuId, "隐身卡");
     }
 
-/*
     private int dailyTask(JSONArray forestSignVOList) {
         try {
             JSONObject forestSignVO = forestSignVOList.getJSONObject(0);
@@ -1822,49 +1821,6 @@ public class AntForest extends ModelTask {
                 }
             }
             return 0; // 如果没有签到，则返回 0
-        } catch (Exception e) {
-            Log.printStackTrace(e);
-            return 0;
-        }
-    }
-*/
-    private int dailyTask(JSONArray forestSignVOList) {
-        try {
-            // 动态获取entityId
-            String entityId = getSignEntityId();
-            if (entityId == null || entityId.isEmpty()) {
-                Log.forest("无法获取签到entityId");
-                return 0;
-            }
-            
-            JSONObject forestSignVO = forestSignVOList.getJSONObject(0);
-            String currentSignKey = forestSignVO.getString("currentSignKey");
-            JSONArray signRecords = forestSignVO.getJSONArray("signRecords");
-            
-            for (int i = 0; i < signRecords.length(); i++) {
-                JSONObject signRecord = signRecords.getJSONObject(i);
-                String signKey = signRecord.getString("signKey");
-                int awardCount = signRecord.optInt("awardCount", 0);
-                
-                if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
-                    // 使用动态获取的entityId
-                    JSONObject joSign = new JSONObject(AntForestRpcCall.energySign(
-                        UserMap.getUserId(), 
-                        entityId
-                    ));
-                    
-                    GlobalThreadPools.sleep(300);
-                    
-                    if (joSign.getJSONObject("resData").getBoolean("success")) {
-                        JSONObject signModel = joSign.getJSONObject("resData").getJSONObject("signModel");
-                        int energy = signModel.getJSONObject("signAward").getInt("count");
-                        Log.forest("森林签到📆成功，获得" + energy + "g能量");
-                        return energy;
-                    }
-                    break;
-                }
-            }
-            return 0;
         } catch (Exception e) {
             Log.printStackTrace(e);
             return 0;
