@@ -16,6 +16,9 @@ import fansirsqi.xposed.sesame.util.Log;
 import fansirsqi.xposed.sesame.util.RandomUtil;
 import fansirsqi.xposed.sesame.util.StringUtil;
 
+import fansirsqi.xposed.sesame.entity.UserEntity;
+import fansirsqi.xposed.sesame.util.maps.UserMap;
+
 /**
  * 森林 RPC 调用类
  */
@@ -214,7 +217,7 @@ public class AntForestRpcCall {
             // 从 UserMap 获取用户实体
             UserEntity userEntity = UserMap.get(userId);
             if (userEntity == null) {
-                Log.e(TAG, "用户实体不存在，userId: " + userId);
+                Log.record(TAG, "用户实体不存在，userId: " + userId);
                 return "";
             }
             
@@ -222,7 +225,7 @@ public class AntForestRpcCall {
             // 如果 UserEntity 中没有 entityId 字段，可能需要根据实际情况调整
             String entityId = userEntity.getEntityId();
             if (entityId == null || entityId.isEmpty()) {
-                Log.e(TAG, "实体ID为空，userId: " + userId);
+                Log.record(TAG, "实体ID为空，userId: " + userId);
                 return "";
             }
             
