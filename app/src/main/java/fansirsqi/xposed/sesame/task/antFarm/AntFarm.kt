@@ -1423,7 +1423,7 @@ class AntFarm : ModelTask() {
         }
     }
 
-
+    /*
     private fun recordFarmGame(gameType: GameType) {
         try {
             do {
@@ -1452,6 +1452,50 @@ class AntFarm : ModelTask() {
                                 continue
                             }
                         }
+                    }
+                    break
+                } finally {
+                    GlobalThreadPools.sleep(2000)
+                }
+            } while (true)
+        } catch (t: Throwable) {
+            Log.runtime(TAG, "recordFarmGame err:")
+            Log.printStackTrace(TAG, t)
+        }
+    }
+    */
+    private fun recordFarmGame(gameType: GameType) {
+        try {
+            do {
+                try {
+                    var jo = JSONObject(AntFarmRpcCall.initFarmGame(gameType.name))
+                    if (ResChecker.checkRes(TAG + "初始化庄园游戏失败:", jo)) {
+                        if (jo.getJSONObject("gameAward").getBoolean("level3Get")) {
+                            return
+                        }
+                        if (jo.optInt("remainingGameCount", 1) == 0) {
+                            return
+                        }
+                        jo = JSONObject(AntFarmRpcCall.recordFarmGame(gameType.name))
+                        if (ResChecker.checkRes(TAG + "记录庄园游戏失败:", jo)) {
+                            val awardInfos = jo.getJSONArray("awardInfos")
+                            val award = StringBuilder()
+                            for (i in 0..<awardInfos.length()) {
+                                val awardInfo = awardInfos.getJSONObject(i)
+                                award.append(awardInfo.getString("awardName")).append("*").append(awardInfo.getInt("awardCount"))
+                            }
+                            if (jo.has("receiveFoodCount")) {
+                                award.append(";肥料*").append(jo.getString("receiveFoodCount"))
+                            }
+                            Log.farm("庄园游戏🎮[" + gameType.gameName() + "]#" + award)
+                            if (jo.optInt("remainingGameCount", 0) > 0) {
+                                continue
+                            }
+                        } else {
+                            Log.runtime(TAG, "庄园游戏$jo")
+                        }
+                    } else {
+                        Log.runtime(TAG, "进入庄园游戏失败$jo")
                     }
                     break
                 } finally {
@@ -2811,7 +2855,7 @@ class AntFarm : ModelTask() {
                 arrayOf<CharSequence?>("蹭饭卡", "加速卡", "救济卡", "篱笆卡", "新蛋卡", "公仔补签卡", "普通装扮补签卡", "高级装扮补签卡", "加饭卡", "稀有装扮补签卡")
         }
     }
-
+    /*
     enum class GameType {
         StarGame, JumpGame, FlyGame, HitGame;
 
@@ -2821,6 +2865,17 @@ class AntFarm : ModelTask() {
 
         companion object {
             val gameNames: Array<CharSequence?> = arrayOf<CharSequence?>("星星球", "登山赛", "飞行赛", "欢乐揍小鸡")
+        }
+    }
+    */
+    enum class GameType(val gameName: String) {
+        starGame("星星球"),
+        jumpGame("登山赛"),
+        flyGame("飞行赛"),
+        hitGame("欢乐揍小鸡");
+
+        companion object {
+            val gameNames = values().map { it.gameName }.toTypedArray()
         }
     }
 
