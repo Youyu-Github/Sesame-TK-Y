@@ -1830,34 +1830,41 @@ public class AntForest extends ModelTask {
 */
     private int dailyTask(JSONArray forestSignVOList) {
         try {
+            // 动态获取entityId
+            String entityId = getSignEntityId();
+            if (entityId == null || entityId.isEmpty()) {
+                Log.forest("无法获取签到entityId");
+                return 0;
+            }
+            
             JSONObject forestSignVO = forestSignVOList.getJSONObject(0);
-            String currentSignKey = forestSignVO.getString("currentSignKey"); // 当前签到的 key
-            JSONArray signRecords = forestSignVO.getJSONArray("signRecords"); // 签到记录
+            String currentSignKey = forestSignVO.getString("currentSignKey");
+            JSONArray signRecords = forestSignVO.getJSONArray("signRecords");
+            
             for (int i = 0; i < signRecords.length(); i++) {
                 JSONObject signRecord = signRecords.getJSONObject(i);
                 String signKey = signRecord.getString("signKey");
                 int awardCount = signRecord.optInt("awardCount", 0);
+                
                 if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
-                    joSign = new JSONObject(AntForestRpcCall.energySign());
+                    // 使用动态获取的entityId
+                    JSONObject joSign = new JSONObject(AntForestRpcCall.antiepSign(
+                        Config.getUserId(), 
+                        entityId
+                    ));
+                    
                     GlobalThreadPools.sleep(300);
-                    if (ResChecker.checkRes(TAG + "能量签到失败:", joSign)) {
-                        Log.forest("能量签到成功");
-                        return awardCount;
+                    
+                    if (joSign.getJSONObject("resData").getBoolean("success")) {
+                        JSONObject signModel = joSign.getJSONObject("resData").getJSONObject("signModel");
+                        int energy = signModel.getJSONObject("signAward").getInt("count");
+                        Log.forest("森林签到📆成功，获得" + energy + "g能量");
+                        return energy;
                     }
-
-                    // energySign 失败后尝试 vitalitySign
-                    joSign = new JSONObject(AntForestRpcCall.vitalitySign());
-                    GlobalThreadPools.sleep(300);
-                    if (ResChecker.checkRes(TAG + "活力签到失败:", joSign)) {
-                        Log.forest("活力签到成功");
-                        return awardCount;
-                    }
-
-                    Log.forest("森林签到失败");
                     break;
                 }
             }
-            return 0; // 如果没有签到，则返回 0
+            return 0;
         } catch (Exception e) {
             Log.printStackTrace(e);
             return 0;

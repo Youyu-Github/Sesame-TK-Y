@@ -208,41 +208,38 @@ public class AntForestRpcCall {
     /**
      * 森林签到
      */
-    public static String energySign(String entityId, String userId) {
-        try {
-            JSONObject params = new JSONObject();
-            params.put("__apiCallStartTime", System.currentTimeMillis());
-            params.put("__apiNativeCallId", "native_" + System.currentTimeMillis());
-            params.put("apiCallLink", "XRiverNotFound");
-            params.put("execEngine", "XRiver");
-            params.put("getResponse", true);
-            
-            JSONObject headers = new JSONObject();
-            headers.put("ags-source", "chInfo_ch_appcenter__chsub_9patch");
-            headers.put("source", "chInfo_ch_appcenter__chsub_9patch");
-            params.put("headers", headers);
-            params.put("operationType", "com.alipay.antiep.sign");
-            
-            JSONArray requestData = new JSONArray();
-            JSONObject requestItem = new JSONObject();
-            requestItem.put("entityId", entityId);
-            requestItem.put("requestType", "rpc");
-            requestItem.put("sceneCode", "ANTFOREST_ENERGY_TASK_SIGN");
-            requestItem.put("source", "ANTFOREST");
-            requestItem.put("userId", userId);
-            requestData.put(requestItem);
-            params.put("requestData", requestData);
-            
-            return RequestManager.requestString("com.alipay.antiep.sign", params.toString());
-        } catch (Exception e) {
-            Log.printStackTrace(e);
-            return "";
-        }
+    public static String antiepSign(String userId, String entityId) {
+        JSONObject params = new JSONObject();
+        params.put("__apiCallStartTime", System.currentTimeMillis());
+        params.put("__apiNativeCallId", "native_" + System.currentTimeMillis());
+        params.put("apiCallLink", "XRiverNotFound");
+        params.put("execEngine", "XRiver");
+        params.put("getResponse", true);
+        
+        JSONObject headers = new JSONObject();
+        headers.put("ags-source", "chInfo_ch_appcenter__chsub_9patch");
+        headers.put("source", "chInfo_ch_appcenter__chsub_9patch");
+        params.put("headers", headers);
+        
+        params.put("operationType", "com.alipay.antiep.sign");
+        
+        JSONArray requestData = new JSONArray();
+        JSONObject requestItem = new JSONObject();
+        requestItem.put("entityId", entityId);
+        requestItem.put("requestType", "rpc");
+        requestItem.put("sceneCode", "ANTFOREST_ENERGY_TASK_SIGN");
+        requestItem.put("source", "ANTFOREST");
+        requestItem.put("userId", userId);
+        requestData.put(requestItem);
+        params.put("requestData", requestData);
+        
+        return RequestManager.requestString("com.alipay.antiep.sign", params.toString());
     }
-    
+    /*
     public static String vitalitySign() {
         return RequestManager.requestString("alipay.antforest.forest.h5.vitalitySign", "[{\"source\":\"chInfo_ch_appcenter__chsub_9patch\"}]");
     }
+    */
 
     public static String queryEnergyRainHome() {
         return RequestManager.requestString("alipay.antforest.forest.h5.queryEnergyRainHome", "[{\"source\":\"senlinguangchuangrukou\",\"version\":\"" + VERSION + "\"}]");
