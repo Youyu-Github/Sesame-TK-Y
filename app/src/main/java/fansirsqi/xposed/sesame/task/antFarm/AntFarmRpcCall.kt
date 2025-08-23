@@ -1,6 +1,7 @@
 package fansirsqi.xposed.sesame.task.antFarm
 
 import fansirsqi.xposed.sesame.hook.RequestManager.requestString
+import fansirsqi.xposed.sesame.hook.RequestManager
 import fansirsqi.xposed.sesame.util.RandomUtil
 import org.json.JSONArray
 import org.json.JSONException
