@@ -189,7 +189,7 @@ public class NewRpcBridge implements RpcBridge {
                                 if (BaseModel.getTimeoutRestart().getValue()) {
                                     Log.record(TAG, "尝试重新登录-延时10s");
                                     TimeUtil.sleep(10000);
-                                    // ApplicationHook.reLoginByBroadcast();
+                                    ApplicationHook.reLoginByBroadcast();
                                 }
                             }
                             return null;
