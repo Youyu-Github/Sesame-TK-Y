@@ -1847,7 +1847,7 @@ public class AntForest extends ModelTask {
                         return awardCount;
                     }
                     
-                    // aenergySign 失败后尝试 vitalitySign
+                    // energySign 失败后尝试 vitalitySign
                     joSign = new JSONObject(AntForestRpcCall.vitalitySign());
                     GlobalThreadPools.sleep(300);
                     if (ResChecker.checkRes(TAG + "活力签到失败:", joSign)) {
