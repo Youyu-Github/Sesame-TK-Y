@@ -2868,15 +2868,14 @@ class AntFarm : ModelTask() {
         }
     }
     */
-    enum class GameType(val gameName: String) {
-        starGame("星星球"),
-        jumpGame("登山赛"),
-        flyGame("飞行赛"),
-        hitGame("欢乐揍小鸡");
+    enum class GameType {
+        starGame, jumpGame, flyGame, hitGame;
 
         companion object {
-            val gameNames = values().map { it.gameName }.toTypedArray()
+            val gameNames = arrayOf("星星球", "登山赛", "飞行赛", "欢乐揍小鸡")
         }
+
+        fun gameName() = gameNames[ordinal]
     }
 
 
