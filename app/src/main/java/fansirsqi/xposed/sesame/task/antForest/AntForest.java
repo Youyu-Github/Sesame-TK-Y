@@ -1840,7 +1840,7 @@ public class AntForest extends ModelTask {
                 if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
                     // 获取当前用户ID
                     String userId = UserMap.getCurrentUid();
-                    String entityId = CollectEnergyEntity.rpcEntity();
+                    String entityId = entity.RpcEntity();
                     // 使用 energySign 发起签名请求
                     JSONObject joSign = new JSONObject(AntForestRpcCall.energySign(entityId, userId));
                     GlobalThreadPools.sleep(300);
