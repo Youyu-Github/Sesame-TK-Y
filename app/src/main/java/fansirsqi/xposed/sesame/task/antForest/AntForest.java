@@ -1838,15 +1838,25 @@ public class AntForest extends ModelTask {
                 String signKey = signRecord.getString("signKey");
                 int awardCount = signRecord.optInt("awardCount", 0);
                 if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
-                    // 使用 energySign 签到（根据抓包数据，这是实际的签到方法）
-                    String userId = UserMap.getCurrentUid(); // 获取当前用户ID
-                    JSONObject joSign = new JSONObject(AntForestRpcCall.energySign(userId));
+                    // 获取当前用户ID
+                    String userId = UserMap.getCurrentUid();
+
+                    // 获取或构造 entityId（优先取返回的 entityId 字段，如果没有就用 signKey + "SIGN0"）
+                    String entityId = signRecord.optString("entityId", null);
+                    if (entityId == null || entityId.isEmpty()) {
+                        entityId = signKey + "SIGN0";
+                    }
+
+                    Log.forest("尝试能量签到: entityId=" + entityId + " userId=" + userId);
+
+                    // 使用 energySign(entityId, userId) 发起签名请求（与你提供的方法签名一致）
+                    JSONObject joSign = new JSONObject(AntForestRpcCall.energySign(entityId, userId));
                     GlobalThreadPools.sleep(300);
                     if (ResChecker.checkRes(TAG + "能量签到失败:", joSign)) {
                         Log.forest("能量签到成功");
                         return awardCount;
                     }
-                    
+
                     // energySign 失败后尝试 vitalitySign
                     joSign = new JSONObject(AntForestRpcCall.vitalitySign());
                     GlobalThreadPools.sleep(300);
@@ -1854,7 +1864,7 @@ public class AntForest extends ModelTask {
                         Log.forest("活力签到成功");
                         return awardCount;
                     }
-                    
+
                     Log.forest("森林签到失败");
                     break;
                 }
@@ -1864,7 +1874,7 @@ public class AntForest extends ModelTask {
             Log.printStackTrace(e);
             return 0;
         }
-}
+    }
 
     // 提取奖励解析逻辑到单独的方法
     private int parseEnergyReward(JSONObject joSign) {
