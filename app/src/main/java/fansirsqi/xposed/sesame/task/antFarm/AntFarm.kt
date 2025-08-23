@@ -2869,7 +2869,7 @@ class AntFarm : ModelTask() {
     }
     */
     enum class GameType {
-        starGame, jumpGame, flyGame, hitGame;
+        StarGame, JumpGame, FlyGame, HitGame;
 
         companion object {
             val gameNames = arrayOf("星星球", "登山赛", "飞行赛", "欢乐揍小鸡")
@@ -2877,7 +2877,6 @@ class AntFarm : ModelTask() {
 
         fun gameName() = gameNames[ordinal]
     }
-
 
     @ToString
     @JsonIgnoreProperties(ignoreUnknown = true)
