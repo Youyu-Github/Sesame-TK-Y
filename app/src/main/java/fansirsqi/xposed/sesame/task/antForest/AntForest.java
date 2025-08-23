@@ -1839,7 +1839,7 @@ public class AntForest extends ModelTask {
                 int awardCount = signRecord.optInt("awardCount", 0);
                 if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
                     // 使用 energySign 签到（根据抓包数据，这是实际的签到方法）
-                    // String userId = UserMap.getCurrentUid(); // 获取当前用户ID
+                    String userId = UserMap.getCurrentUid(); // 获取当前用户ID
                     JSONObject joSign = new JSONObject(AntForestRpcCall.energySign(userId));
                     GlobalThreadPools.sleep(300);
                     if (ResChecker.checkRes(TAG + "能量签到失败:", joSign)) {
