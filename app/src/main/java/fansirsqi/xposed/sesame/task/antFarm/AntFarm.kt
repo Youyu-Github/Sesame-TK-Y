@@ -65,10 +65,6 @@ class AntFarm : ModelTask() {
         return "AntFarm.png"
     }
 
-    override fun getPriority(): Int {
-        return 1
-    }
-
     private var ownerFarmId: String? = null
     private var animals: Array<Animal>? = null
     private var ownerAnimal = Animal()
@@ -544,6 +540,8 @@ class AntFarm : ModelTask() {
             }
             //小鸡睡觉&起床
             animalSleepAndWake()
+            tc.countDebug("小鸡睡觉&起床")
+            tc.stop()
         } catch (t: Throwable) {
             Log.runtime(TAG, "AntFarm.start.run err:")
             Log.printStackTrace(TAG, t)
@@ -1513,9 +1511,11 @@ class AntFarm : ModelTask() {
                                             Log.farm("庄园任务🧾[$title]")
                                         }
                                     }
+                                    GlobalThreadPools.sleep(1000)
                                 }
                             } else if ("ANSWER" == bizKey) {
                                 answerQuestion("100") //答题
+                                GlobalThreadPools.sleep(1000)
                             } else {
                                 // 安全计数，避免 NPE 警告
                                 val count = farmTaskTryCount.computeIfAbsent(bizKey) { k: kotlin.String? -> java.util.concurrent.atomic.AtomicInteger(0) }!!
@@ -1526,16 +1526,18 @@ class AntFarm : ModelTask() {
                                     Log.error("庄园任务(超过1次)标记失败：$title\n$taskDetailjo")
                                     badTaskSet.add(bizKey)
                                     put("badFarmTaskSet", badTaskSet)
+                                    GlobalThreadPools.sleep(1000)
                                 } else {
                                     Log.farm("庄园任务🧾[$title]")
+                                    GlobalThreadPools.sleep(1000)
                                 }
                             }
                         }
                     }
                     if ("ANSWER" == bizKey && !Status.hasFlagToday(CACHED_FLAG)) { //单独处理答题任务
                         answerQuestion("100") //答题
+                        GlobalThreadPools.sleep(1000)
                     }
-                    GlobalThreadPools.sleep(1000)
                 }
             }
         } catch (t: Throwable) {
@@ -1839,7 +1841,7 @@ class AntFarm : ModelTask() {
                                 jo = jo.getJSONObject("farmVO").getJSONObject("subFarmVO")
                                 val friendFarmId = jo.getString("farmId")
                                 val jaAnimals = jo.getJSONArray("animals")
-                                var notified = 0 == notifyFriend!!.value
+                                var notified = (0 == notifyFriend!!.value)
                                 for (j in 0..<jaAnimals.length()) {
                                     jo = jaAnimals.getJSONObject(j)
                                     val animalId = jo.getString("animalId")

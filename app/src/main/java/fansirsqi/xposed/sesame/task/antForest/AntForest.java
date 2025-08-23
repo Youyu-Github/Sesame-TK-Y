@@ -1838,15 +1838,16 @@ public class AntForest extends ModelTask {
                 String signKey = signRecord.getString("signKey");
                 int awardCount = signRecord.optInt("awardCount", 0);
                 if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
-                    // 先尝试energySign签到
-                    JSONObject joSign = new JSONObject(AntForestRpcCall.energySign());
+                    // 使用 antiepSign 签到（根据抓包数据，这是实际的签到方法）
+                    String userId = Config.getUserInfo().getUserId(); // 获取当前用户ID
+                    JSONObject joSign = new JSONObject(AntForestRpcCall.antiepSign(userId));
                     GlobalThreadPools.sleep(300);
                     if (ResChecker.checkRes(TAG + "能量签到失败:", joSign)) {
                         Log.forest("能量签到成功");
                         return awardCount;
                     }
                     
-                    // energySign失败后尝试vitalitySign
+                    // antiepSign 失败后尝试 vitalitySign
                     joSign = new JSONObject(AntForestRpcCall.vitalitySign());
                     GlobalThreadPools.sleep(300);
                     if (ResChecker.checkRes(TAG + "活力签到失败:", joSign)) {
@@ -1863,7 +1864,7 @@ public class AntForest extends ModelTask {
             Log.printStackTrace(e);
             return 0;
         }
-    }
+}
 
     // 提取奖励解析逻辑到单独的方法
     private int parseEnergyReward(JSONObject joSign) {
