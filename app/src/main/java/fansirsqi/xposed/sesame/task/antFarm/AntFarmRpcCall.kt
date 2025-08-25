@@ -298,6 +298,7 @@ object AntFarmRpcCall {
                         "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\"}]"
             )
         }
+    }
 
     fun RandomScore(str: String?): Int {
         if ("starGame" == str) {
