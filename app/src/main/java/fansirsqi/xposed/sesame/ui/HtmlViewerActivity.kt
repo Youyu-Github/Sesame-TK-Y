@@ -29,6 +29,7 @@ import fansirsqi.xposed.sesame.util.Log
 import fansirsqi.xposed.sesame.util.ToastUtil
 import java.io.File
 import android.os.Looper
+import org.json.JSONObject
 
 class HtmlViewerActivity : BaseActivity() {
     val TAG = "HtmlViewerActivity"
@@ -113,57 +114,68 @@ class HtmlViewerActivity : BaseActivity() {
         super.onResume()
         // 安全设置WebView
         try {
-            val intent = getIntent() // 获取传递过来的 Intent
+            val intent = intent // 获取传递过来的 Intent
             if (intent != null) {
-                if (mWebView != null) {
-                    settings!!.setSupportZoom(true) // 支持缩放
-                    settings!!.builtInZoomControls = true // 启用内置缩放机制
-                    settings!!.displayZoomControls = false // 不显示缩放控件
-                    settings!!.useWideViewPort = true // 启用触摸缩放
-                    settings!!.loadWithOverviewMode = true //概览模式加载
-                    settings!!.textZoom = 85
+                val webView = mWebView
+                val webSettings = webView?.settings
+                
+                webSettings?.let { settings ->
+                    settings.setSupportZoom(true) // 支持缩放
+                    settings.builtInZoomControls = true // 启用内置缩放机制
+                    settings.displayZoomControls = false // 不显示缩放控件
+                    settings.useWideViewPort = true // 启用触摸缩放
+                    settings.loadWithOverviewMode = true //概览模式加载
+                    settings.textZoom = 85
+                    
                     // 可选夜间模式设置
                     if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
                         try {
-                            WebSettingsCompat.setAlgorithmicDarkeningAllowed(settings!!, true)
+                            WebSettingsCompat.setAlgorithmicDarkeningAllowed(settings, true)
                         } catch (e: Exception) {
                             Log.error(TAG, "设置夜间模式失败: " + e.message)
                             Log.printStackTrace(TAG, e)
                         }
                     }
+                    
+                    configureWebViewSettings(intent, settings)
                 }
-                configureWebViewSettings(intent, settings!!)
-                uri = intent.data
-                if (uri != null) {
-                    mWebView!!.loadUrl(uri.toString())
+                
+                val currentUri = intent.data
+                uri = currentUri
+                
+                if (currentUri != null && webView != null) {
+                    webView.loadUrl(currentUri.toString())
 
                     /// 日志实时显示 begin
-                    settings.javaScriptEnabled = true
-                    settings.domStorageEnabled = true // 可选
+                    webSettings?.javaScriptEnabled = true
+                    webSettings?.domStorageEnabled = true // 可选
 
-                    mWebView.loadUrl("file:///android_asset/log_viewer.html")
-                    mWebView.webChromeClient = object : WebChromeClient() {
+                    webView.loadUrl("file:///android_asset/log_viewer.html")
+                    webView.webChromeClient = object : WebChromeClient() {
                         override fun onProgressChanged(view: WebView?, progress: Int) {
-                            progressBar.progress = progress
+                            progressBar?.progress = progress
                             if (progress < 100) {
-                                setBaseSubtitle("Loading...")
-                                progressBar.visibility = View.VISIBLE
+                                // 替换 setBaseSubtitle
+                                supportActionBar?.subtitle = "Loading..."
+                                progressBar?.visibility = View.VISIBLE
                             } else {
-                                setBaseSubtitle(mWebView.title?.toString() ?: "")
-                                progressBar.visibility = View.GONE
+                                // 替换 setBaseSubtitle
+                                supportActionBar?.subtitle = webView.title ?: ""
+                                progressBar?.visibility = View.GONE
 
                                 // ★★ 页面已就绪：把现有文件一次性灌入 ★★
-                                if (uri?.scheme?.equals("file", ignoreCase = true) == true) {
-                                    val path = uri.path
+                                if (currentUri.scheme?.equals("file", ignoreCase = true) == true) {
+                                    val path = currentUri.path
                                     if (path != null && path.endsWith(".log")) {
-                                        val all = readAllTextSafe(path) // 你实现的文件读取
-                                        val jsArg = toJsString(all)     // 下面给了帮助方法
-                                        mWebView.evaluateJavascript("setFullText($jsArg)", null)
+                                        // 替换 readAllTextSafe 和 toJsString
+                                        val all = readFileContent(path) // 实现文件读取
+                                        val jsArg = escapeJsString(all) // 实现JS字符串转义
+                                        webView.evaluateJavascript("setFullText($jsArg)", null)
 
                                         // 然后启动增量监听（你在 MyWebView 里实现的）
-                                        if (mWebView is MyWebView) {
-                                            mWebView.startWatchingIncremental(path)
-                                            // 或者 mWebView.startWatchingWithObserver(path)
+                                        if (webView is MyWebView) {
+                                            webView.startWatchingIncremental(path)
+                                            // 或者 webView.startWatchingWithObserver(path)
                                         }
                                     }
                                 }
@@ -172,15 +184,31 @@ class HtmlViewerActivity : BaseActivity() {
                     }
                     /// 日志实时显示 end
                 }
+                
                 canClear = intent.getBooleanExtra("canClear", false)
-                if (uri!!.toString().endsWith(".log")) {
-                        startRefreshing()
-                    }
+                if (currentUri != null && currentUri.toString().endsWith(".log")) {
+                    startRefreshing()
+                }
             }
         } catch (e: Exception) {
             Log.error(TAG, "WebView设置异常: " + e.message)
             Log.printStackTrace(TAG, e)
         }
+    }
+
+    // 添加缺失的方法实现
+    private fun readFileContent(filePath: String): String {
+        return try {
+            File(filePath).readText()
+        } catch (e: Exception) {
+            Log.error(TAG, "读取文件失败: ${e.message}")
+            ""
+        }
+    }
+
+    // 添加缺失的方法实现
+    private fun escapeJsString(input: String): String {
+        return JSONObject.quote(input) // 需要导入 org.json.JSONObject
     }
 
     override fun onPause() {
@@ -199,7 +227,7 @@ class HtmlViewerActivity : BaseActivity() {
         }
         if (refreshRunnable == null) {
             refreshRunnable = Runnable {
-                mWebView!!.reload()
+                mWebView?.reload()
                 // 继续定时刷新，每隔5秒刷新一次
                 refreshHandler?.postDelayed(refreshRunnable!!, 5000)
             }
