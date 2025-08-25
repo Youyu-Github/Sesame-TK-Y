@@ -241,40 +241,53 @@ class HtmlViewerActivity : BaseActivity() {
      */
     private fun clearFile() {
         try {
-            if (uri != null) {
-                val path = uri!!.path
+            // 使用局部变量避免并发问题
+            val currentUri = uri
+            val currentWebView = mWebView
+            val currentProgressBar = progressBar
+            
+            if (currentUri != null) {
+                val path = currentUri.path
                 if (path != null) {
                     val file = File(path)
                     if (Files.clearFile(file)) {
                         ToastUtil.makeText(this, "文件已清空", Toast.LENGTH_SHORT).show()
-                        mWebView!!.reload()
-                        /// 日志实时显示 end
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true // 可选
-
-                        mWebView.loadUrl("file:///android_asset/log_viewer.html")
-                        mWebView.webChromeClient = object : WebChromeClient() {
+                        currentWebView?.reload()
+                        
+                        // 重新配置 WebView
+                        currentWebView?.settings?.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true // 可选
+                        }
+                        
+                        currentWebView?.loadUrl("file:///android_asset/log_viewer.html")
+                        currentWebView?.webChromeClient = object : WebChromeClient() {
                             override fun onProgressChanged(view: WebView, progress: Int) {
-                                progressBar.progress = progress
+                                // 在回调内部也使用局部变量
+                                val innerWebView = mWebView
+                                val innerProgressBar = progressBar
+                                val innerUri = uri
+                                
+                                innerProgressBar?.progress = progress
                                 if (progress < 100) {
                                     setBaseSubtitle("Loading...")
-                                    progressBar.visibility = View.VISIBLE
+                                    innerProgressBar?.visibility = View.VISIBLE
                                 } else {
-                                    setBaseSubtitle(mWebView.title)
-                                    progressBar.visibility = View.GONE
+                                    setBaseSubtitle(innerWebView?.title)
+                                    innerProgressBar?.visibility = View.GONE
 
                                     // ★★ 页面已就绪：把现有文件一次性灌入 ★★
-                                    if (uri != null && "file".equals(uri.scheme, ignoreCase = true)) {
-                                        val path = uri.path
-                                        if (path != null && path.endsWith(".log")) {
-                                            val all = readAllTextSafe(path) // 你实现的文件读取
+                                    if (innerUri != null && "file".equals(innerUri.scheme, ignoreCase = true)) {
+                                        val innerPath = innerUri.path
+                                        if (innerPath != null && innerPath.endsWith(".log")) {
+                                            val all = readAllTextSafe(innerPath) // 你实现的文件读取
                                             val jsArg = toJsString(all)     // 下面给了帮助方法
-                                            mWebView.evaluateJavascript("setFullText($jsArg)", null)
+                                            innerWebView?.evaluateJavascript("setFullText($jsArg)", null)
 
                                             // 然后启动增量监听（你在 MyWebView 里实现的）
-                                            if (mWebView is MyWebView) {
-                                                mWebView.startWatchingIncremental(path)
-                                                // 或者 mWebView.startWatchingWithObserver(path)
+                                            if (innerWebView is MyWebView) {
+                                                innerWebView.startWatchingIncremental(innerPath)
+                                                // 或者 innerWebView.startWatchingWithObserver(innerPath)
                                             }
                                         }
                                     }
@@ -282,7 +295,6 @@ class HtmlViewerActivity : BaseActivity() {
                             }
                         }
                     }
-                    /// 日志实时显示 end
                 }
             }
         } catch (e: Exception) {
