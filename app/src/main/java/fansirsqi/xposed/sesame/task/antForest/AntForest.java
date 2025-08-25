@@ -1666,6 +1666,46 @@ public class AntForest extends ModelTask {
         }
     }
 
+    /**
+     * 弹出任务列表方法，用于处理森林任务。
+     */
+    private void popupTask() {
+        try {
+            JSONObject resData = new JSONObject(AntForestRpcCall.popupTask());
+            if (ResChecker.checkRes(TAG, resData)) {
+                JSONArray forestSignVOList = resData.optJSONArray("forestSignVOList");
+                if (forestSignVOList != null) {
+                    for (int i = 0; i < forestSignVOList.length(); i++) {
+                        JSONObject forestSignVO = forestSignVOList.getJSONObject(i);
+                        String signId = forestSignVO.getString("signId");
+                        String currentSignKey = forestSignVO.getString("currentSignKey");
+                        JSONArray signRecords = forestSignVO.getJSONArray("signRecords");
+                        for (int j = 0; j < signRecords.length(); j++) {
+                            JSONObject signRecord = signRecords.getJSONObject(j);
+                            String signKey = signRecord.getString("signKey");
+                            if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
+                                JSONObject resData2 = new JSONObject(AntForestRpcCall.antiepSign(signId, UserMap.getCurrentUid()));
+                                GlobalThreadPools.sleep(100L);
+                                if (ResChecker.checkRes(TAG, resData2)) {
+                                    Log.forest("收集过期能量💊[" + signRecord.getInt("awardCount") + "g]");
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else {
+                Log.record(TAG, "任务弹出失败: " + resData.getString("resultDesc"));
+                Log.runtime(resData.toString());
+            }
+        } catch (JSONException e) {
+            Log.runtime(TAG, "popupTask JSON错误:");
+            Log.printStackTrace(TAG, e);
+        } catch (Exception e) {
+            Log.runtime(TAG, "popupTask 错误:");
+            Log.printStackTrace(TAG, e);
+        }
+    }
 
     /**
      * 为好友浇水并返回浇水次数和是否可以继续浇水的状态。

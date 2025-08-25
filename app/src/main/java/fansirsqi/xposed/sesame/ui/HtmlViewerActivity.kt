@@ -173,10 +173,13 @@ class HtmlViewerActivity : BaseActivity() {
                                         webView.evaluateJavascript("setFullText($jsArg)", null)
 
                                         // 然后启动增量监听（你在 MyWebView 里实现的）
+                                        /*
                                         if (webView is MyWebView) {
                                             webView.startWatchingIncremental(path)
                                             // 或者 webView.startWatchingWithObserver(path)
                                         }
+                                        */
+                                        webView.startWatchingIncremental(path)
                                     }
                                 }
                             }
