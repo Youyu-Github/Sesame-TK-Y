@@ -251,12 +251,12 @@ public class ApplicationHook {
                 appLloadPackageParam = loadPackageParam;
                 classLoader = appLloadPackageParam.getClassLoader();
                 // 在Hook Application.attach 之前，先 deoptimize LoadedApk.makeApplicationInner
-//                try {
-//                    @SuppressLint("PrivateApi") Class<?> loadedApkClass = classLoader.loadClass("android.app.LoadedApk");
-//                    deoptimizeMethod(loadedApkClass, "makeApplicationInner");
-//                } catch (Throwable t) {
-//                    Log.printStackTrace(TAG,"deoptimize makeApplicationInner err:", t);
-//                }
+                try {
+                    @SuppressLint("PrivateApi") Class<?> loadedApkClass = classLoader.loadClass("android.app.LoadedApk");
+                    deoptimizeMethod(loadedApkClass, "makeApplicationInner");
+                } catch (Throwable t) {
+                    Log.printStackTrace(TAG,"deoptimize makeApplicationInner err:", t);
+                }
                 XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
