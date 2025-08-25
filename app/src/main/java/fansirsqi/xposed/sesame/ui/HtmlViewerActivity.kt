@@ -138,39 +138,38 @@ class HtmlViewerActivity : BaseActivity() {
                     mWebView!!.loadUrl(uri.toString())
 
                     /// 日志实时显示 begin
-                    settings.setJavaScriptEnabled(true)
-                    settings.setDomStorageEnabled(true) // 可选
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true // 可选
 
                     mWebView.loadUrl("file:///android_asset/log_viewer.html")
-                    mWebView.setWebChromeClient(new WebChromeClient() {
-                        @Override
-                        public void onProgressChanged(WebView view, int progress) {
-                            progressBar.setProgress(progress)
+                    mWebView.webChromeClient = object : WebChromeClient() {
+                        override fun onProgressChanged(view: WebView?, progress: Int) {
+                            progressBar.progress = progress
                             if (progress < 100) {
                                 setBaseSubtitle("Loading...")
-                                progressBar.setVisibility(View.VISIBLE)
+                                progressBar.visibility = View.VISIBLE
                             } else {
-                                setBaseSubtitle(mWebView.getTitle())
-                                progressBar.setVisibility(View.GONE)
+                                setBaseSubtitle(mWebView.title?.toString() ?: "")
+                                progressBar.visibility = View.GONE
 
                                 // ★★ 页面已就绪：把现有文件一次性灌入 ★★
-                                if (uri != null && "file".equalsIgnoreCase(uri.getScheme())) {
-                                    String path = uri.getPath()
+                                if (uri?.scheme?.equals("file", ignoreCase = true) == true) {
+                                    val path = uri.path
                                     if (path != null && path.endsWith(".log")) {
-                                        String all = readAllTextSafe(path) // 你实现的文件读取
-                                        String jsArg = toJsString(all)     // 下面给了帮助方法
-                                        mWebView.evaluateJavascript("setFullText(" + jsArg + ")", null)
+                                        val all = readAllTextSafe(path) // 你实现的文件读取
+                                        val jsArg = toJsString(all)     // 下面给了帮助方法
+                                        mWebView.evaluateJavascript("setFullText($jsArg)", null)
 
                                         // 然后启动增量监听（你在 MyWebView 里实现的）
-                                        if (mWebView instanceof MyWebView) {
-                                            ((MyWebView) mWebView).startWatchingIncremental(path)
-                                            // 或者 ((MyWebView) mWebView).startWatchingWithObserver(path)
+                                        if (mWebView is MyWebView) {
+                                            mWebView.startWatchingIncremental(path)
+                                            // 或者 mWebView.startWatchingWithObserver(path)
                                         }
                                     }
                                 }
                             }
                         }
-                    })
+                    }
                     /// 日志实时显示 end
                 }
                 canClear = intent.getBooleanExtra("canClear", false)
