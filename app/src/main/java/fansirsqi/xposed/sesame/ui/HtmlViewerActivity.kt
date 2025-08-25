@@ -238,7 +238,7 @@ class HtmlViewerActivity : BaseActivity() {
         if (!isRefreshing) {
             refreshHandler?.postDelayed(refreshRunnable!!, 5000)
             isRefreshing = true
-            ToastUtil.makeText(this, "已开启日志实时刷新", Toast.LENGTH_SHORT).show()
+//            ToastUtil.makeText(this, "已开启日志实时刷新", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -246,7 +246,7 @@ class HtmlViewerActivity : BaseActivity() {
         if (isRefreshing) {
             refreshHandler?.removeCallbacks(refreshRunnable!!)
             isRefreshing = false
-            ToastUtil.makeText(this, "已关闭日志实时刷新", Toast.LENGTH_SHORT).show()
+//            ToastUtil.makeText(this, "已关闭日志实时刷新", Toast.LENGTH_SHORT).show()
         }
     }
 

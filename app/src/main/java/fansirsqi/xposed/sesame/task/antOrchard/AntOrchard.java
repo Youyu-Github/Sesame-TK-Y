@@ -493,7 +493,7 @@ public class AntOrchard extends ModelTask {
         String shareId = Base64.encodeToString((uid + "-" + RandomUtil.getRandomInt(5) + "ANTFARM_ORCHARD_SHARE_P2P").getBytes(), Base64.NO_WRAP);
         String str = AntOrchardRpcCall.achieveBeShareP2P(shareId);
         JSONObject jsonObject = new JSONObject(str);
-        GlobalThreadPools.sleep(800);
+        GlobalThreadPools.sleep(2000);
         String name = UserMap.getMaskName(uid);
         if (!jsonObject.optBoolean("success")) {
           String code = jsonObject.getString("code");
