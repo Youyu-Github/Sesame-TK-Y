@@ -1525,7 +1525,6 @@ class AntFarm : ModelTask() {
                         retryCount++
                         if (retryCount >= maxRetries) {
                             Log.runtime(TAG, "达到最大重试次数，退出游戏")
-                            GlobalThreadPools.sleep(1000)
                             break
                         }
                         continue // 重试初始化
@@ -1534,13 +1533,11 @@ class AntFarm : ModelTask() {
                     // 2. 检查游戏状态
                     if (initJo.getJSONObject("gameAward").getBoolean("level3Get")) {
                         Log.farm("庄园游戏[${gameType.gameName()}]已完成等级3奖励")
-                        GlobalThreadPools.sleep(1000)
                         return
                     }
                     
                     if (initJo.optInt("remainingGameCount", 1) == 0) {
                         Log.farm("庄园游戏[${gameType.gameName()}]无剩余游戏次数")
-                        GlobalThreadPools.sleep(1000)
                         return
                     }
                     
@@ -1550,11 +1547,9 @@ class AntFarm : ModelTask() {
                     
                     if (!ResChecker.checkRes(TAG + "记录庄园游戏失败:", recordJo)) {
                         Log.runtime(TAG, "记录游戏失败，响应: $recordJo")
-                        GlobalThreadPools.sleep(1000)
                         retryCount++
                         if (retryCount >= maxRetries) {
                             Log.runtime(TAG, "达到最大重试次数，退出游戏")
-                            GlobalThreadPools.sleep(1000)
                             break
                         }
                         continue // 重试整个流程
@@ -1578,13 +1573,12 @@ class AntFarm : ModelTask() {
                     }
                     
                     Log.farm("庄园游戏🎮[${gameType.gameName()}]#${award}")
-                    GlobalThreadPools.sleep(1000)
                     
                     // 5. 检查是否还有游戏次数
                     if (recordJo.optInt("remainingGameCount", 0) > 0) {
                         retryCount = 0 // 重置重试计数器
                         continue // 继续下一轮游戏
-                        GlobalThreadPools.sleep(2000)
+                        GlobalThreadPools.sleep(1000)
                     } else {
                         break // 没有剩余次数，退出循环
                     }

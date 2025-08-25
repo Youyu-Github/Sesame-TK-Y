@@ -2567,6 +2567,7 @@ public class AntForest extends ModelTask {
     /**
      * 使用能量保护罩，一般是限时保护罩，打开青春特权森林道具领取
      */
+    /*
     private void useShieldCard(JSONObject bagObject) {
         try {
             // 在背包中查询限时保护罩
@@ -2594,6 +2595,45 @@ public class AntForest extends ModelTask {
             Log.error(TAG + "useShieldCard err");
         }
     }
+    */
+    //修改开始
+    private void useShieldCard(JSONObject bagObject) {
+        try {
+            final String targetShieldType = "LIMIT_TIME_ENERGY_SHIELD_TREE";
+            final String fallbackShieldType = "ENERGY_SHIELD";
+            final int twentyFourHoursMillis = 1000 * 60 * 60 * 24;
+            
+            // 主要查找逻辑
+            JSONObject jo = findPropBag(bagObject, targetShieldType);
+            
+            if (jo == null) {
+                jo = findAlternativeShield(bagObject);
+            }
+
+            // 使用道具并更新状态
+            if (jo != null && usePropBag(jo)) {
+                shieldEndTime = System.currentTimeMillis() + twentyFourHoursMillis;
+            } else {
+                updateSelfHomePage();
+            }
+        } catch (Throwable th) {
+            Log.error(TAG + "useShieldCard err");
+        }
+    }
+
+    private JSONObject findAlternativeShield(JSONObject bagObject) {
+        if (youthPrivilege.getValue() > 0) {
+            if (Privilege.INSTANCE.youthPrivilege()) {
+                return findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD_TREE");
+            }
+        } else if (shieldCardConstant.getValue()) {
+            if (exchangeEnergyShield()) {
+                return findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD");
+            }
+        }
+        return findPropBag(bagObject, "ENERGY_SHIELD");
+    }
+    //修改结束
 
     public void useCardBoot(List<String> TargetTimeValue, String propName, Runnable func) {
         for (String targetTimeStr : TargetTimeValue) {
