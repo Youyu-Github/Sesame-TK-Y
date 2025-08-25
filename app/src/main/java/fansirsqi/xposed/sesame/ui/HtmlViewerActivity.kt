@@ -135,6 +135,42 @@ class HtmlViewerActivity : BaseActivity() {
                 uri = intent.data
                 if (uri != null) {
                     mWebView!!.loadUrl(uri.toString())
+
+                    /// 日志实时显示 begin
+                    settings.setJavaScriptEnabled(true)
+                    settings.setDomStorageEnabled(true) // 可选
+
+                    mWebView.loadUrl("file:///android_asset/log_viewer.html")
+                    mWebView.setWebChromeClient(new WebChromeClient() {
+                        @Override
+                        public void onProgressChanged(WebView view, int progress) {
+                            progressBar.setProgress(progress)
+                            if (progress < 100) {
+                                setBaseSubtitle("Loading...")
+                                progressBar.setVisibility(View.VISIBLE)
+                            } else {
+                                setBaseSubtitle(mWebView.getTitle())
+                                progressBar.setVisibility(View.GONE)
+
+                                // ★★ 页面已就绪：把现有文件一次性灌入 ★★
+                                if (uri != null && "file".equalsIgnoreCase(uri.getScheme())) {
+                                    String path = uri.getPath()
+                                    if (path != null && path.endsWith(".log")) {
+                                        String all = readAllTextSafe(path) // 你实现的文件读取
+                                        String jsArg = toJsString(all)     // 下面给了帮助方法
+                                        mWebView.evaluateJavascript("setFullText(" + jsArg + ")", null)
+
+                                        // 然后启动增量监听（你在 MyWebView 里实现的）
+                                        if (mWebView instanceof MyWebView) {
+                                            ((MyWebView) mWebView).startWatchingIncremental(path)
+                                            // 或者 ((MyWebView) mWebView).startWatchingWithObserver(path)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    })
+                    /// 日志实时显示 end
                 }
                 canClear = intent.getBooleanExtra("canClear", false)
             }
@@ -152,8 +188,6 @@ class HtmlViewerActivity : BaseActivity() {
     override fun onDestroy() {
         super.onDestroy()
     }
-
-
 
 
 
@@ -239,118 +273,20 @@ class HtmlViewerActivity : BaseActivity() {
     /**
      * 清空当前文件
      */
-    override fun onResume() {
-        super.onResume()
-        // 安全设置WebView
+    private fun clearFile() {
         try {
-            val intent = intent // 获取传递过来的 Intent
-            if (intent != null) {
-                // 使用局部变量避免并发问题
-                val currentWebView = mWebView
-                val currentProgressBar = progressBar
-                
-                currentWebView?.settings?.apply {
-                    setSupportZoom(true) // 支持缩放
-                    builtInZoomControls = true // 启用内置缩放机制
-                    displayZoomControls = false // 不显示缩放控件
-                    useWideViewPort = true // 启用触摸缩放
-                    loadWithOverviewMode = true // 概览模式加载
-                    textZoom = 85
-                    
-                    // 可选夜间模式设置
-                    if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
-                        try {
-                            WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, true)
-                        } catch (e: Exception) {
-                            Log.error(TAG, "设置夜间模式失败: ${e.message}")
-                            Log.printStackTrace(TAG, e)
-                        }
+            if (uri != null) {
+                val path = uri!!.path
+                if (path != null) {
+                    val file = File(path)
+                    if (Files.clearFile(file)) {
+                        ToastUtil.makeText(this, "文件已清空", Toast.LENGTH_SHORT).show()
+                        mWebView!!.reload()
                     }
                 }
-                
-                configureWebViewSettings(intent, currentWebView?.settings)
-                uri = intent.data
-                if (uri != null) {
-                    currentWebView?.loadUrl(uri.toString())
-                    
-                    /// 日志实时显示 begin
-                    currentWebView?.settings?.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true // 可选
-                    }
-                    
-                    currentWebView?.loadUrl("file:///android_asset/log_viewer.html")
-                    currentWebView?.webChromeClient = object : WebChromeClient() {
-                        override fun onProgressChanged(view: WebView, progress: Int) {
-                            // 在回调内部也使用局部变量
-                            val innerWebView = mWebView
-                            val innerProgressBar = progressBar
-                            val innerUri = uri
-                            
-                            innerProgressBar?.progress = progress
-                            if (progress < 100) {
-                                setSubtitle("Loading...")
-                                innerProgressBar?.visibility = View.VISIBLE
-                            } else {
-                                setSubtitle(innerWebView?.title)
-                                innerProgressBar?.visibility = View.GONE
-
-                                // ★★ 页面已就绪：把现有文件一次性灌入 ★★
-                                if (innerUri != null && "file".equals(innerUri.scheme, ignoreCase = true)) {
-                                    val path = innerUri.path
-                                    if (path != null && path.endsWith(".log")) {
-                                        val all = readFileContent(path) // 实现文件读取
-                                        val jsArg = escapeForJs(all)    // 实现转义方法
-                                        innerWebView?.evaluateJavascript("setFullText($jsArg)", null)
-
-                                        // 然后启动增量监听（你在 MyWebView 里实现的）
-                                        if (innerWebView is MyWebView) {
-                                            innerWebView.startWatchingIncremental(path)
-                                            // 或者 innerWebView.startWatchingWithObserver(path)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    /// 日志实时显示 end
-                }
-                canClear = intent.getBooleanExtra("canClear", false)
             }
         } catch (e: Exception) {
-            Log.error(TAG, "WebView设置异常: ${e.message}")
             Log.printStackTrace(TAG, e)
-        }
-    }
-
-    // 实现缺失的方法
-    private fun setSubtitle(title: CharSequence?) {
-        // 根据你的实际情况实现设置副标题的逻辑
-        // 例如：supportActionBar?.subtitle = title
-        // 或者自定义的实现
-    }
-
-    private fun readFileContent(path: String): String {
-        // 实现文件读取逻辑
-        return try {
-            File(path).readText()
-        } catch (e: Exception) {
-            Log.e(TAG, "读取文件失败: $path", e)
-            ""
-        }
-    }
-
-    private fun escapeForJs(text: String): String {
-        // 实现JS字符串转义逻辑
-        return try {
-            JSONObject.quote(text) // 使用Android内置的JSON库
-        } catch (e: Exception) {
-            // 备用方案：手动转义
-            text.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t")
         }
     }
 
