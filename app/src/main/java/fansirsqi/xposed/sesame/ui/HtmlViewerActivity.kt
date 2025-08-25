@@ -28,6 +28,7 @@ import fansirsqi.xposed.sesame.util.LanguageUtil
 import fansirsqi.xposed.sesame.util.Log
 import fansirsqi.xposed.sesame.util.ToastUtil
 import java.io.File
+import android.os.Looper
 
 class HtmlViewerActivity : BaseActivity() {
     val TAG = "HtmlViewerActivity"
@@ -173,6 +174,9 @@ class HtmlViewerActivity : BaseActivity() {
                     /// 日志实时显示 end
                 }
                 canClear = intent.getBooleanExtra("canClear", false)
+                if (uri!!.toString().endsWith(".log")) {
+                        startRefreshing()
+                    }
             }
         } catch (e: Exception) {
             Log.error(TAG, "WebView设置异常: " + e.message)
@@ -182,13 +186,39 @@ class HtmlViewerActivity : BaseActivity() {
 
     override fun onPause() {
         super.onPause()
-
+        stopRefreshing()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        stopRefreshing()
     }
 
+    private fun startRefreshing() {
+        if (refreshHandler == null) {
+            refreshHandler = Handler(Looper.getMainLooper())
+        }
+        if (refreshRunnable == null) {
+            refreshRunnable = Runnable {
+                mWebView!!.reload()
+                // 继续定时刷新，每隔5秒刷新一次
+                refreshHandler?.postDelayed(refreshRunnable!!, 5000)
+            }
+        }
+        if (!isRefreshing) {
+            refreshHandler?.postDelayed(refreshRunnable!!, 5000)
+            isRefreshing = true
+            ToastUtil.makeText(this, "已开启日志实时刷新", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun stopRefreshing() {
+        if (isRefreshing) {
+            refreshHandler?.removeCallbacks(refreshRunnable!!)
+            isRefreshing = false
+            ToastUtil.makeText(this, "已关闭日志实时刷新", Toast.LENGTH_SHORT).show()
+        }
+    }
 
 
     /**
@@ -217,6 +247,13 @@ class HtmlViewerActivity : BaseActivity() {
         menu.add(0, 4, 4, getString(R.string.copy_the_url))
         menu.add(0, 5, 5, getString(R.string.scroll_to_top))
         menu.add(0, 6, 6, getString(R.string.scroll_to_bottom))
+        if (uri != null && uri!!.toString().endsWith(".log")) {
+            if (isRefreshing) {
+                menu.add(0, 7, 7, "关闭实时刷新")
+            } else {
+                menu.add(0, 7, 7, "开启实时刷新")
+            }
+        }
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -239,8 +276,14 @@ class HtmlViewerActivity : BaseActivity() {
 
             6 ->                 // 滚动到底部
                 mWebView!!.scrollToBottom()
-
+            7 ->                 // 切换实时刷新
+                if (isRefreshing) {
+                    stopRefreshing()
+                } else {
+                    startRefreshing()
+                }
         }
+        invalidateOptionsMenu() // 刷新菜单以更新文本
         return true
     }
 
@@ -317,5 +360,7 @@ class HtmlViewerActivity : BaseActivity() {
             ToastUtil.makeText(this, getString(R.string.copy_success), Toast.LENGTH_SHORT).show()
         }
     }
-
+    companion object {
+        private val TAG: String = HtmlViewerActivity::class.java.getSimpleName()
+    }
 }
