@@ -3,7 +3,6 @@ import android.util.Base64;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -481,7 +480,7 @@ public class AntStall extends ModelTask {
         }
     }
     private void friendHomeOpen(List<Seat> seats, Queue<String> shopIds) {
-        Collections.sort(seats, (e1, e2) -> e2.hot - e1.hot);
+        seats.sort((e1, e2) -> e2.hot - e1.hot);
         for (Seat seat : seats) {
             String shopId = shopIds.poll();
             if (shopId == null) {
@@ -733,23 +732,7 @@ public class AntStall extends ModelTask {
         }
         return false;
     }
-    private String shareP2P() {
-        try {
-            String s = AntStallRpcCall.shareP2P();
-            JSONObject jo = new JSONObject(s);
-            if (jo.optBoolean("success")) {
-                String shareId = jo.getString("shareId");
-                Log.record(TAG,"蚂蚁新村⛪[分享助力]");
-                return shareId;
-            } else {
-                Log.record(TAG,"shareP2P err:" + " " + s);
-            }
-        } catch (Throwable t) {
-            Log.runtime(TAG, "shareP2P err:");
-            Log.printStackTrace(TAG, t);
-        }
-        return null;
-    }
+
     /**
      * 助力好友
      */

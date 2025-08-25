@@ -26,9 +26,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import de.robv.android.xposed.XposedHelpers;
-import fansirsqi.xposed.sesame.data.DataCache;
 import fansirsqi.xposed.sesame.data.RuntimeInfo;
 import fansirsqi.xposed.sesame.data.Statistics;
 import fansirsqi.xposed.sesame.data.Status;
@@ -56,7 +56,6 @@ import fansirsqi.xposed.sesame.newutil.DataStore;
 import fansirsqi.xposed.sesame.task.ModelTask;
 import fansirsqi.xposed.sesame.task.TaskCommon;
 import fansirsqi.xposed.sesame.task.TaskStatus;
-import fansirsqi.xposed.sesame.ui.ObjReference;
 import fansirsqi.xposed.sesame.util.Average;
 import fansirsqi.xposed.sesame.util.GlobalThreadPools;
 import fansirsqi.xposed.sesame.util.ListUtil;
@@ -122,7 +121,8 @@ public class AntForest extends ModelTask {
     /// lzw add end
 
     private final Average delayTimeMath = new Average(5);
-    private final ObjReference<Long> collectEnergyLockLimit = new ObjReference<>(0L);
+    //    private final ObjReference<Long> collectEnergyLockLimit = new ObjReference<>(0L);
+    private final AtomicLong collectEnergyLockLimit = new AtomicLong(0L);
     private final Object doubleCardLockObj = new Object();
     private BooleanModelField expiredEnergy; // 收取过期能量
     private PriorityModelField collectEnergy;
@@ -270,7 +270,7 @@ public class AntForest extends ModelTask {
         modelFields.addField(giveEnergyRainList = new SelectModelField("giveEnergyRainList", "赠送能量雨 | 配置列表", new LinkedHashSet<>(), AlipayUser::getList));
         modelFields.addField(energyRainChance = new BooleanModelField("energyRainChance", "兑换使用能量雨次卡 | 开关", false));
         modelFields.addField(collectWateringBubble = new BooleanModelField("collectWateringBubble", "收取浇水金球 | 开关", false));
-        modelFields.addField(expiredEnergy = new BooleanModelField("expiredEnergy", "收取过期能量 | 开关", false));
+//        modelFields.addField(expiredEnergy = new BooleanModelField("expiredEnergy", "收取过期能量 | 开关", false));
         modelFields.addField(doubleCard = new ChoiceModelField("doubleCard", "双击卡开关 | 消耗类型", applyPropType.CLOSE, applyPropType.nickNames));
         modelFields.addField(doubleCountLimit = new IntegerModelField("doubleCountLimit", "双击卡 | 使用次数", 6));
         modelFields.addField(doubleCardTime = new ListModelField.ListJoinCommaToStringModelField("doubleCardTime", "双击卡 | 使用时间/范围", ListUtil.newArrayList(
@@ -1455,7 +1455,7 @@ public class AntForest extends ModelTask {
                                 GlobalThreadPools.sleep(sleep);
                             }
                             startTime = System.currentTimeMillis();
-                            collectEnergyLockLimit.setForce(startTime);
+                            collectEnergyLockLimit.set(startTime);
                         }
                         RequestManager.requestString(rpcEntity, 0, 0);
                         long spendTime = System.currentTimeMillis() - startTime;
@@ -1668,47 +1668,6 @@ public class AntForest extends ModelTask {
 
 
     /**
-     * 弹出任务列表方法，用于处理森林任务。
-     */
-    private void popupTask() {
-        try {
-            JSONObject resData = new JSONObject(AntForestRpcCall.popupTask());
-            if (ResChecker.checkRes(TAG, resData)) {
-                JSONArray forestSignVOList = resData.optJSONArray("forestSignVOList");
-                if (forestSignVOList != null) {
-                    for (int i = 0; i < forestSignVOList.length(); i++) {
-                        JSONObject forestSignVO = forestSignVOList.getJSONObject(i);
-                        String signId = forestSignVO.getString("signId");
-                        String currentSignKey = forestSignVO.getString("currentSignKey");
-                        JSONArray signRecords = forestSignVO.getJSONArray("signRecords");
-                        for (int j = 0; j < signRecords.length(); j++) {
-                            JSONObject signRecord = signRecords.getJSONObject(j);
-                            String signKey = signRecord.getString("signKey");
-                            if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
-                                JSONObject resData2 = new JSONObject(AntForestRpcCall.antiepSign(signId, UserMap.getCurrentUid()));
-                                GlobalThreadPools.sleep(100L);
-                                if (ResChecker.checkRes(TAG, resData2)) {
-                                    Log.forest("收集过期能量💊[" + signRecord.getInt("awardCount") + "g]");
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-            } else {
-                Log.record(TAG, "任务弹出失败: " + resData.getString("resultDesc"));
-                Log.runtime(resData.toString());
-            }
-        } catch (JSONException e) {
-            Log.runtime(TAG, "popupTask JSON错误:");
-            Log.printStackTrace(TAG, e);
-        } catch (Exception e) {
-            Log.runtime(TAG, "popupTask 错误:");
-            Log.printStackTrace(TAG, e);
-        }
-    }
-
-    /**
      * 为好友浇水并返回浇水次数和是否可以继续浇水的状态。
      *
      * @param userId      好友的用户ID
@@ -1805,13 +1764,15 @@ public class AntForest extends ModelTask {
         try {
             JSONObject forestSignVO = forestSignVOList.getJSONObject(0);
             String currentSignKey = forestSignVO.getString("currentSignKey"); // 当前签到的 key
+            String signId = forestSignVO.getString("signId"); // 签到ID
+            String sceneCode = forestSignVO.getString("sceneCode"); // 场景代码
             JSONArray signRecords = forestSignVO.getJSONArray("signRecords"); // 签到记录
-            for (int i = 0; i < signRecords.length(); i++) {
+            for (int i = 0; i < signRecords.length(); i++) { //遍历签到记录
                 JSONObject signRecord = signRecords.getJSONObject(i);
                 String signKey = signRecord.getString("signKey");
                 int awardCount = signRecord.optInt("awardCount", 0);
                 if (signKey.equals(currentSignKey) && !signRecord.getBoolean("signed")) {
-                    JSONObject joSign = new JSONObject(AntForestRpcCall.vitalitySign()); // 执行签到请求
+                    JSONObject joSign = new JSONObject(AntForestRpcCall.antiepSign(signId, UserMap.getCurrentUid(), sceneCode));
                     GlobalThreadPools.sleep(300); // 等待300毫秒
                     if (ResChecker.checkRes(TAG + "森林签到失败:", joSign)) {
                         Log.forest("森林签到📆成功");
@@ -1858,22 +1819,17 @@ public class AntForest extends ModelTask {
                     "TEST_LEAF_TASK",//逛农场得落叶肥料
                     "SHARETASK"//邀请好友助力
             ));
-            /* 3️⃣ 失败任务集合：空文件时自动创建空 HashSet 并立即落盘 */
             TypeReference<Set<String>> typeRef = new TypeReference<>() {
             };
             Set<String> badTaskSet = DataStore.INSTANCE.getOrCreate("badForestTaskSet", typeRef);
-            /* 3️⃣ 首次运行时把预设黑名单合并进去并立即落盘 */
             if (badTaskSet.isEmpty()) {
                 badTaskSet.addAll(presetBad);
                 DataStore.INSTANCE.put("badForestTaskSet", badTaskSet);   // 持久化
             }
             while (true) {
                 boolean doubleCheck = false; // 标记是否需要再次检查任务
-                String s = AntForestRpcCall.queryTaskList(); // 查询任务列表
-                JSONObject jo = new JSONObject(s); // 解析响应为 JSON 对象
+                JSONObject jo = new JSONObject(AntForestRpcCall.queryTaskList()); // 解析响应为 JSON 对象
                 if (!ResChecker.checkRes(TAG + "查询森林任务失败:", jo)) {
-                    Log.record(jo.getString("resultDesc")); // 记录失败描述
-                    Log.runtime(s); // 打印响应内容
                     break;
                 }
                 JSONArray forestSignVOList = jo.getJSONArray("forestSignVOList");
@@ -1921,8 +1877,8 @@ public class AntForest extends ModelTask {
                                         .incrementAndGet();
 
                                 JSONObject joFinishTask = new JSONObject(AntForestRpcCall.finishTask(sceneCode, taskType)); // 完成任务请求
-                                if (count > 1) {
-                                    Log.error(TAG, "完成森林任务失败超过1次" + taskTitle + "\n" + joFinishTask); // 记录完成任务失败信息
+                                if (count > 6) {
+                                    Log.error(TAG, "完成森林任务失败超过6次" + taskTitle + "\n" + joFinishTask); // 记录完成任务失败信息
                                     badTaskSet.add(taskType);
                                     DataStore.INSTANCE.put("badForestTaskSet", badTaskSet);
                                 } else {

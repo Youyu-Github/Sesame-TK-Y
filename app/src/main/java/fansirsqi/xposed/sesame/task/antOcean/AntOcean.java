@@ -255,6 +255,7 @@ public class AntOcean extends ModelTask {
                         // 检查 applyAction 是否为 AVAILABLE
                         String actionStr = item.getString("applyAction");
                         ApplyAction action = ApplyAction.fromString(actionStr);
+                        assert action != null;
                         if (action.equals(ApplyAction.AVAILABLE)) {
                             String templateCode = item.getString("templateCode");//业务id
                             String cultivationName = item.getString("cultivationName");
@@ -733,7 +734,7 @@ public class AntOcean extends ModelTask {
                                         .incrementAndGet();
 
                                 JSONObject joFinishTask = new JSONObject(AntOceanRpcCall.finishTask(sceneCode, taskType));
-                                if (count > 1) {
+                                if (count > 5) {
                                     Log.error(TAG, "完成任务失败，" + taskTitle);
                                     badTaskSet.add(taskType);
                                     DataStore.INSTANCE.put("badOceanTaskSet", badTaskSet);

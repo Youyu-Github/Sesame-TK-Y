@@ -33,7 +33,7 @@ public class ForestChouChouLe {
                     Log.record("延时1S");
                     GlobalThreadPools.sleep(1000L);
                     JSONObject listTaskopengreen = new JSONObject(AntForestRpcCall.listTaskopengreen(activityId, listSceneCode, source));
-                    if (ResChecker.checkRes(TAG + "查询森林寻宝任务列表失败:", listTaskopengreen)) {
+                    if (ResChecker.checkRes(TAG, listTaskopengreen)) {
                         JSONArray taskList = listTaskopengreen.getJSONArray("taskInfoList");
                         // 处理任务列表
                         for (int i = 0; i < taskList.length(); i++) {
