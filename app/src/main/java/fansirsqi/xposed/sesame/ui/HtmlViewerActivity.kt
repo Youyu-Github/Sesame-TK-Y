@@ -248,7 +248,41 @@ class HtmlViewerActivity : BaseActivity() {
                     if (Files.clearFile(file)) {
                         ToastUtil.makeText(this, "文件已清空", Toast.LENGTH_SHORT).show()
                         mWebView!!.reload()
+                        /// 日志实时显示 end
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true // 可选
+
+                        mWebView.loadUrl("file:///android_asset/log_viewer.html")
+                        mWebView.webChromeClient = object : WebChromeClient() {
+                            override fun onProgressChanged(view: WebView, progress: Int) {
+                                progressBar.progress = progress
+                                if (progress < 100) {
+                                    setBaseSubtitle("Loading...")
+                                    progressBar.visibility = View.VISIBLE
+                                } else {
+                                    setBaseSubtitle(mWebView.title)
+                                    progressBar.visibility = View.GONE
+
+                                    // ★★ 页面已就绪：把现有文件一次性灌入 ★★
+                                    if (uri != null && "file".equals(uri.scheme, ignoreCase = true)) {
+                                        val path = uri.path
+                                        if (path != null && path.endsWith(".log")) {
+                                            val all = readAllTextSafe(path) // 你实现的文件读取
+                                            val jsArg = toJsString(all)     // 下面给了帮助方法
+                                            mWebView.evaluateJavascript("setFullText($jsArg)", null)
+
+                                            // 然后启动增量监听（你在 MyWebView 里实现的）
+                                            if (mWebView is MyWebView) {
+                                                mWebView.startWatchingIncremental(path)
+                                                // 或者 mWebView.startWatchingWithObserver(path)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
+                    /// 日志实时显示 end
                 }
             }
         } catch (e: Exception) {
