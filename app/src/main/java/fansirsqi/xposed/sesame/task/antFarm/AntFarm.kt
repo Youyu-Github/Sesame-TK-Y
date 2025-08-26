@@ -423,7 +423,7 @@ class AntFarm : ModelTask() {
             // if (getRunCnts() >= rewardFriend!!.value) {
             if (rewardFriend!!.value) {
                 rewardFriend()
-                // tc.countDebug("打赏好友")
+                tc.countDebug("打赏好友")
             }
             if (getRunCnts() >= sendBackAnimal!!.value) {
                 sendBackAnimal()
@@ -516,7 +516,7 @@ class AntFarm : ModelTask() {
             // if (getRunCnts() >= hireAnimal!!.value) {
             if (hireAnimal!!.value) {
                 hireAnimal()
-                // tc.countDebug("雇佣小鸡")
+                tc.countDebug("雇佣小鸡")
             }
             if (getRunCnts() >= getFeed!!.value) {
                 letsGetChickenFeedTogether()

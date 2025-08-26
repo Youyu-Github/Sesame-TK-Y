@@ -172,8 +172,8 @@ public class AntForest extends ModelTask {
     private SelectModelField whoYouWantToGiveTo;
     // private PriorityModelField dailyCheckIn;//青春特权签到
     private BooleanModelField dailyCheckIn;//青春特权签到
-    private PriorityModelField youthPrivilege;//青春特权 森林道具
-    // private BooleanModelField youthPrivilege;//青春特权 森林道具
+    // private PriorityModelField youthPrivilege;//青春特权 森林道具
+    private BooleanModelField youthPrivilege;//青春特权 森林道具
     private ChoiceModelField bubbleBoostCard;//加速卡
     public static SelectModelField ecoLifeOption;
     private PriorityModelField ecoLife;
@@ -322,8 +322,8 @@ public class AntForest extends ModelTask {
         modelFields.addField(medicalHealthOption = new SelectModelField("medicalHealthOption", "健康医疗 | 选项", new LinkedHashSet<>(), OtherEntityProvider.listHealthcareOptions(), "医疗健康需要先完成一次医疗打卡"));
 
         modelFields.addField(ForestMarket = new PriorityModelField("ForestMarket", "森林集市", priorityType.PRIORITY_2, priorityType.nickNames));
-        modelFields.addField(youthPrivilege = new PriorityModelField("youthPrivilege", "青春特权 | 森林道具", priorityType.PRIORITY_2, priorityType.nickNames));
-        // modelFields.addField(youthPrivilege = new BooleanModelField("youthPrivilege", "青春特权 | 森林道具", false));
+        // modelFields.addField(youthPrivilege = new PriorityModelField("youthPrivilege", "青春特权 | 森林道具", priorityType.PRIORITY_2, priorityType.nickNames));
+        modelFields.addField(youthPrivilege = new BooleanModelField("youthPrivilege", "青春特权 | 森林道具", false));
         // modelFields.addField(dailyCheckIn = new PriorityModelField("studentCheckIn", "青春特权 | 签到红包", priorityType.PRIORITY_2, priorityType.nickNames));
         modelFields.addField(dailyCheckIn = new BooleanModelField("studentCheckIn", "青春特权 | 签到红包", false));
 
@@ -508,8 +508,8 @@ public class AntForest extends ModelTask {
                     }
                 }
                 //青春特权森林道具领取
-                if (getRunCnts() >= youthPrivilege.getValue()) {
-                //if (youthPrivilege.getValue()) {
+                // if (getRunCnts() >= youthPrivilege.getValue()) {
+                if (youthPrivilege.getValue()) {
                     Privilege.INSTANCE.youthPrivilege();
                     tc.countDebug("青春特权森林道具领取");
                 }
@@ -517,7 +517,7 @@ public class AntForest extends ModelTask {
                 // if (getRunCnts() >= dailyCheckIn.getValue()) {
                 if (dailyCheckIn.getValue()) {
                     Privilege.INSTANCE.studentSignInRedEnvelope();
-                    // tc.countDebug("青春特权每日签到红包");
+                    tc.countDebug("青春特权每日签到红包");
                 }
                  if (getRunCnts() >= forestChouChouLe.getValue()) {
                     ForestChouChouLe chouChouLe = new ForestChouChouLe();
@@ -2570,8 +2570,8 @@ public class AntForest extends ModelTask {
             // 在背包中查询限时保护罩
             JSONObject jo = findPropBag(bagObject, "LIMIT_TIME_ENERGY_SHIELD_TREE");
             if (jo == null) {
-                if (youthPrivilege.getValue() > 0) {
-                //if (youthPrivilege.getValue()) {
+                // if (youthPrivilege.getValue() > 0) {
+                if (youthPrivilege.getValue()) {
                     if (Privilege.INSTANCE.youthPrivilege()) {
                         jo = findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD_TREE");
                     } // 重新查找
