@@ -1952,7 +1952,6 @@ public class AntForest extends ModelTask {
      *
      * @param userId 用户的ID。
      */
-    /*
     private void usePropBeforeCollectEnergy(String userId) {
         try {
             if (Objects.equals(selfId, userId)) {
@@ -1999,71 +1998,6 @@ public class AntForest extends ModelTask {
             Log.printStackTrace(e);
         }
     }
-    */
-    // 开始修改 提取常量
-    private static final long ONE_DAY_IN_MILLIS = 1000 * 60 * 60 * 24;
-
-    private void usePropBeforeCollectEnergy(String userId) {
-        if (isSelf(userId)) return;
-        
-        try {
-            if (shouldUseAnyProp()) {
-                synchronized (doubleCardLockObj) {
-                    usePropsSafely();
-                }
-            }
-        } catch (Exception e) {
-            handlePropUseError(e);
-        }
-    }
-
-    private boolean isSelf(String userId) {
-        return Objects.equals(selfId, userId);
-    }
-
-    private boolean shouldUseAnyProp() {
-        return shouldUseDouble() || shouldUseRobExpand() || 
-            shouldUseStealth() || shouldUseShield() || 
-            shouldUseEnergyBomb() || shouldUseBubbleBoost();
-    }
-
-    private void usePropsSafely() {
-        JSONObject bagObject = queryPropList();
-        
-        if (shouldUseDouble()) useDoubleCard(bagObject);
-        if (shouldUseRobExpand()) useRobExpandCard(bagObject);
-        if (shouldUseStealth()) useStealthCard(bagObject);
-        if (shouldUseBubbleBoost()) useBubbleBoostCard(bagObject);
-        
-        useShieldOrBombCard(bagObject);
-    }
-
-    private void useShieldOrBombCard(JSONObject bagObject) {
-        if (shouldUseShield()) {
-            useShieldCard(bagObject);
-        } else if (shouldUseEnergyBomb()) {
-            useEnergyBombCard(bagObject);
-        }
-    }
-
-    // 为每种道具创建独立的条件判断方法
-    private boolean shouldUseDouble() {
-        return !doubleCard.getValue().equals(applyPropType.CLOSE) && 
-            doubleEndTime < System.currentTimeMillis();
-    }
-
-    private boolean shouldUseRobExpand() {
-        return !robExpandCard.getValue().equals(applyPropType.CLOSE) && 
-            robExpandCardEndTime < System.currentTimeMillis();
-    }
-
-    // 类似地实现其他道具的条件方法...
-
-    private void handlePropUseError(Exception e) {
-        Log.error("Failed to use props before collecting energy: " + e.getMessage());
-        // 可能的恢复逻辑或重试机制
-    }
-    // 结束修改
 
     /**
      * 检查当前时间是否在设置的使用双击卡时间内
@@ -2576,7 +2510,6 @@ public class AntForest extends ModelTask {
      *
      * @param bagObject 背包的JSON对象。
      */
-    /*
     private void useDoubleCard(JSONObject bagObject) {
         try {
             if (hasDoubleCardTime() && Status.canDoubleToday()) {
@@ -2601,50 +2534,6 @@ public class AntForest extends ModelTask {
             Log.printStackTrace(TAG, th);
         }
     }
-    */
-    // 开始修改
-    private static final long ONE_DAY_IN_ABC = 1000 * 60 * 60 * 24;
-
-    private void useDoubleCard(JSONObject bagObject) {
-        try {
-            JSONObject shield = findShield(bagObject);
-            
-            if (shield != null && usePropBag(shield)) {
-                shieldEndTime = System.currentTimeMillis() + ONE_DAY_IN_ABC;
-            } else {
-                updateSelfHomePage();
-            }
-        } catch (Exception e) {
-            Log.error(TAG + "useDoubleCard error: " + e.getMessage());
-            // 可能的恢复逻辑
-        }
-    }
-
-    private JSONObject findShield(JSONObject bagObject) {
-        JSONObject shield = findPropBag(bagObject, "LIMIT_TIME_ENERGY_SHIELD_TREE");
-        
-        if (shield != null) return shield;
-        
-        if (hasYouthPrivilege()) {
-            return findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD_TREE");
-        }
-        
-        if (canExchangeShield() && exchangeEnergyShield()) {
-            return findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD");
-        }
-        
-        return findPropBag(bagObject, "ENERGY_SHIELD");
-    }
-
-    private boolean hasYouthPrivilege() {
-        return youthPrivilege.getValue() > 0 && Privilege.INSTANCE.youthPrivilege();
-    }
-
-    private boolean canExchangeShield() {
-        return shieldCardConstant.getValue();
-    }
-    // 结束修改
-
 
     /**
      * 使用隐身卡道具。 这个方法检查是否满足使用隐身卡的条件，如果满足，则在背包中查找并使用隐身卡。
@@ -2676,7 +2565,6 @@ public class AntForest extends ModelTask {
     /**
      * 使用能量保护罩，一般是限时保护罩，打开青春特权森林道具领取
      */
-    /*
     private void useShieldCard(JSONObject bagObject) {
         try {
             // 在背包中查询限时保护罩
@@ -2704,53 +2592,6 @@ public class AntForest extends ModelTask {
             Log.error(TAG + "useShieldCard err");
         }
     }
-    */
-    // 修改开始
-    // 提取常量
-    private static final long ONE_DAY_IN_DEF = 1000 * 60 * 60 * 24;
-
-    private void useShieldCard(JSONObject bagObject) {
-        try {
-            JSONObject shield = findShield(bagObject);
-            
-            if (shield != null && usePropBag(shield)) {
-                shieldEndTime = System.currentTimeMillis() + ONE_DAY_IN_DEF;
-            } else {
-                updateSelfHomePage();
-            }
-        } catch (Exception e) {
-            Log.error(TAG + "useShieldCard error: " + e.getMessage());
-            // 可能的恢复逻辑
-        }
-    }
-
-    private JSONObject findShield(JSONObject bagObject) {
-        // 首先尝试查找限时保护罩
-        JSONObject shield = findPropBag(bagObject, "LIMIT_TIME_ENERGY_SHIELD_TREE");
-        if (shield != null) return shield;
-        
-        // 尝试通过青年特权获取
-        if (hasYouthPrivilege()) {
-            return findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD_TREE");
-        }
-        
-        // 尝试兑换保护罩
-        if (canExchangeShield() && exchangeEnergyShield()) {
-            return findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD");
-        }
-        
-        // 最后尝试普通保护罩
-        return findPropBag(bagObject, "ENERGY_SHIELD");
-    }
-
-    private boolean hasYouthPrivilege() {
-        return youthPrivilege.getValue() > 0 && Privilege.INSTANCE.youthPrivilege();
-    }
-
-    private boolean canExchangeShield() {
-        return shieldCardConstant.getValue();
-    }
-    //修改结束
 
     public void useCardBoot(List<String> TargetTimeValue, String propName, Runnable func) {
         for (String targetTimeStr : TargetTimeValue) {
