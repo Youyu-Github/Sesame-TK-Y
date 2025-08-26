@@ -2603,14 +2603,14 @@ public class AntForest extends ModelTask {
     }
     */
     // 开始修改
-    private static final long ONE_DAY_IN_MILLIS1 = 1000 * 60 * 60 * 24;
+    private static final long ONE_DAY_IN_ABC = 1000 * 60 * 60 * 24;
 
     private void useDoubleCard(JSONObject bagObject) {
         try {
             JSONObject shield = findShield(bagObject);
             
             if (shield != null && usePropBag(shield)) {
-                shieldEndTime = System.currentTimeMillis() + ONE_DAY_IN_MILLIS1;
+                shieldEndTime = System.currentTimeMillis() + ONE_DAY_IN_ABC;
             } else {
                 updateSelfHomePage();
             }
@@ -2707,14 +2707,14 @@ public class AntForest extends ModelTask {
     */
     // 修改开始
     // 提取常量
-    private static final long ONE_DAY_IN_MILLIS2 = 1000 * 60 * 60 * 24;
+    private static final long ONE_DAY_IN_DEF = 1000 * 60 * 60 * 24;
 
     private void useShieldCard(JSONObject bagObject) {
         try {
             JSONObject shield = findShield(bagObject);
             
             if (shield != null && usePropBag(shield)) {
-                shieldEndTime = System.currentTimeMillis() + ONE_DAY_IN_MILLIS2;
+                shieldEndTime = System.currentTimeMillis() + ONE_DAY_IN_DEF;
             } else {
                 updateSelfHomePage();
             }
