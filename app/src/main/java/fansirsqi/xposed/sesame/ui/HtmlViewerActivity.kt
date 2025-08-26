@@ -110,6 +110,7 @@ class HtmlViewerActivity : BaseActivity() {
             })
     }
 
+    // 添加了日志实时显示，后续删除需要更改到private fun stopRefreshing
     override fun onResume() {
         super.onResume()
         // 安全设置WebView
@@ -136,13 +137,10 @@ class HtmlViewerActivity : BaseActivity() {
                             Log.printStackTrace(TAG, e)
                         }
                     }
-                    
                     configureWebViewSettings(intent, settings)
                 }
-                
                 val currentUri = intent.data
                 uri = currentUri
-                
                 if (currentUri != null && webView != null) {
                     webView.loadUrl(currentUri.toString())
 
@@ -209,10 +207,12 @@ class HtmlViewerActivity : BaseActivity() {
         }
     }
 
+    /// 日志实时显示 begin
     // 添加缺失的方法实现
     private fun escapeJsString(input: String): String {
         return JSONObject.quote(input) // 需要导入 org.json.JSONObject
     }
+    /// 日志实时显示 end
 
     override fun onPause() {
         super.onPause()
@@ -224,6 +224,7 @@ class HtmlViewerActivity : BaseActivity() {
         stopRefreshing()
     }
 
+    /// 日志实时显示 begin
     private fun startRefreshing() {
         if (refreshHandler == null) {
             refreshHandler = Handler(Looper.getMainLooper())
@@ -249,6 +250,7 @@ class HtmlViewerActivity : BaseActivity() {
 //            ToastUtil.makeText(this, "已关闭日志实时刷新", Toast.LENGTH_SHORT).show()
         }
     }
+    /// 日志实时显示 end
 
 
     /**
