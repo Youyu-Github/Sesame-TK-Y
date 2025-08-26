@@ -264,7 +264,6 @@ object AntFarmRpcCall {
         )
     }
 
-    /*
     fun sign(): String {
         return requestString("com.alipay.antfarm.sign", "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"version\":\"" + VERSION + "\"}]")
     }
@@ -320,83 +319,6 @@ object AntFarmRpcCall {
                     + "\"}]")
         )
     }
-    */
-    // 修改开始
-    // 在类级别定义 token 存储映射
-    private val gameTokens = mutableMapOf<String, String>()
-
-    fun sign(): String {
-        return requestString("com.alipay.antfarm.sign", "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"version\":\"" + VERSION + "\"}]")
-    }
-
-    fun initFarmGame(gameType: String?): String {
-        val requestData = when (gameType) {
-            "flyGame" -> {
-                "[{\"gameType\":\"flyGame\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"toolTypes\":\"ACCELERATETOOL,SHARETOOL\",\"version\":\"\"}]"
-            }
-            "jumpGame" -> {
-                "[{\"gameType\":\"jumpGame\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"ch_url-https://render.alipay.com/p/yuyan/180020010001247569/index.html\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\"}]"
-            }
-            else -> {
-                "[{\"gameType\":\"$gameType\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\"}]"
-            }
-        }
-        
-        val response = requestString("com.alipay.antfarm.initFarmGame", requestData)
-        
-        // 解析响应并存储 token
-        try {
-            val jsonResponse = JSONObject(response)
-            if (jsonResponse.getBoolean("success")) {
-                val data = jsonResponse.getJSONObject("Data")
-                val token = data.getString("token")
-                gameType?.let { gameTokens[it] = token }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        
-        return response
-    }
-
-    fun RandomScore(str: String?): Int {
-        return when (str) {
-            "starGame" -> RandomUtil.nextInt(300, 400)
-            "jumpGame" -> RandomUtil.nextInt(2500, 2700)
-            "flyGame" -> RandomUtil.nextInt(4000, 8000)
-            "hitGame" -> RandomUtil.nextInt(80, 120)
-            else -> 210
-        }
-    }
-
-    fun recordFarmGame(gameType: String?): String {
-        val uuid: String = uuid
-        val score = RandomScore(gameType)
-        val token = gameType?.let { gameTokens[it] } ?: ""
-        
-        // 使用更复杂的数据生成 MD5
-        val dataToHash = "${uuid}${score}${token}"
-        val md5String = getMD5(dataToHash)
-        
-        if ("flyGame" == gameType) {
-            val foodCount = score / 50
-            return requestString(
-                "com.alipay.antfarm.recordFarmGame",
-                ("[{\"foodCount\":" + foodCount + ",\"gameType\":\"flyGame\",\"md5\":\"" + md5String
-                        + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"score\":" + score
-                        + ",\"source\":\"H5\",\"toolTypes\":\"ACCELERATETOOL,SHARETOOL\",\"uuid\":\"" + uuid
-                        + "\"}]")
-            )
-        }
-        return requestString(
-            "com.alipay.antfarm.recordFarmGame",
-            ("[{\"gameType\":\"" + gameType + "\",\"md5\":\"" + md5String
-                    + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"score\":" + score
-                    + ",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\",\"uuid\":\"" + uuid
-                    + "\"}]")
-        )
-    }
-    //修改结束
 
     private val uuid: String
         get() {
