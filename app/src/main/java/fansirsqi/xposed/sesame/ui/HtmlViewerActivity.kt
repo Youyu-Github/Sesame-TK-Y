@@ -27,6 +27,7 @@ import fansirsqi.xposed.sesame.util.Files
 import fansirsqi.xposed.sesame.util.LanguageUtil
 import fansirsqi.xposed.sesame.util.Log
 import fansirsqi.xposed.sesame.util.ToastUtil
+import fansirsqi.xposed.sesame.newui.WatermarkView
 import java.io.File
 import android.os.Looper
 import org.json.JSONObject
@@ -46,6 +47,7 @@ class HtmlViewerActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         LanguageUtil.setLocale(this)
         setContentView(R.layout.activity_html_viewer)
+        WatermarkView.Companion.install(this)
         install(this)
         // 初始化 WebView 和进度条
         mWebView = findViewById(R.id.mwv_webview)
@@ -137,6 +139,16 @@ class HtmlViewerActivity : BaseActivity() {
         sb.append('\'')
         return sb.toString()
     }
+
+    private fun readAllTextSafe(path: String): String {
+        return try {
+            val cs = java.nio.charset.StandardCharsets.UTF_8
+            val data = java.nio.file.Files.readAllBytes(java.io.File(path).toPath())
+            String(data, cs)
+        } catch (t: Throwable) {
+            ""
+        }
+    }
     // 日志实时显示 结束
 
     // 添加了日志实时显示，后续删除需要更改到private fun stopRefreshing
@@ -201,8 +213,9 @@ class HtmlViewerActivity : BaseActivity() {
                                     val path = currentUri.path
                                     if (path != null && path.endsWith(".log")) {
                                         // 替换 readAllTextSafe 和 toJsString
-                                        val all = readFileContent(path) // 实现文件读取
+                                        // val all = readFileContent(path) // 实现文件读取
                                         // val jsArg = escapeJsString(all) // 实现JS字符串转义
+                                        val all = readAllTextSafe(path)
                                         val jsArg = toJsString(all)
 
                                         webView.evaluateJavascript("setFullText($jsArg)", null)
@@ -291,41 +304,6 @@ class HtmlViewerActivity : BaseActivity() {
         }
     }
     */
-    override fun onPause() {
-        super.onPause()
-        if (mWebView is MyWebView) {
-            (mWebView as MyWebView).stopWatchingIncremental()
-        }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        if (mWebView is MyWebView) {
-            (mWebView as MyWebView).stopWatchingIncremental()
-        }
-    }
-
-    private var mWebView: WebView? = null
-
-    override fun onDestroy() {
-        // 先停止文件监听（如果是 MyWebView 的实例）
-        (mWebView as? MyWebView)?.stopWatchingIncremental()
-
-        // 再做 WebView 清理
-        mWebView?.let { wv ->
-            try {
-                wv.loadUrl("about:blank")
-                wv.stopLoading()
-                wv.WebChromeClient(null)
-                wv.WebViewClient(null)
-                wv.destroy()
-            } catch (_: Throwable) {
-                // 忽略任何异常（与原 Java 代码行为一致）
-            }
-        }
-
-        super.onDestroy()
-    }
     /// 日志实时显示 end
 
 
@@ -472,6 +450,50 @@ class HtmlViewerActivity : BaseActivity() {
             ToastUtil.makeText(this, getString(R.string.copy_success), Toast.LENGTH_SHORT).show()
         }
     }
+
+    override fun onPause() {
+        super.onPause()
+        if (mWebView is MyWebView) {
+            (mWebView as MyWebView).stopWatchingIncremental()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (mWebView is MyWebView) {
+            (mWebView as MyWebView).stopWatchingIncremental()
+        }
+    }
+
+    // 日志实时显示
+    override fun onDestroy() {
+        // 先停止文件监听，再做 WebView 清理，最后再 super
+        if (mWebView is MyWebView) {
+            (mWebView as MyWebView).stopWatchingIncremental()
+        }
+        
+        try {
+            mWebView?.apply {
+                loadUrl("about:blank")
+                stopLoading()
+                
+                // 在 Kotlin 中不能直接将客户端设置为 null，需要创建空的客户端实例
+                webChromeClient = object : WebChromeClient() {}
+                webViewClient = object : WebViewClient() {}
+                
+                destroy()
+            }
+        } catch (ignore: Throwable) {
+            // 异常处理
+        } finally {
+            mWebView = null // 确保引用被清除
+        }
+        
+        super.onDestroy()
+    }
+    // 日志实时显示
+
+    
     /*
     companion object {
         private val TAG: String = HtmlViewerActivity::class.java.getSimpleName()
