@@ -110,6 +110,35 @@ class HtmlViewerActivity : BaseActivity() {
             })
     }
 
+    // 日志实时显示 开始
+    private fun toJsString(s: String?): String {
+        if (s == null) return "''"
+        val sb = StringBuilder(s.length + 16)
+        sb.append('\'')
+        for (i in s.indices) {
+            val c = s[i]
+            when (c) {
+                '\'' -> sb.append("\\'")
+                '\\' -> sb.append("\\\\")
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                '\u000C' -> sb.append("\\f") // \f
+                '\b' -> sb.append("\\b")
+                else -> {
+                    if (c < 0x20.toChar()) {
+                        sb.append(String.format("\\u%04x", c.toInt()))
+                    } else {
+                        sb.append(c)
+                    }
+                }
+            }
+        }
+        sb.append('\'')
+        return sb.toString()
+    }
+    // 日志实时显示 结束
+
     // 添加了日志实时显示，后续删除需要更改到private fun stopRefreshing
     override fun onResume() {
         super.onResume()
@@ -173,7 +202,9 @@ class HtmlViewerActivity : BaseActivity() {
                                     if (path != null && path.endsWith(".log")) {
                                         // 替换 readAllTextSafe 和 toJsString
                                         val all = readFileContent(path) // 实现文件读取
-                                        val jsArg = escapeJsString(all) // 实现JS字符串转义
+                                        // val jsArg = escapeJsString(all) // 实现JS字符串转义
+                                        val jsArg = toJsString(all)
+
                                         webView.evaluateJavascript("setFullText($jsArg)", null)
 
                                         // 然后启动增量监听（你在 MyWebView 里实现的）
@@ -193,9 +224,11 @@ class HtmlViewerActivity : BaseActivity() {
                 }
                 
                 canClear = intent.getBooleanExtra("canClear", false)
+                /*
                 if (currentUri != null && currentUri.toString().endsWith(".log")) {
                     startRefreshing()
                 }
+                */
             }
         } catch (e: Exception) {
             Log.error(TAG, "WebView设置异常: " + e.message)
@@ -277,7 +310,7 @@ class HtmlViewerActivity : BaseActivity() {
         if (mWebView is MyWebView) {
             (mWebView as MyWebView).stopWatchingIncremental()
         }
-        mWebView?.let {
+        if (mWebView != null) {
             try {
                 it.loadUrl("about:blank")
                 it.stopLoading()
