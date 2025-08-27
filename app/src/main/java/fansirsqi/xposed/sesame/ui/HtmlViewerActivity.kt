@@ -184,8 +184,7 @@ class HtmlViewerActivity : BaseActivity() {
                     webSettings?.domStorageEnabled = true // 可选
 
                     webView.loadUrl("file:///android_asset/log_viewer.html")
-                    // webView.webChromeClient = object : WebChromeClient() {
-                    webView.WebChromeClient = object : WebChromeClient() {
+                    webView.webChromeClient = object : WebChromeClient() {
                         override fun onProgressChanged(view: WebView?, progress: Int) {
                             progressBar?.progress = progress
                             if (progress < 100) {
