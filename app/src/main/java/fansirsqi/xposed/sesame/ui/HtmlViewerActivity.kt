@@ -310,15 +310,27 @@ class HtmlViewerActivity : BaseActivity() {
         if (mWebView is MyWebView) {
             (mWebView as MyWebView).stopWatchingIncremental()
         }
-        if (mWebView != null) {
-            try {
-                mWebView?.loadUrl("about:blank")
-                mWebView?.stopLoading()
-                mWebView?.destroy()
-            } catch (ignore: Throwable) {
-                // 异常处理
+        
+        try {
+            mWebView?.apply {
+                loadUrl("about:blank")
+                stopLoading()
+                
+                // 创建空的客户端实例来替换现有客户端
+                webChromeClient = object : WebChromeClient() {}
+                webViewClient = object : WebViewClient() {}
+                
+                // 移除所有视图（如果已添加到视图层次结构中）
+                (parent as? ViewGroup)?.removeView(this)
+                
+                destroy()
             }
+        } catch (ignore: Throwable) {
+            // 异常处理
+        } finally {
+            mWebView = null // 确保引用被清除
         }
+        
         super.onDestroy()
     }
     /// 日志实时显示 end
