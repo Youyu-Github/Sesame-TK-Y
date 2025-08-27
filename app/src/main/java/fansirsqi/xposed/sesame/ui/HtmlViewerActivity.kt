@@ -482,8 +482,6 @@ class HtmlViewerActivity : BaseActivity() {
                 
                 // 使用 Java 方法设置 null（绕过 Kotlin 类型检查）
                 webView.setWebViewClient(null)
-                    // 空实现
-                }
                 
                 webView.destroy()
             } catch (ignore: Throwable) {
