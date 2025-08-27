@@ -481,7 +481,7 @@ class HtmlViewerActivity : BaseActivity() {
                 webView.webChromeClient = null
                 
                 // 使用 Java 方法设置 null（绕过 Kotlin 类型检查）
-                webView.setWebViewClient(null)
+                // webView.WebViewClient(null)
                 
                 webView.destroy()
             } catch (ignore: Throwable) {
