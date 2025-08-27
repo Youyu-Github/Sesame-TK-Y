@@ -312,12 +312,13 @@ class HtmlViewerActivity : BaseActivity() {
         }
         if (mWebView != null) {
             try {
-                it.loadUrl("about:blank")
-                it.stopLoading()
-                it.webChromeClient = null
-                it.webViewClient = null
-                it.destroy()
+                mWebView?.loadUrl("about:blank")
+                mWebView?.stopLoading()
+                mWebView?.webChromeClient = null
+                mWebView?.webViewClient = null
+                mWebView?.destroy()
             } catch (ignore: Throwable) {
+                // 异常处理
             }
         }
         super.onDestroy()
