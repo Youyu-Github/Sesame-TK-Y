@@ -468,17 +468,25 @@ class HtmlViewerActivity : BaseActivity() {
 
     override fun onDestroy() {
         // 先停止文件监听，再做 WebView 清理，最后再 super
-        if (mWebView is MyWebView) {
-            (mWebView as MyWebView).stopWatchingIncremental()
-        }
-        if (mWebView != null) {
+        (mWebView as? MyWebView)?.stopWatchingIncremental()
+        
+        val webView = mWebView // 使用局部变量避免并发修改问题
+        if (webView != null) {
             try {
-                mWebView.loadUrl("about:blank")
-                mWebView.stopLoading()
-                mWebView.setWebChromeClient(null)
-                mWebView.setWebViewClient(null)
-                mWebView.destroy()
+                webView.loadUrl("about:blank")
+                webView.stopLoading()
+                
+                // 使用安全的属性设置方式
+                webView.webChromeClient = null
+                
+                // 对于 WebViewClient，创建一个空的实现而不是设置为 null
+                webView.webViewClient = object : WebViewClient() {
+                    // 空实现
+                }
+                
+                webView.destroy()
             } catch (ignore: Throwable) {
+                // 空捕获块
             }
         }
         super.onDestroy()
