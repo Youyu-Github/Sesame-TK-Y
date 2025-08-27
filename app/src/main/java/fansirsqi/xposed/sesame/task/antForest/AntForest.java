@@ -2602,7 +2602,8 @@ public class AntForest extends ModelTask {
             // 如果没找到限时保护罩，则根据不同条件查找其他保护罩
             if (jo == null) {
                 // 查找青春特权保护罩
-                if (youthPrivilege.getValue() > 0) {
+                // if (youthPrivilege.getValue() > 0) {
+                if (youthPrivilege.getValue()) {
                     if (Privilege.INSTANCE.youthPrivilege()) {
                         jo = findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD_TREE");
                     }
