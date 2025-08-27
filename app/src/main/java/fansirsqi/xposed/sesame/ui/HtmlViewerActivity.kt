@@ -32,7 +32,6 @@ import java.io.File
 import android.os.Looper
 import org.json.JSONObject
 import android.webkit.WebViewClient
-import androidx.webkit.WebViewFeature
 
 class HtmlViewerActivity : BaseActivity() {
     val TAG = "HtmlViewerActivity"
@@ -482,7 +481,7 @@ class HtmlViewerActivity : BaseActivity() {
                 webView.webChromeClient = null
                 
                 // 使用 Java 方法设置 null（绕过 Kotlin 类型检查）
-                webView.WebViewClient(null)
+                // webView.WebViewClient(null)
                 
                 webView.destroy()
             } catch (ignore: Throwable) {
