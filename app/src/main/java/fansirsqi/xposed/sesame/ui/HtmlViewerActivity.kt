@@ -451,6 +451,7 @@ class HtmlViewerActivity : BaseActivity() {
         }
     }
 
+    // 日志实时显示
     override fun onPause() {
         super.onPause()
         if (mWebView is MyWebView) {
@@ -465,30 +466,21 @@ class HtmlViewerActivity : BaseActivity() {
         }
     }
 
-    // 日志实时显示
     override fun onDestroy() {
         // 先停止文件监听，再做 WebView 清理，最后再 super
         if (mWebView is MyWebView) {
             (mWebView as MyWebView).stopWatchingIncremental()
         }
-        
-        try {
-            mWebView?.apply {
-                loadUrl("about:blank")
-                stopLoading()
-                
-                // 在 Kotlin 中不能直接将客户端设置为 null，需要创建空的客户端实例
-                webChromeClient = object : WebChromeClient() {}
-                webViewClient = object : WebViewClient() {}
-                
-                destroy()
+        if (mWebView != null) {
+            try {
+                mWebView.loadUrl("about:blank")
+                mWebView.stopLoading()
+                mWebView.setWebChromeClient(null)
+                mWebView.setWebViewClient(null)
+                mWebView.destroy()
+            } catch (ignore: Throwable) {
             }
-        } catch (ignore: Throwable) {
-            // 异常处理
-        } finally {
-            mWebView = null // 确保引用被清除
         }
-        
         super.onDestroy()
     }
     // 日志实时显示
