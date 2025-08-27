@@ -142,7 +142,13 @@ class HtmlViewerActivity : BaseActivity() {
                 val currentUri = intent.data
                 uri = currentUri
                 if (currentUri != null && webView != null) {
+                    /*
                     webView.loadUrl(currentUri.toString())
+                    // 如果是日志文件，则启动定时刷新
+                    if (uri!!.toString().endsWith(".log")) {
+                        startRefreshing()
+                    }
+                    */
 
                     /// 日志实时显示 begin
                     webSettings?.javaScriptEnabled = true
@@ -171,12 +177,12 @@ class HtmlViewerActivity : BaseActivity() {
                                         webView.evaluateJavascript("setFullText($jsArg)", null)
 
                                         // 然后启动增量监听（你在 MyWebView 里实现的）
-                                        /*
+                                        
                                         if (webView is MyWebView) {
                                             webView.startWatchingIncremental(path)
                                             // 或者 webView.startWatchingWithObserver(path)
                                         }
-                                        */
+                                        
                                         webView.startWatchingIncremental(path)
                                     }
                                 }
@@ -207,6 +213,7 @@ class HtmlViewerActivity : BaseActivity() {
         }
     }
 
+    /*
     /// 日志实时显示 begin
     // 添加缺失的方法实现
     private fun escapeJsString(input: String): String {
@@ -250,6 +257,38 @@ class HtmlViewerActivity : BaseActivity() {
 //            ToastUtil.makeText(this, "已关闭日志实时刷新", Toast.LENGTH_SHORT).show()
         }
     }
+    */
+    override fun onPause() {
+        super.onPause()
+        if (mWebView is MyWebView) {
+            (mWebView as MyWebView).stopWatchingIncremental()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (mWebView is MyWebView) {
+            (mWebView as MyWebView).stopWatchingIncremental()
+        }
+    }
+
+    override fun onDestroy() {
+        // 先停止文件监听，再做 WebView 清理，最后再 super
+        if (mWebView is MyWebView) {
+            (mWebView as MyWebView).stopWatchingIncremental()
+        }
+        mWebView?.let {
+            try {
+                it.loadUrl("about:blank")
+                it.stopLoading()
+                it.webChromeClient = null
+                it.webViewClient = null
+                it.destroy()
+            } catch (ignore: Throwable) {
+            }
+        }
+        super.onDestroy()
+    }
     /// 日志实时显示 end
 
 
@@ -279,6 +318,7 @@ class HtmlViewerActivity : BaseActivity() {
         menu.add(0, 4, 4, getString(R.string.copy_the_url))
         menu.add(0, 5, 5, getString(R.string.scroll_to_top))
         menu.add(0, 6, 6, getString(R.string.scroll_to_bottom))
+        /*
         if (uri != null && uri!!.toString().endsWith(".log")) {
             if (isRefreshing) {
                 menu.add(0, 7, 7, "关闭实时刷新")
@@ -286,6 +326,7 @@ class HtmlViewerActivity : BaseActivity() {
                 menu.add(0, 7, 7, "开启实时刷新")
             }
         }
+        */
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -308,12 +349,14 @@ class HtmlViewerActivity : BaseActivity() {
 
             6 ->                 // 滚动到底部
                 mWebView!!.scrollToBottom()
+            /*
             7 ->                 // 切换实时刷新
                 if (isRefreshing) {
                     stopRefreshing()
                 } else {
                     startRefreshing()
                 }
+            */
         }
         invalidateOptionsMenu() // 刷新菜单以更新文本
         return true
@@ -392,7 +435,9 @@ class HtmlViewerActivity : BaseActivity() {
             ToastUtil.makeText(this, getString(R.string.copy_success), Toast.LENGTH_SHORT).show()
         }
     }
+    /*
     companion object {
         private val TAG: String = HtmlViewerActivity::class.java.getSimpleName()
     }
+    */
 }

@@ -976,7 +976,7 @@ public class AntForest extends ModelTask {
             if (!fromTag.equals("pk")) {
                 userName = UserMap.getMaskName(userId);
             } else {
-                userName = "PK榜森友" + userHomeObj.getJSONObject("userEnergy").getString("displayName");
+                userName = "PK榜森友|" + userHomeObj.getJSONObject("userEnergy").getString("displayName");
 
             }
             bizType = "GREEN";
@@ -1965,9 +1965,9 @@ public class AntForest extends ModelTask {
 
             boolean needStealth = !stealthCard.getValue().equals(applyPropType.CLOSE) && stealthEndTime < System.currentTimeMillis();
             boolean needShield =
-                    !shieldCard.getValue().equals(applyPropType.CLOSE) && energyBombCardType.getValue().equals(applyPropType.CLOSE) && ((shieldEndTime - System.currentTimeMillis()) < 1000 * 60 * 60 * 24);//调整保护罩剩余时间不超过一天自动续命
+                    !shieldCard.getValue().equals(applyPropType.CLOSE) && energyBombCardType.getValue().equals(applyPropType.CLOSE) && ((shieldEndTime - System.currentTimeMillis()) < 1000L * 60 * 60 * 24);//调整保护罩剩余时间不超过一天自动续命
             boolean needEnergyBombCard =
-                    !energyBombCardType.getValue().equals(applyPropType.CLOSE) && shieldCard.getValue().equals(applyPropType.CLOSE) && ((energyBombCardEndTime - System.currentTimeMillis()) < 1000 * 60 * 60 * 24);//调整保护罩剩余时间不超过一天自动续命
+                    !energyBombCardType.getValue().equals(applyPropType.CLOSE) && shieldCard.getValue().equals(applyPropType.CLOSE) && ((energyBombCardEndTime - System.currentTimeMillis()) < 1000L * 60 * 60 * 24);//调整保护罩剩余时间不超过一天自动续命
 
             boolean needBubbleBoostCard = !bubbleBoostCard.getValue().equals(applyPropType.CLOSE);
 
