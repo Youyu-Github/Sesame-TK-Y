@@ -1967,7 +1967,7 @@ public class AntForest extends ModelTask {
             boolean needShield =
                     !shieldCard.getValue().equals(applyPropType.CLOSE) && energyBombCardType.getValue().equals(applyPropType.CLOSE) && ((shieldEndTime - System.currentTimeMillis()) < 1000L * 60 * 60 * 24);//调整保护罩剩余时间不超过一天自动续命
             boolean needEnergyBombCard =
-                    !energyBombCardType.getValue().equals(applyPropType.CLOSE) && shieldCard.getValue().equals(applyPropType.CLOSE) && ((energyBombCardEndTime - System.currentTimeMillis()) < 1000L * 60 * 60 * 24);//调整保护罩剩余时间不超过一天自动续命
+                    !energyBombCardType.getValue().equals(applyPropType.CLOSE) && shieldCard.getValue().equals(applyPropType.CLOSE) && ((energyBombCardEndTime - System.currentTimeMillis()) < 1000L * 60 * 60 * 24 * 2);//调整炸弹卡剩余时间不超过两天自动续命
 
             boolean needBubbleBoostCard = !bubbleBoostCard.getValue().equals(applyPropType.CLOSE);
 
@@ -2565,7 +2565,8 @@ public class AntForest extends ModelTask {
     /**
      * 使用能量保护罩，一般是限时保护罩，打开青春特权森林道具领取
      */
-    private void useShieldCard(JSONObject bagObject) {
+    /*
+     private void useShieldCard(JSONObject bagObject) {
         try {
             // 在背包中查询限时保护罩
             JSONObject jo = findPropBag(bagObject, "LIMIT_TIME_ENERGY_SHIELD_TREE");
@@ -2587,6 +2588,50 @@ public class AntForest extends ModelTask {
                 shieldEndTime = System.currentTimeMillis() + 1000 * 60 * 60 * 24;
             } else {
                 updateSelfHomePage();
+            }
+        } catch (Throwable th) {
+            Log.error(TAG + "useShieldCard err");
+        }
+    }
+    */
+    private void useShieldCard(JSONObject bagObject) {
+        try {
+            // 在背包中查询限时保护罩
+            JSONObject jo = findPropBag(bagObject, "LIMIT_TIME_ENERGY_SHIELD_TREE");
+
+            // 如果没找到限时保护罩，则根据不同条件查找其他保护罩
+            if (jo == null) {
+                // 查找青春特权保护罩
+                if (youthPrivilege.getValue() > 0) {
+                    if (Privilege.INSTANCE.youthPrivilege()) {
+                        jo = findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD_TREE");
+                    }
+                }
+                // 查找普通保护罩
+                else if (shieldCardConstant.getValue()) {
+                    if (exchangeEnergyShield()) {
+                        jo = findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD");
+                    }
+                }
+                // 查找树宝保护罩
+                else if (findPropBag(bagObject, "shubao3rd_ENERGY_SHIELD") != null) {
+                    jo = findPropBag(bagObject, "shubao3rd_ENERGY_SHIELD");
+                }
+                // 查找敦煌飞天保护罩
+                else if (findPropBag(bagObject, "MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE") != null) {
+                    jo = findPropBag(bagObject, "MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE");
+                }
+                // 查找普通能量保护罩
+                else {
+                    jo = findPropBag(bagObject, "ENERGY_SHIELD"); // 普通保护罩，一般用不到
+                }
+            }
+
+            // 使用保护罩，如果找到且使用成功
+            if (jo != null && usePropBag(jo)) {
+                shieldEndTime = System.currentTimeMillis() + 1000 * 60 * 60 * 24; // 设置保护罩有效期为24小时
+            } else {
+                updateSelfHomePage(); // 更新主页
             }
         } catch (Throwable th) {
             Log.error(TAG + "useShieldCard err");
