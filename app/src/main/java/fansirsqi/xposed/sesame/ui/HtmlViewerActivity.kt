@@ -185,7 +185,7 @@ class HtmlViewerActivity : BaseActivity() {
 
                     webView.loadUrl("file:///android_asset/log_viewer.html")
                     // webView.webChromeClient = object : WebChromeClient() {
-                    webView.setwebChromeClient = object : WebChromeClient() {
+                    webView.WebChromeClient = object : WebChromeClient() {
                         override fun onProgressChanged(view: WebView?, progress: Int) {
                             progressBar?.progress = progress
                             if (progress < 100) {
@@ -315,8 +315,6 @@ class HtmlViewerActivity : BaseActivity() {
             try {
                 mWebView?.loadUrl("about:blank")
                 mWebView?.stopLoading()
-                mWebView?.setwebChromeClient = null
-                mWebView?.setWebViewClient = null
                 mWebView?.destroy()
             } catch (ignore: Throwable) {
                 // 异常处理
