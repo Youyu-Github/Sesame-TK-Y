@@ -31,6 +31,7 @@ import fansirsqi.xposed.sesame.newui.WatermarkView
 import java.io.File
 import android.os.Looper
 import org.json.JSONObject
+import android.webkit.WebViewClient
 
 class HtmlViewerActivity : BaseActivity() {
     val TAG = "HtmlViewerActivity"
@@ -479,8 +480,8 @@ class HtmlViewerActivity : BaseActivity() {
                 // 使用安全的属性设置方式
                 webView.webChromeClient = null
                 
-                // 对于 WebViewClient，创建一个空的实现而不是设置为 null
-                webView.webViewClient = object : WebViewClient() {
+                // 使用 Java 方法设置 null（绕过 Kotlin 类型检查）
+                webView.setWebViewClient(null)
                     // 空实现
                 }
                 
