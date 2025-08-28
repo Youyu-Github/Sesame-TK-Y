@@ -2651,7 +2651,8 @@ public class AntForest extends ModelTask {
             // 如果没找到限时保护罩，则根据不同条件查找其他保护罩
             if (jo == null) {
                 // 查找青春特权保护罩
-                if (youthPrivilege.getValue() > 0) {
+                // if (youthPrivilege.getValue() > 0) {
+                if (youthPrivilege.getValue()) {
                     Log.record(TAG, "检测到青春特权，尝试使用青春特权保护罩");
                     if (Privilege.INSTANCE.youthPrivilege()) {
                         jo = findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD_TREE");
@@ -2703,10 +2704,10 @@ public class AntForest extends ModelTask {
                 updateSelfHomePage(); // 更新主页
             }
         } catch (Throwable th) {
-            Log.error(TAG + " useShieldCard 异常", th);
+            Log.error(TAG, "useShieldCard 异常", th);
         }
     }
-    
+
 
     public void useCardBoot(List<String> TargetTimeValue, String propName, Runnable func) {
         for (String targetTimeStr : TargetTimeValue) {
