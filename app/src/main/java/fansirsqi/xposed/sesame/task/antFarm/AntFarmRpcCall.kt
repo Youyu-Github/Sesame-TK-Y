@@ -9,6 +9,7 @@ import org.json.JSONObject
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.UUID
+import fansirsqi.xposed.sesame.util.Log
 
 object AntFarmRpcCall {
     private const val VERSION = "1.8.2302070202.46"
@@ -309,7 +310,7 @@ object AntFarmRpcCall {
         val safeGameType = gameType ?: ""
         
         // 记录请求参数以便调试
-        Log.debug(TAG, "初始化庄园游戏，游戏类型: $safeGameType")
+        Log.record(TAG, "初始化庄园游戏，游戏类型: $safeGameType")
         
         val requestParams = if ("flyGame" == safeGameType) {
             "[{\"gameType\":\"flyGame\",\"requestType\":\"RPC\",\"sceneCode\":\"FLAYGAME\"," +
@@ -320,7 +321,7 @@ object AntFarmRpcCall {
         }
         
         // 记录完整的请求参数
-        Log.debug(TAG, "请求参数: $requestParams")
+        Log.record(TAG, "请求参数: $requestParams")
         
         return requestString("com.alipay.antfarm.initFarmGame", requestParams)
     }
