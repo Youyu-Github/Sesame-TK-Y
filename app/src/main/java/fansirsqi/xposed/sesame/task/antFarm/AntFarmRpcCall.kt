@@ -305,9 +305,7 @@ object AntFarmRpcCall {
         )
     }
     */
-    /*
     private const val TAG = "AntFarmRpcCall"
-
     fun initFarmGame(gameType: String?): String {
         // 确保使用正确的游戏类型值
         val safeGameType = gameType ?: ""
@@ -327,33 +325,6 @@ object AntFarmRpcCall {
         Log.record(TAG, "请求参数: $requestParams")
         
         return requestString("com.alipay.antfarm.initFarmGame", requestParams)
-    }
-    */
-    class AntFarmRpcCall {
-        companion object {
-            private const val TAG = "AntFarmRpcCall"
-        }
-        
-        fun initFarmGame(gameType: String?): String {
-            // 确保使用正确的游戏类型值
-            val safeGameType = gameType ?: ""
-            
-            // 记录请求参数以便调试
-            Log.record(TAG, "初始化庄园游戏，游戏类型: $safeGameType")
-            
-            val requestParams = if ("flyGame" == safeGameType) {
-                "[{\"gameType\":\"flyGame\",\"requestType\":\"RPC\",\"sceneCode\":\"FLAYGAME\"," +
-                        "\"source\":\"FARM_game_yundongfly\",\"toolTypes\":\"ACCELERATETOOL,SHARETOOL,NONE\",\"version\":\"\"}]"
-            } else {
-                // 使用与成功请求完全相同的参数格式
-                "[{\"gameType\":\"$safeGameType\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\"}]"
-            }
-            
-            // 记录完整的请求参数
-            Log.record(TAG, "请求参数: $requestParams")
-            
-            return requestString("com.alipay.antfarm.initFarmGame", requestParams)
-        }
     }
 
     fun RandomScore(str: String?): Int {
