@@ -2704,7 +2704,8 @@ public class AntForest extends ModelTask {
                 updateSelfHomePage(); // 更新主页
             }
         } catch (Throwable th) {
-            Log.error(TAG, "useShieldCard 异常", th);
+            // Log.error(TAG + "useShieldCard 异常", th);
+            Log.error(TAG + "useShieldCard 异常");
         }
     }
 
