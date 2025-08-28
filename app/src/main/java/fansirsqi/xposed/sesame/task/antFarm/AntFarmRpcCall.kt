@@ -284,6 +284,7 @@ object AntFarmRpcCall {
         )
     }
     */
+    /*
     fun initFarmGame(gameType: String?): String {
         // 修复1: 使用安全调用和Elvis运算符处理null值
         val safeGameType = gameType ?: ""
@@ -301,6 +302,27 @@ object AntFarmRpcCall {
             "com.alipay.antfarm.initFarmGame",
             "[{\"gameType\":\"$safeGameType\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\"}]"
         )
+    }
+    */
+    fun initFarmGame(gameType: String?): String {
+        // 确保使用正确的游戏类型值
+        val safeGameType = gameType ?: ""
+        
+        // 记录请求参数以便调试
+        Log.debug(TAG, "初始化庄园游戏，游戏类型: $safeGameType")
+        
+        val requestParams = if ("flyGame" == safeGameType) {
+            "[{\"gameType\":\"flyGame\",\"requestType\":\"RPC\",\"sceneCode\":\"FLAYGAME\"," +
+                    "\"source\":\"FARM_game_yundongfly\",\"toolTypes\":\"ACCELERATETOOL,SHARETOOL,NONE\",\"version\":\"\"}]"
+        } else {
+            // 使用与成功请求完全相同的参数格式
+            "[{\"gameType\":\"$safeGameType\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\"}]"
+        }
+        
+        // 记录完整的请求参数
+        Log.debug(TAG, "请求参数: $requestParams")
+        
+        return requestString("com.alipay.antfarm.initFarmGame", requestParams)
     }
 
     fun RandomScore(str: String?): Int {
