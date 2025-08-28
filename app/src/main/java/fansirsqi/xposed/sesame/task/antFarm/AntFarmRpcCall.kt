@@ -268,6 +268,7 @@ object AntFarmRpcCall {
         return requestString("com.alipay.antfarm.sign", "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"version\":\"" + VERSION + "\"}]")
     }
 
+    /*
     fun initFarmGame(gameType: String?): String {
         if ("flyGame" == gameType) {
             return requestString(
@@ -280,6 +281,25 @@ object AntFarmRpcCall {
             "com.alipay.antfarm.initFarmGame",
             ("[{\"gameType\":\"" + gameType
                     + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\"}]")
+        )
+    }
+    */
+    fun initFarmGame(gameType: String?): String {
+        // 修复1: 使用安全调用和Elvis运算符处理null值
+        val safeGameType = gameType ?: ""
+        
+        if ("flyGame" == safeGameType) {
+            return requestString(
+                "com.alipay.antfarm.initFarmGame",
+                "[{\"gameType\":\"flyGame\",\"requestType\":\"RPC\",\"sceneCode\":\"FLAYGAME\"," +
+                        "\"source\":\"FARM_game_yundongfly\",\"toolTypes\":\"ACCELERATETOOL,SHARETOOL,NONE\",\"version\":\"\"}]"
+            )
+        }
+        
+        // 修复2: 使用字符串模板安全插入变量
+        return requestString(
+            "com.alipay.antfarm.initFarmGame",
+            "[{\"gameType\":\"$safeGameType\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\"}]"
         )
     }
 

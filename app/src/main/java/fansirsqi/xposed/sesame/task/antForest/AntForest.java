@@ -2594,6 +2594,7 @@ public class AntForest extends ModelTask {
         }
     }
     */
+    /*
     private void useShieldCard(JSONObject bagObject) {
         try {
             // 在背包中查询限时保护罩
@@ -2638,6 +2639,74 @@ public class AntForest extends ModelTask {
             Log.error(TAG + "useShieldCard err");
         }
     }
+    */
+    private void useShieldCard(JSONObject bagObject) {
+        try {
+            Log.record(TAG, "开始执行 useShieldCard，背包内容：" + bagObject);
+
+            // 在背包中查询限时保护罩
+            JSONObject jo = findPropBag(bagObject, "LIMIT_TIME_ENERGY_SHIELD_TREE");
+            Log.record(TAG, "初次查找限时保护罩 LIMIT_TIME_ENERGY_SHIELD_TREE，结果：" + jo);
+
+            // 如果没找到限时保护罩，则根据不同条件查找其他保护罩
+            if (jo == null) {
+                // 查找青春特权保护罩
+                if (youthPrivilege.getValue() > 0) {
+                    Log.record(TAG, "检测到青春特权，尝试使用青春特权保护罩");
+                    if (Privilege.INSTANCE.youthPrivilege()) {
+                        jo = findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD_TREE");
+                        Log.record(TAG, "青春特权保护罩查找结果：" + jo);
+                    } else {
+                        Log.record(TAG, "青春特权条件不满足");
+                    }
+                }
+                // 查找普通保护罩
+                else if (shieldCardConstant.getValue()) {
+                    Log.record(TAG, "检测到普通保护罩常量，尝试兑换普通保护罩");
+                    if (exchangeEnergyShield()) {
+                        jo = findPropBag(queryPropList(), "LIMIT_TIME_ENERGY_SHIELD");
+                        Log.record(TAG, "普通保护罩查找结果：" + jo);
+                    } else {
+                        Log.record(TAG, "兑换普通保护罩失败");
+                    }
+                }
+                // 查找树宝保护罩
+                else if (findPropBag(bagObject, "shubao3rd_ENERGY_SHIELD") != null) {
+                    jo = findPropBag(bagObject, "shubao3rd_ENERGY_SHIELD");
+                    Log.record(TAG, "找到树宝保护罩：" + jo);
+                }
+                // 查找敦煌飞天保护罩
+                else if (findPropBag(bagObject, "MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE") != null) {
+                    jo = findPropBag(bagObject, "MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE");
+                    Log.record(TAG, "找到敦煌飞天保护罩：" + jo);
+                }
+                // 查找普通能量保护罩
+                else {
+                    jo = findPropBag(bagObject, "ENERGY_SHIELD");
+                    Log.record(TAG, "找到普通保护罩：" + jo);
+                }
+            }
+
+            // 使用保护罩，如果找到且使用成功
+            if (jo != null) {
+                boolean success = usePropBag(jo);
+                Log.record(TAG, "尝试使用保护罩：" + jo + "，结果：" + success);
+                if (success) {
+                    shieldEndTime = System.currentTimeMillis() + 1000 * 60 * 60 * 24; // 设置保护罩有效期为24小时
+                    Log.record(TAG, "保护罩使用成功，shieldEndTime：" + shieldEndTime);
+                } else {
+                    Log.record(TAG, "保护罩使用失败，刷新主页");
+                    updateSelfHomePage(); // 更新主页
+                }
+            } else {
+                Log.record(TAG, "未找到可用保护罩，刷新主页");
+                updateSelfHomePage(); // 更新主页
+            }
+        } catch (Throwable th) {
+            Log.error(TAG + " useShieldCard 异常", th);
+        }
+    }
+    
 
     public void useCardBoot(List<String> TargetTimeValue, String propName, Runnable func) {
         for (String targetTimeStr : TargetTimeValue) {
