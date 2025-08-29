@@ -1952,7 +1952,8 @@ public class AntForest extends ModelTask {
      *
      * @param userId 用户的ID。
      */
-    private void usePropBeforeCollectEnergy(String userId) {
+    /*
+     private void usePropBeforeCollectEnergy(String userId) {
         try {
             if (Objects.equals(selfId, userId)) {
                 return;
@@ -1968,6 +1969,53 @@ public class AntForest extends ModelTask {
                     !shieldCard.getValue().equals(applyPropType.CLOSE) && energyBombCardType.getValue().equals(applyPropType.CLOSE) && ((shieldEndTime - System.currentTimeMillis()) < 1000L * 60 * 60 * 24);//调整保护罩剩余时间不超过一天自动续命
             boolean needEnergyBombCard =
                     !energyBombCardType.getValue().equals(applyPropType.CLOSE) && shieldCard.getValue().equals(applyPropType.CLOSE) && ((energyBombCardEndTime - System.currentTimeMillis()) < 1000L * 60 * 60 * 24 * 2);//调整炸弹卡剩余时间不超过两天自动续命
+
+            boolean needBubbleBoostCard = !bubbleBoostCard.getValue().equals(applyPropType.CLOSE);
+
+            if (needDouble || needStealth || needShield || needEnergyBombCard || needrobExpand) {
+                synchronized (doubleCardLockObj) {
+                    JSONObject bagObject = queryPropList();
+                    if (needDouble) useDoubleCard(bagObject);
+                    if (needrobExpand) {
+//                        userobExpandCard(bagObject);
+                        useCardBoot(robExpandCardTime.getValue(), "1.1倍能量卡", this::userobExpandCard);
+                    }
+                    if (needStealth) useStealthCard(bagObject);
+                    if (needBubbleBoostCard) {
+//                        useBubbleBoostCard(bagObject);
+                        useCardBoot(bubbleBoostTime.getValue(), "加速卡", this::useBubbleBoostCard);
+                    }
+
+                    // 互斥逻辑：如果两个开关都打开，则优先使用保护罩|不会使用炸弹卡
+                    if (needShield) {
+                        useShieldCard(bagObject);
+                    } else if (needEnergyBombCard) {
+                        useEnergyBombCard(bagObject);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // 打印异常信息
+            Log.printStackTrace(e);
+        }
+    }
+    */
+    private void usePropBeforeCollectEnergy(String userId) {
+        try {
+            if (Objects.equals(selfId, userId)) {
+                return;
+            }
+
+
+            boolean needDouble = !doubleCard.getValue().equals(applyPropType.CLOSE) && doubleEndTime < System.currentTimeMillis();
+
+            boolean needrobExpand = !robExpandCard.getValue().equals(applyPropType.CLOSE) && robExpandCardEndTime < System.currentTimeMillis();
+
+            boolean needStealth = !stealthCard.getValue().equals(applyPropType.CLOSE) && stealthEndTime < System.currentTimeMillis();
+            boolean needShield =
+                    !shieldCard.getValue().equals(applyPropType.CLOSE) && energyBombCardType.getValue().equals(applyPropType.CLOSE) && ((shieldEndTime - System.currentTimeMillis()) < 3600 * 24);//调整保护罩剩余时间不超过一天自动续命
+            boolean needEnergyBombCard =
+                    !energyBombCardType.getValue().equals(applyPropType.CLOSE) && shieldCard.getValue().equals(applyPropType.CLOSE) && ((energyBombCardEndTime - System.currentTimeMillis()) < 3600 * 48);//调整炸弹卡剩余时间不超过两天自动续命
 
             boolean needBubbleBoostCard = !bubbleBoostCard.getValue().equals(applyPropType.CLOSE);
 
@@ -2704,7 +2752,6 @@ public class AntForest extends ModelTask {
                 updateSelfHomePage(); // 更新主页
             }
         } catch (Throwable th) {
-            // Log.error(TAG + "useShieldCard 异常", th);
             Log.error(TAG + "useShieldCard 异常");
         }
     }

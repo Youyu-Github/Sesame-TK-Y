@@ -439,10 +439,10 @@ class AntFarm : ModelTask() {
             if (getRunCnts() >= recordFarmGame!!.value) {
                 for (time in farmGameTime!!.value) {
                     if (TimeUtil.checkNowInTimeRange(time)) {
-                        recordFarmGame(GameType.StarGame)
-                        recordFarmGame(GameType.JumpGame)
-                        recordFarmGame(GameType.FlyGame)
-                        recordFarmGame(GameType.HitGame)
+                        recordFarmGame(GameType.starGame)
+                        recordFarmGame(GameType.jumpGame)
+                        recordFarmGame(GameType.flyGame)
+                        recordFarmGame(GameType.hitGame)
                         break
                     }
                 }
@@ -2812,7 +2812,7 @@ class AntFarm : ModelTask() {
     }
     /*
     enum class GameType {
-        StarGame, JumpGame, FlyGame, HitGame;
+        starGame, jumpGame, flyGame, hitGame;
 
         fun gameName(): CharSequence? {
             return gameNames[ordinal]
@@ -2824,7 +2824,7 @@ class AntFarm : ModelTask() {
     }
     */
     enum class GameType {
-        StarGame, JumpGame, FlyGame, HitGame;
+        starGame, jumpGame, flyGame, hitGame;
 
         companion object {
             val gameNames = arrayOf("星星球", "登山赛", "飞行赛", "欢乐揍小鸡")
