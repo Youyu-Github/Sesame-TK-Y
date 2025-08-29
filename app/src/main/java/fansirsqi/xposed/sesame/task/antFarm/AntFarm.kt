@@ -1149,7 +1149,6 @@ class AntFarm : ModelTask() {
                         val toolType = ToolType.valueOf(awardType)
 
                         val isFull = farmTools.any { it.toolType == toolType && it.toolCount == it.toolHoldLimit }
-
                         if (isFull) {
                             Log.record(TAG, "领取道具[${toolType.nickName()}]#已满，暂不领取")
                             continue
