@@ -2810,7 +2810,7 @@ class AntFarm : ModelTask() {
                 arrayOf<CharSequence?>("蹭饭卡", "加速卡", "救济卡", "篱笆卡", "新蛋卡", "公仔补签卡", "普通装扮补签卡", "高级装扮补签卡", "加饭卡", "稀有装扮补签卡")
         }
     }
-    /*
+
     enum class GameType {
         starGame, jumpGame, flyGame, hitGame;
 
@@ -2822,7 +2822,7 @@ class AntFarm : ModelTask() {
             val gameNames: Array<CharSequence?> = arrayOf<CharSequence?>("星星球", "登山赛", "飞行赛", "欢乐揍小鸡")
         }
     }
-    */
+    /*
     enum class GameType {
         starGame, jumpGame, flyGame, hitGame;
 
@@ -2832,6 +2832,7 @@ class AntFarm : ModelTask() {
 
         fun gameName() = gameNames[ordinal]
     }
+    */
 
     @ToString
     @JsonIgnoreProperties(ignoreUnknown = true)

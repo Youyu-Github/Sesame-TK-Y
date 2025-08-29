@@ -269,7 +269,7 @@ object AntFarmRpcCall {
         return requestString("com.alipay.antfarm.sign", "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"version\":\"" + VERSION + "\"}]")
     }
 
-    /*
+
     fun initFarmGame(gameType: String?): String {
         if ("flyGame" == gameType) {
             return requestString(
@@ -284,7 +284,6 @@ object AntFarmRpcCall {
                     + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"toolTypes\":\"STEALTOOL,ACCELERATETOOL,SHARETOOL\"}]")
         )
     }
-    */
     /*
     fun initFarmGame(gameType: String?): String {
         // 修复1: 使用安全调用和Elvis运算符处理null值
@@ -305,6 +304,7 @@ object AntFarmRpcCall {
         )
     }
     */
+    /*
     private const val TAG = "AntFarmRpcCall"
     fun initFarmGame(gameType: String?): String {
         // 确保使用正确的游戏类型值
@@ -326,6 +326,7 @@ object AntFarmRpcCall {
         
         return requestString("com.alipay.antfarm.initFarmGame", requestParams)
     }
+    */
 
     fun RandomScore(str: String?): Int {
         if ("starGame" == str) {
