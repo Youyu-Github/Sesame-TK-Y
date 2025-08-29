@@ -1446,7 +1446,8 @@ class AntFarm : ModelTask() {
                             if (jo.has("receiveFoodCount")) {
                                 award.append(";肥料*").append(jo.getString("receiveFoodCount"))
                             }
-                            Log.farm("庄园游戏🎮[" + gameType.gameName() + "]#" + award)
+                            // Log.farm("庄园游戏🎮[" + gameType.gameName() + "]#" + award)
+                            Log.farm("庄园游戏🎮[" + gameType.nickName + "]#" + award)
                             if (jo.optInt("remainingGameCount", 0) > 0) {
                                 continue
                             }
@@ -2811,6 +2812,7 @@ class AntFarm : ModelTask() {
         }
     }
 
+    /*
     enum class GameType {
         starGame, jumpGame, flyGame, hitGame;
 
@@ -2822,6 +2824,7 @@ class AntFarm : ModelTask() {
             val gameNames: Array<CharSequence?> = arrayOf<CharSequence?>("星星球", "登山赛", "飞行赛", "欢乐揍小鸡")
         }
     }
+    */
     /*
     enum class GameType {
         starGame, jumpGame, flyGame, hitGame;
@@ -2833,6 +2836,10 @@ class AntFarm : ModelTask() {
         fun gameName() = gameNames[ordinal]
     }
     */
+    enum class GameType(val nickName: String) {
+        starGame("星星球"), jumpGame("登山赛"), flyGame("飞行赛"), hitGame("欢乐揍小鸡");
+    }
+
 
     @ToString
     @JsonIgnoreProperties(ignoreUnknown = true)
