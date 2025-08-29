@@ -2815,19 +2815,6 @@ class AntFarm : ModelTask() {
     enum class GameType {
         starGame, jumpGame, flyGame, hitGame;
 
-        fun gameName(): CharSequence? {
-            return gameNames[ordinal]
-        }
-
-        companion object {
-            val gameNames: Array<CharSequence?> = arrayOf<CharSequence?>("星星球", "登山赛", "飞行赛", "欢乐揍小鸡")
-        }
-    }
-    */
-    /*
-    enum class GameType {
-        starGame, jumpGame, flyGame, hitGame;
-
         companion object {
             val gameNames = arrayOf("星星球", "登山赛", "飞行赛", "欢乐揍小鸡")
         }
