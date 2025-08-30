@@ -2567,8 +2567,7 @@ public class AntForest extends ModelTask {
     /**
      * 使用能量保护罩，一般是限时保护罩，打开青春特权森林道具领取
      */
-    /*
-     private void useShieldCard(JSONObject bagObject) {
+    private void useShieldCard(JSONObject bagObject) {
         try {
             // 在背包中查询限时保护罩
             JSONObject jo = findPropBag(bagObject, "LIMIT_TIME_ENERGY_SHIELD_TREE");
@@ -2595,7 +2594,6 @@ public class AntForest extends ModelTask {
             Log.error(TAG + "useShieldCard err");
         }
     }
-    */
     /*
     private void useShieldCard(JSONObject bagObject) {
         try {
@@ -2642,6 +2640,7 @@ public class AntForest extends ModelTask {
         }
     }
     */
+    /*
     private void useShieldCard(JSONObject bagObject) {
         try {
             Log.record(TAG, "开始执行 useShieldCard，背包内容：" + bagObject);
@@ -2709,6 +2708,7 @@ public class AntForest extends ModelTask {
             Log.error(TAG + "useShieldCard 异常");
         }
     }
+    */
 
 
     public void useCardBoot(List<String> TargetTimeValue, String propName, Runnable func) {
