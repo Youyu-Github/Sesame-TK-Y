@@ -211,10 +211,10 @@ public class AntForest extends ModelTask {
     
     private static boolean canConsumeAnimalProp;
     private static int totalCollected = 0;
-    // private static int totalHelpCollected = 0;
-    // private static int totalWatered = 0;
-    private static final int totalHelpCollected = 0;
-    private static final int totalWatered = 0;
+    private static int totalHelpCollected = 0;
+    private static int totalWatered = 0;
+    // private static final int totalHelpCollected = 0;
+    // private static final int totalWatered = 0;
 
     private final Map<String, AtomicInteger> forestTaskTryCount = new ConcurrentHashMap<>();
 
