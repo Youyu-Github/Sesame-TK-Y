@@ -125,6 +125,12 @@ public class Vitality {
      * exchangedCount == 0......
      */
     public static Boolean handleVitalityExchange(String skuId) {
+        // 检查是否已经达到今日兑换上限
+        if (fansirsqi.xposed.sesame.data.Status.hasFlagToday("forest::VitalityExchangeLimit::" + skuId)) {
+            Log.record(TAG, "活力兑换🍃[" + skuId + "]今日已达上限，跳过兑换");
+            return false;
+        }
+
         if (skuInfo.isEmpty()) {
             initVitality("SC_ASSETS");
         }
@@ -151,7 +157,7 @@ public class Vitality {
             String spuId = sku.getString("spuId");
             if (VitalityExchange(spuId, skuId, skuName)) {
                 if (skuName.contains("限时")) {
-                    Status.setFlagToday("forest::VitalityExchangeLimit::" + skuId);
+                    fansirsqi.xposed.sesame.data.Status.setFlagToday("forest::VitalityExchangeLimit::" + skuId);
                 }
                 return true;
             }
@@ -166,8 +172,8 @@ public class Vitality {
     public static Boolean VitalityExchange(String spuId, String skuId, String skuName) {
         try {
             if (VitalityExchange(spuId, skuId)) {
-                Status.vitalityExchangeToday(skuId);
-                int exchangedCount = Status.getVitalityCount(skuId);
+                fansirsqi.xposed.sesame.data.Status.vitalityExchangeToday(skuId);
+                int exchangedCount = fansirsqi.xposed.sesame.data.Status.getVitalityCount(skuId);
                 Log.forest("活力兑换🍃[" + skuName + "]#第" + exchangedCount + "次");
                 return true;
             }
@@ -181,6 +187,14 @@ public class Vitality {
     private static Boolean VitalityExchange(String spuId, String skuId) {
         try {
             JSONObject jo = new JSONObject(AntForestRpcCall.exchangeBenefit(spuId, skuId));
+            if (!jo.optBoolean("success")) {
+                String resultCode = jo.optString("resultCode", "");
+                if ("QUOTA_USER_NOT_ENOUGH".equals(resultCode)) {
+                    Log.forest("活力兑换🍃[兑换次数已达上限]#" + jo.optString("resultDesc", ""));
+                    fansirsqi.xposed.sesame.data.Status.setFlagToday("forest::VitalityExchangeLimit::" + skuId);
+                    return false;
+                }
+            }
             return ResChecker.checkRes(TAG + "森林活力值兑换失败:", jo);
         } catch (Throwable th) {
             Log.runtime(TAG, "VitalityExchange err:" + spuId + "," + skuId);

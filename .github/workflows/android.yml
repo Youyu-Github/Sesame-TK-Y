@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set Timezone to Asia/Shanghai
+      - name: 将时区设为亚洲/上海
         run: |
           sudo timedatectl set-timezone Asia/Shanghai
           echo "Current time: $(date)"
@@ -25,26 +25,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK
+      - name: 设置 JDK
         uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "zulu"
           cache: gradle
 
-      - name: Set up Gradle
+      - name: 设置 Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
           gradle-version: wrapper
 
-      - name: Grant execute permission for gradlew
+      - name: 授予 gradlew 执行权限
         run: chmod +x gradlew
 
-      - name: Build with Gradle
+      - name: 使用 Gradle 构建
         run: ./gradlew assembleNormalRelease assembleCompatibleRelease -Pversion=${{ github.ref_name }}
 
-      - name: Locate APKs and Set Outputs
+      - name: 查找 APK 并设置输出
         id: locate_apks
         run: |
           normal_apk=$(find app/build/outputs/apk/normal/release -name "*.apk" | head -n 1)
@@ -52,13 +52,13 @@ jobs:
           echo "normal_apk=$normal_apk" >> $GITHUB_OUTPUT
           echo "compatible_apk=$compatible_apk" >> $GITHUB_OUTPUT
 
-      - name: Copy APKs to staging for signing
+      - name: 将 APK 复制到暂存阶段以便签名
         run: |
           mkdir -p app/build/outputs/apk/all
           cp "${{ steps.locate_apks.outputs.normal_apk }}" app/build/outputs/apk/all/
           cp "${{ steps.locate_apks.outputs.compatible_apk }}" app/build/outputs/apk/all/
 
-      - name: Sign APKs
+      - name: APK 签名
         id: sign_apks
         uses: ilharp/sign-android-release@v2
         with:
@@ -69,7 +69,7 @@ jobs:
           keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
           buildToolsVersion: 36.0.0
 
-      - name: Extract Signed APK Paths
+      - name: 提取签名 APK 路径
         id: extract_apks
         run: |
           IFS=':' read -r -a files <<< "${{ steps.sign_apks.outputs.signedFiles }}"
@@ -81,19 +81,19 @@ jobs:
             fi
           done
 
-      - name: Upload APK - Compatible
+      - name: 更新安装包 - Compatible
         uses: actions/upload-artifact@v4
         with:
           name: apk-compatible
           path: ${{ steps.extract_apks.outputs.signed_compatible }}
 
-      - name: Upload APK - Normal
+      - name: 更新安装包 - Normal
         uses: actions/upload-artifact@v4
         with:
           name: apk-normal
           path: ${{ steps.extract_apks.outputs.signed_normal }}
 
-      - name: Extract file names
+      - name: 提取文件名
         id: extract_info
         run: |
           normal_file=$(basename "${{ steps.extract_apks.outputs.signed_normal }}")
@@ -104,12 +104,12 @@ jobs:
           echo "compatible_file=$compatible_file" >> $GITHUB_OUTPUT
           echo "version=$version" >> $GITHUB_OUTPUT
 
-      - name: Generate APKS Checksum
+      - name: 生成sha256校验值
         run: |
           sha256sum ${{ steps.extract_apks.outputs.signed_normal }} > CHECKSUMS-Sesame-Normal-${{ steps.extract_info.outputs.version }}.${{ env.SHORT_SHA }}-signed.apk.sha256
           sha256sum ${{ steps.extract_apks.outputs.signed_compatible }} > CHECKSUMS-Sesame-Compatible-${{ steps.extract_info.outputs.version }}.${{ env.SHORT_SHA }}-signed.apk.sha256
 
-      - name: Create Tag from Version
+      - name: 获取提交详细信息
         # if: startsWith(github.ref, 'refs/heads/main') && github.event_name == 'push'
         if: github.event_name == 'push'
         run: |
@@ -118,7 +118,7 @@ jobs:
           git tag "$VERSION_TAG"
           git push origin "$VERSION_TAG"
 
-      - name: Post to channel
+      - name: 向TG发送组合消息（APK 和 说明）
         # if: github.ref == 'refs/heads/main'
         env:
           CHANNEL_ID: ${{ secrets.TG_CHAT_ID }}
@@ -140,7 +140,7 @@ jobs:
             -F "compatible.apk=@${COMPATIBLE_FILE}"
       
 
-      - name: Upload Assets to Source Release
+      - name: 将资源整合上传到你的仓库发布
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ github.event.release.tag_name || steps.extract_info.outputs.version }} # 发布的名称。默认为标签名称

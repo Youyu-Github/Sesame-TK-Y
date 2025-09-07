@@ -629,24 +629,19 @@ public class Files {
      */
     public static Boolean clearFile(File file) {
         if (file.exists()) {
-            FileWriter fileWriter = null;
-            try {
-                // 使用 FileWriter 清空文件内容
-                fileWriter = new FileWriter(file);
-                fileWriter.write(""); // 写入空字符串，清空文件内容
-                fileWriter.flush(); // 刷新缓存，确保内容写入文件
-                return true; // 返回清空成功
-            } catch (IOException e) {
-                Log.printStackTrace(e);
-            } finally {
+            try (FileWriter fileWriter = new FileWriter(file)) {
                 try {
-                    if (fileWriter != null) {
-                        fileWriter.close(); // 关闭文件写入流
-                    }
+                    // 使用 FileWriter 清空文件内容
+                    fileWriter.write(""); // 写入空字符串，清空文件内容
+                    fileWriter.flush(); // 刷新缓存，确保内容写入文件
+                    return true; // 返回清空成功
                 } catch (IOException e) {
                     Log.printStackTrace(e);
                 }
+            } catch (IOException e) {
+                Log.printStackTrace(e);
             }
+            // 关闭文件写入流
         }
         // 如果文件不存在，则返回 false
         return false;

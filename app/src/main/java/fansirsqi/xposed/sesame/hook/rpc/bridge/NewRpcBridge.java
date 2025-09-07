@@ -5,6 +5,7 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import de.robv.android.xposed.XposedHelpers;
@@ -109,6 +110,19 @@ public class NewRpcBridge implements RpcBridge {
         loader = null;
     }
 
+    /**
+     * 发送RPC请求并获取响应字符串
+     * <p>
+     * 该方法是requestObject的包装，将RPC响应对象转换为字符串返回：
+     * 1. 调用requestObject执行实际的RPC请求
+     * 2. 从返回的RPC实体中提取响应字符串
+     * </p>
+     *
+     * @param rpcEntity RPC请求实体，包含请求方法、参数等信息
+     * @param tryCount 最大尝试次数，设置为1表示只尝试一次不重试，设置为0表示不尝试，大于1表示有重试
+     * @param retryInterval 重试间隔（毫秒），负值表示使用默认延迟，0表示立即重试
+     * @return 响应字符串，如果请求失败则返回null
+     */
     public String requestString(RpcEntity rpcEntity, int tryCount, int retryInterval) {
         RpcEntity resRpcEntity = requestObject(rpcEntity, tryCount, retryInterval);
         if (resRpcEntity != null) {
@@ -117,6 +131,23 @@ public class NewRpcBridge implements RpcBridge {
         return null;
     }
 
+    /**
+     * 发送RPC请求并获取响应对象
+     * <p>
+     * 该方法负责执行实际的RPC调用，支持重试机制和错误处理：
+     * 1. 根据tryCount参数控制重试次数
+     * 2. 根据retryInterval参数控制重试间隔
+     *    - retryInterval < 0: 使用600ms+随机延迟
+     *    - retryInterval = 0: 不等待立即重试
+     *    - retryInterval > 0: 使用指定的毫秒数等待
+     * 3. 检测网络错误并根据配置进入离线模式或尝试重新登录
+     * </p>
+     *
+     * @param rpcEntity RPC请求实体，包含请求方法、参数等信息
+     * @param tryCount 最大尝试次数，设置为1表示只尝试一次不重试，设置为0表示不尝试，大于1表示有重试
+     * @param retryInterval 重试间隔（毫秒），负值表示使用默认延迟，0表示立即重试
+     * @return 包含响应数据的RPC实体，如果请求失败则返回null
+     */
     @Override
     public RpcEntity requestObject(RpcEntity rpcEntity, int tryCount, int retryInterval) {
         if (ApplicationHook.isOffline()) {
@@ -127,7 +158,8 @@ public class NewRpcBridge implements RpcBridge {
             do {
                 count++;
                 try {
-                    RpcIntervalLimit.INSTANCE.enterIntervalLimit(rpcEntity.getRequestMethod());
+                    // RpcIntervalLimit.INSTANCE.enterIntervalLimit(rpcEntity.getRequestMethod());
+                    RpcIntervalLimit.INSTANCE.enterIntervalLimit(Objects.requireNonNull(rpcEntity.getRequestMethod()));
                     newRpcCallMethod.invoke(
                             newRpcInstance, rpcEntity.getRequestMethod(), false, false, "json", parseObjectMethod.invoke(null,
                                     rpcEntity.getRpcFullRequestData()), "", null, true, false, 0, false, "", null, null, null, Proxy.newProxyInstance(loader,

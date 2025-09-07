@@ -1544,6 +1544,7 @@ class AntFarm : ModelTask() {
         }
     }
 
+    /*
     private fun receiveFarmAwards() {
         try {
             var doubleCheck: Boolean
@@ -1580,6 +1581,64 @@ class AntFarm : ModelTask() {
                     }
                 }
             } while (doubleCheck)
+        } catch (t: Throwable) {
+            Log.printStackTrace(TAG, "receiveFarmAwards 错误:", t)
+        }
+    }
+    */
+    private fun receiveFarmAwards() {
+        try {
+            var doubleCheck: Boolean
+            var isFeedFull = false // 添加饲料槽已满的标志
+            do {
+                doubleCheck = false
+                val jo = JSONObject(AntFarmRpcCall.listFarmTask())
+                if (ResChecker.checkRes(TAG + "查询庄园任务失败:", jo)) {
+                    val farmTaskList = jo.getJSONArray("farmTaskList")
+                    val signList = jo.getJSONObject("signList")
+                    farmSign(signList)
+                    for (i in 0..<farmTaskList.length()) {
+                        // 如果饲料槽已满，跳过后续任务的领取
+                        if (isFeedFull) {
+                            //Log.record(TAG, "饲料槽已满，跳过后续任务奖励领取")
+                            break
+                        }
+
+                        val task = farmTaskList.getJSONObject(i)
+                        val taskStatus = task.getString("taskStatus")
+                        val taskTitle = task.optString("title", "未知任务")
+                        val awardCount = task.optInt("awardCount", 0)
+                        val taskId = task.optString("taskId")
+                        if (TaskStatus.FINISHED.name == taskStatus) {
+                            if (task.optString("awardType") == "ALLPURPOSE") {
+                                if (awardCount + foodStock > foodStockLimit) {
+                                    unreceiveTaskAward++
+                                    Log.record(TAG, taskTitle + "领取" + awardCount + "g饲料后将超过[" + foodStockLimit + "g]上限!终止领取")
+                                    break
+                                }
+                            }
+                            val receiveTaskAwardjo = JSONObject(AntFarmRpcCall.receiveFarmTaskAward(taskId))
+                            // 检查领取结果
+                            if (ResChecker.checkRes(TAG + "领取庄园任务奖励失败:", receiveTaskAwardjo)) {
+                                add2FoodStock(awardCount)
+                                Log.farm("庄园奖励[" + taskTitle + "]#" + awardCount + "g")
+                                doubleCheck = true
+                                if (unreceiveTaskAward > 0) unreceiveTaskAward--
+                            } else {
+                                // 检查是否是饲料槽已满的错误
+                                val resultCode = receiveTaskAwardjo.optString("resultCode", "")
+                                val memo = receiveTaskAwardjo.optString("memo", "")
+                                if ("331" == resultCode) {
+                                    isFeedFull = true
+                                    Log.record(TAG, "检测到饲料槽已满，停止领取任务奖励: $memo")
+                                    break
+                                }
+                            }
+                        }
+                        GlobalThreadPools.sleep(1000)
+                    }
+                }
+            } while (doubleCheck && !isFeedFull) // 如果饲料槽已满，不再进行双重检查
         } catch (t: Throwable) {
             Log.printStackTrace(TAG, "receiveFarmAwards 错误:", t)
         }

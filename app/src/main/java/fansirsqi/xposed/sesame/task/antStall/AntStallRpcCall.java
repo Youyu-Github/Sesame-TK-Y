@@ -9,51 +9,52 @@ import java.util.UUID;
  */
 public class AntStallRpcCall {
     //0.1.2406171355.5
-    private static final String VERSION = "0.1.2312271038.27";
+    //0.1.2312271038.27
+    private static final String VERSION = "0.1.2508141056.25";
     public static String home() {
         return RequestManager.requestString("com.alipay.antstall.self.home",
-                "[{\"arouseAppParams\":{},\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" +
+                "[{\"arouseAppParams\":{},\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" +
                         VERSION + "\"}]");
     }
     public static String settle(String assetId, int settleCoin) {
         return RequestManager.requestString("com.alipay.antstall.self.settle",
                 "[{\"assetId\":\"" + assetId + "\",\"coinType\":\"MASTER\",\"settleCoin\":" + settleCoin +
-                        ",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                        ",\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     public static String shopList() {
         return RequestManager.requestString("com.alipay.antstall.shop.list",
-                "[{\"freeTop\":false,\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" +
+                "[{\"freeTop\":false,\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" +
                         VERSION + "\"}]");
     }
     public static String preOneKeyClose() {
         return RequestManager.requestString("com.alipay.antstall.user.shop.close.preOneKey",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     public static String oneKeyClose() {
         return RequestManager.requestString("com.alipay.antstall.user.shop.oneKeyClose",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     public static String preShopClose(String shopId, String billNo) {
         return RequestManager.requestString("com.alipay.antstall.user.shop.close.pre",
                 "[{\"billNo\":\"" + billNo + "\",\"shopId\":\"" + shopId +
-                        "\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
+                        "\",\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
     }
     public static String shopClose(String shopId) {
         return RequestManager.requestString("com.alipay.antstall.user.shop.close",
-                "[{\"shopId\":\"" + shopId + "\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
+                "[{\"shopId\":\"" + shopId + "\",\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
     }
     public static String oneKeyOpen() {
         return RequestManager.requestString("com.alipay.antstall.user.shop.oneKeyOpen",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     public static String shopOpen(String friendSeatId, String friendUserId, String shopId) {
         return RequestManager.requestString("com.alipay.antstall.user.shop.open",
                 "[{\"friendSeatId\":\"" + friendSeatId + "\",\"friendUserId\":\"" + friendUserId + "\",\"shopId\":\"" +
-                        shopId + "\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
+                        shopId + "\",\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
     }
     public static String rankCoinDonate() {
         return RequestManager.requestString("com.alipay.antstall.rank.coin.donate",
@@ -62,16 +63,16 @@ public class AntStallRpcCall {
     public static String friendHome(String userId) {
         return RequestManager.requestString("com.alipay.antstall.friend.home",
                 "[{\"arouseAppParams\":{},\"friendUserId\":\"" + userId +
-                        "\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
+                        "\",\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
     }
     public static String taskList() {
         return RequestManager.requestString("com.alipay.antstall.task.list",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" +
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" +
                         VERSION + "\"}]");
     }
     public static String signToday() {
         return RequestManager.requestString("com.alipay.antstall.sign.today",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" +
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" +
                         VERSION + "\"}]");
     }
     public static String finishTask(String outBizNo, String taskType) {
@@ -107,61 +108,61 @@ public class AntStallRpcCall {
     }
     public static String taskFinish(String taskType) {
         return RequestManager.requestString("com.alipay.antstall.task.finish",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"taskType\":\"" + taskType + "\",\"version\":\"" +
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"taskType\":\"" + taskType + "\",\"version\":\"" +
                         VERSION + "\"}]");
     }
     public static String taskAward(String amount, String prizeId, String taskType) {
         return RequestManager.requestString("com.alipay.antstall.task.award",
                 "[{\"amount\":" + amount + ",\"prizeId\":\"" + prizeId +
-                        "\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"taskType\":\""
+                        "\",\"source\":\"search\",\"systemType\":\"android\",\"taskType\":\""
                         + taskType + "\",\"version\":\"" + VERSION + "\"}]");
     }
     public static String taskBenefit() {
         return RequestManager.requestString("com.alipay.antstall.task.benefit",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" +
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" +
                         VERSION + "\"}]");
     }
     public static String collectManure() {
         return RequestManager.requestString("com.alipay.antstall.manure.collectManure",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" +
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" +
                         VERSION + "\"}]");
     }
     public static String queryManureInfo() {
         return RequestManager.requestString("com.alipay.antstall.manure.queryManureInfo",
-                "[{\"queryManureType\":\"ANTSTALL\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" +
+                "[{\"queryManureType\":\"ANTSTALL\",\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" +
                         VERSION + "\"}]");
     }
     public static String projectList() {
         return RequestManager.requestString("com.alipay.antstall.project.list",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
     }
     public static String projectDetail(String projectId) {
         return RequestManager.requestString("com.alipay.antstall.project.detail",
                 "[{\"projectId\":\"" + projectId +
-                        "\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
+                        "\",\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
     }
     public static String projectDonate(String projectId) {
         return RequestManager.requestString("com.alipay.antstall.project.donate",
                 "[{\"bizNo\":\"" + UUID.randomUUID().toString() + "\",\"projectId\":\"" + projectId +
-                        "\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
+                        "\",\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
     }
     public static String roadmap() {
         return RequestManager.requestString("com.alipay.antstall.village.roadmap",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
     }
     public static String nextVillage() {
         return RequestManager.requestString("com.alipay.antstall.user.ast.next.village",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
     }
     public static String rankInviteRegister() {
         return RequestManager.requestString("com.alipay.antstall.rank.invite.register",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     public static String friendInviteRegister(String friendUserId) {
         return RequestManager.requestString("com.alipay.antstall.friend.invite.register",
                 "[{\"friendUserId\":\"" + friendUserId
-                        + "\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                        + "\",\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     /* 助力好友 */
@@ -181,39 +182,39 @@ public class AntStallRpcCall {
         return RequestManager.requestString("com.alipay.antstall.friend.shop.sendback.pre",
                 "[{\"billNo\":\"" + billNo + "\",\"seatId\":\"" + seatId + "\",\"shopId\":\"" + shopId
                         + "\",\"shopUserId\":\"" + shopUserId
-                        + "\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                        + "\",\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     public static String shopSendBack(String seatId) {
         return RequestManager.requestString("com.alipay.antstall.friend.shop.sendback",
                 "[{\"seatId\":\"" + seatId
-                        + "\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                        + "\",\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     public static String rankInviteOpen() {
         return RequestManager.requestString("com.alipay.antstall.rank.invite.open",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     public static String oneKeyInviteOpenShop(String friendUserId, String mySeatId) {
         return RequestManager.requestString("com.alipay.antstall.user.shop.oneKeyInviteOpenShop",
                 "[{\"friendUserId\":\"" + friendUserId + "\",\"mySeatId\":\"" + mySeatId
-                        + "\",\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                        + "\",\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     public static String dynamicLoss() {
         return RequestManager.requestString("com.alipay.antstall.dynamic.loss",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\"" + VERSION + "\"}]");
     }
     public static String throwManure(JSONArray dynamicList) {
         return RequestManager.requestString("com.alipay.antstall.manure.throwManure",
                 "[{\"dynamicList\":" + dynamicList
-                        + ",\"sendMsg\":false,\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                        + ",\"sendMsg\":false,\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     public static String settleReceivable() {
         return RequestManager.requestString("com.alipay.antstall.self.settle.receivable",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     /**
@@ -223,7 +224,7 @@ public class AntStallRpcCall {
      */
     public static String nextTicketFriend() {
         return RequestManager.requestString("com.alipay.antstall.friend.nextTicketFriend",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                "[{\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
     /**
@@ -235,7 +236,7 @@ public class AntStallRpcCall {
         return RequestManager.requestString("com.alipay.antstall.friend.paste.ticket",
                 "[{\"billNo\":\"" + billNo + "\",\"seatId\":\"" + seatId + "\",\"shopId\":\"" + shopId
                         + "\",\"shopUserId\":\"" + shopUserId + "\",\"seatUserId\": \"" + seatUserId + "\","
-                        + "\"source\":\"ch_appcenter__chsub_9patch\",\"systemType\":\"android\",\"version\":\""
+                        + "\"source\":\"search\",\"systemType\":\"android\",\"version\":\""
                         + VERSION + "\"}]");
     }
 }

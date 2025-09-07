@@ -534,6 +534,10 @@ public class AntStall extends ModelTask {
     private void taskList() {
         try {
             String s = AntStallRpcCall.taskList();
+            if (s == null) {
+                Log.error(TAG, "蚂蚁新村⛪[RPC调用失败]#taskList返回null，可能是RpcBridge未初始化");
+                return;
+            }
             JSONObject jo = new JSONObject(s);
             if (!ResChecker.checkRes(TAG + "查询蚂蚁新村任务列表失败:", jo)) {
                 Log.record(TAG,"taskList err:" + " " + s);

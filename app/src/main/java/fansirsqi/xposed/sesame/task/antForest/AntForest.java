@@ -60,6 +60,7 @@ import fansirsqi.xposed.sesame.util.Average;
 import fansirsqi.xposed.sesame.util.GlobalThreadPools;
 import fansirsqi.xposed.sesame.util.ListUtil;
 import fansirsqi.xposed.sesame.util.Log;
+import fansirsqi.xposed.sesame.util.StringUtil;
 import fansirsqi.xposed.sesame.util.maps.UserMap;
 import fansirsqi.xposed.sesame.util.Notify;
 import fansirsqi.xposed.sesame.util.RandomUtil;
@@ -72,6 +73,7 @@ import fansirsqi.xposed.sesame.util.TimeCounter;
 import java.text.SimpleDateFormat;
 import java.util.*;
 /// lzw add end
+import fansirsqi.xposed.sesame.hook.rpc.intervallimit.IntervalLimit;
 
 import static fansirsqi.xposed.sesame.task.antForest.ForestUtil.hasBombCard;
 import static fansirsqi.xposed.sesame.task.antForest.ForestUtil.hasShield;
@@ -94,8 +96,10 @@ public class AntForest extends ModelTask {
      * 执行间隔-分钟
      */
     private Integer checkIntervalInt;
-    private FixedOrRangeIntervalLimit collectIntervalEntity;
-    private FixedOrRangeIntervalLimit doubleCollectIntervalEntity;
+    // private FixedOrRangeIntervalLimit collectIntervalEntity;
+    // private FixedOrRangeIntervalLimit doubleCollectIntervalEntity;
+    private IntervalLimit collectIntervalEntity;
+    private IntervalLimit doubleCollectIntervalEntity;
     /**
      * 双击卡结束时间
      */
@@ -207,13 +211,16 @@ public class AntForest extends ModelTask {
     
     private static boolean canConsumeAnimalProp;
     private static int totalCollected = 0;
-    private static int totalHelpCollected = 0;
-    private static int totalWatered = 0;
+    // private static int totalHelpCollected = 0;
+    // private static int totalWatered = 0;
+    private static final int totalHelpCollected = 0;
+    private static final int totalWatered = 0;
 
     private final Map<String, AtomicInteger> forestTaskTryCount = new ConcurrentHashMap<>();
 
     @Getter
-    private Set<String> dontCollectMap = new HashSet<>();
+    // private Set<String> dontCollectMap = new HashSet<>();
+    private Set<String> dsontCollectMap = new HashSet<>();
     ArrayList<String> emojiList = new ArrayList<>(Arrays.asList(
             "🍅", "🍓", "🥓", "🍂", "🍚", "🌰", "🟢", "🌴",
             "🥗", "🧀", "🥩", "🍍", "🌶️", "🍲", "🍆", "🥕",
@@ -356,32 +363,68 @@ public class AntForest extends ModelTask {
         }
     }
 
+    /*
     @Override
     public Boolean isSync() {
         return true;
     }
+    */
 
     @Override
     public int getPriority() {
         return 1;
     }
 
+    /**
+     * 创建区间限制对象
+     * 
+     * @param intervalStr 区间字符串，如 "1000-2000"
+     * @param defaultMin 默认最小值
+     * @param defaultMax 默认最大值
+     * @param description 描述，用于日志
+     * @return 区间限制对象
+     */
+    private FixedOrRangeIntervalLimit createSafeIntervalLimit(String intervalStr, int defaultMin, int defaultMax, String description) {
+        // 记录原始输入值
+        Log.record(TAG, description + "原始设置值: [" + intervalStr + "]");
+        
+        // 使用自定义区间限制类，处理所有边界情况
+        FixedOrRangeIntervalLimit limit = new FixedOrRangeIntervalLimit(intervalStr, defaultMin, defaultMax);
+        Log.record(TAG, description + "成功创建区间限制");
+        return limit;
+    }
+
     @Override
     public void boot(ClassLoader classLoader) {
         super.boot(classLoader);
-        FixedOrRangeIntervalLimit queryIntervalLimit = new FixedOrRangeIntervalLimit(queryInterval.getValue(), 200, 10000);//限制查询间隔
+        // FixedOrRangeIntervalLimit queryIntervalLimit = new FixedOrRangeIntervalLimit(queryInterval.getValue(), 200, 10000);//限制查询间隔
+        // 安全创建各种区间限制
+        FixedOrRangeIntervalLimit queryIntervalLimit = createSafeIntervalLimit(
+            queryInterval.getValue(), 10, 10000, "查询间隔");
+            
+        // 添加RPC间隔限制
         RpcIntervalLimit.INSTANCE.addIntervalLimit("alipay.antforest.forest.h5.queryHomePage", queryIntervalLimit);
         RpcIntervalLimit.INSTANCE.addIntervalLimit("alipay.antforest.forest.h5.queryFriendHomePage", queryIntervalLimit);
         RpcIntervalLimit.INSTANCE.addIntervalLimit("alipay.antmember.forest.h5.collectEnergy", 200);
         RpcIntervalLimit.INSTANCE.addIntervalLimit("alipay.antmember.forest.h5.queryEnergyRanking", 200);
         RpcIntervalLimit.INSTANCE.addIntervalLimit("alipay.antforest.forest.h5.fillUserRobFlag", 500);
+        // 设置其他参数
         tryCountInt = tryCount.getValue();
         retryIntervalInt = retryInterval.getValue();
         advanceTimeInt = advanceTime.getValue();
         checkIntervalInt = BaseModel.getCheckInterval().getValue();
-        dontCollectMap = dontCollectList.getValue();
-        collectIntervalEntity = new FixedOrRangeIntervalLimit(collectInterval.getValue(), 200, 10000);//收取间隔
-        doubleCollectIntervalEntity = new FixedOrRangeIntervalLimit(doubleCollectInterval.getValue(), 200, 5000);//双击间隔
+        // dontCollectMap = dontCollectList.getValue();
+        // collectIntervalEntity = new FixedOrRangeIntervalLimit(collectInterval.getValue(), 200, 10000);//收取间隔
+        // doubleCollectIntervalEntity = new FixedOrRangeIntervalLimit(doubleCollectInterval.getValue(), 200, 5000);//双击间隔
+        dsontCollectMap = dontCollectList.getValue();
+        
+        // 创建收取间隔实体
+        collectIntervalEntity = createSafeIntervalLimit(
+            collectInterval.getValue(), 50, 10000, "收取间隔");
+            
+        // 创建双击收取间隔实体
+        doubleCollectIntervalEntity = createSafeIntervalLimit(
+            doubleCollectInterval.getValue(), 10, 5000, "双击间隔");
         delayTimeMath.clear();
         AntForestRpcCall.init();
     }
@@ -410,16 +453,16 @@ public class AntForest extends ModelTask {
             usePropBeforeCollectEnergy(selfId);
             tc.countDebug("使用道具卡");
 
+            collectPKEnergy();
+            tc.countDebug("收PK榜森友能量");
+            collectFriendEnergy();
+            tc.countDebug("收取好友能量");
+
             JSONObject selfHomeObj = querySelfHome();
             tc.countDebug("获取自己主页对象信息");
 
             selfHomeObj = collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self"); //收取自己的能量
             tc.countDebug("收取自己的能量");
-
-            collectPKEnergy();
-            tc.countDebug("收PK榜森友能量");
-            collectFriendEnergy();
-            tc.countDebug("收取好友能量");
 
             if (selfHomeObj != null) {
 
@@ -988,7 +1031,8 @@ public class AntForest extends ModelTask {
             } //该次已缓存，标记为已收取
             Log.record(TAG, "进入[" + userName + "]的蚂蚁森林");
             // 3. 判断是否允许收取能量
-            if ((collectEnergy.getValue() <= 0) || dontCollectMap.contains(userId)) {
+            // if ((collectEnergy.getValue() <= 0) || dontCollectMap.contains(userId)) {
+            if ((collectEnergy.getValue() <= 0) || dsontCollectMap.contains(userId)) {
                 return userHomeObj;
             }
 
@@ -1129,12 +1173,14 @@ public class AntForest extends ModelTask {
                     if (Objects.equals(userId, selfId)) continue; //如果是自己则跳过
                     pkIdList.add(userId);
                     if (pkIdList.size() == 20) {
-                        processLastdEnergy(pkIdList, "pk");//20个id 一次处理
+                        // processLastdEnergy(pkIdList, "pk");//20个id 一次处理
+                        processLastEnergy(pkIdList, "pk");//20个id 一次处理
                         pkIdList.clear();
                     }
                 }
                 if (!pkIdList.isEmpty()) {
-                    processLastdEnergy(pkIdList, "pk");
+                    // processLastdEnergy(pkIdList, "pk");
+                    processLastEnergy(pkIdList, "pk");
                 }
                 Log.runtime(TAG, "收取PK能量完成！");
             }
@@ -1144,38 +1190,94 @@ public class AntForest extends ModelTask {
     }
 
     
+    /**
+     * 收集好友排行榜中的能量
+     * <p>
+     * 该方法首先获取好友排行榜，然后分批处理好友的能量：
+     * 1. 先处理排名前20的好友
+     * 2. 再分批处理剩余好友（每批20个）
+     * 3. 包含重试机制，最多尝试3次，每次重试间隔3秒
+     * </p>
+     */
     private void collectFriendEnergy() {
         try {
             TimeCounter tc = new TimeCounter(TAG);
+            /*
             JSONObject friendsObject = new JSONObject(AntForestRpcCall.queryFriendsEnergyRanking());
             if (!ResChecker.checkRes(TAG + "获取好友排行榜失败:", friendsObject)) {
                 Log.error(TAG, "获取好友排行榜失败: " + friendsObject.optString("resultDesc"));
+            */
+            // 添加重试机制，最多尝试3次
+            String rankingResponse = null;
+            JSONObject friendsObject = null;
+            boolean success = false;
+            
+            for (int retry = 0; retry < 3 && !success; retry++) {
+                if (retry > 0) {
+                    Log.record(TAG, "获取好友排行榜第" + (retry + 1) + "次尝试");
+                    // 重试前等待一段时间
+                    GlobalThreadPools.sleep(3000);
+                }
+                
+                rankingResponse = AntForestRpcCall.queryFriendsEnergyRanking();
+                if (StringUtil.isEmpty(rankingResponse)) {
+                    Log.error(TAG, "获取好友排行榜返回为空，准备重试");
+                    continue;
+                }
+                
+                try {
+                    friendsObject = new JSONObject(rankingResponse);
+                    if (ResChecker.checkRes(TAG + "获取好友排行榜失败:", friendsObject)) {
+                        success = true;
+                        Log.record(TAG, "成功获取好友排行榜");
+                    } else {
+                        String errorMsg = friendsObject.optString("errorMessage", "未知错误");
+                        Log.error(TAG, "获取好友排行榜失败: " + errorMsg + "，准备重试");
+                    }
+                } catch (JSONException e) {
+                    Log.error(TAG, "解析好友排行榜JSON异常，准备重试: " + e.getMessage());
+                }
+            }
+            
+            if (!success) {
+                Log.error(TAG, "获取好友排行榜失败，已重试3次，放弃");
                 return;
             }
             tc.countDebug("获取好友排行榜");
             // 处理排名靠前的好友（通常自己也在其中） 20个
+            Log.record(TAG, "开始处理排名靠前好友");
             collectUserEnergy(friendsObject, "");
             tc.countDebug("处理排名靠前的好友");
             // 分批处理其他好友（从第20位开始）
+            /*
             JSONArray totalDatas = friendsObject.optJSONArray("totalDatas");
             if (totalDatas == null || totalDatas.length() == 0) {
                 Log.runtime(TAG, "好友排行榜为空，跳过");
+            */
+            JSONArray totalData = friendsObject.optJSONArray("totalDatas");
+            if (totalData == null || totalData.length() == 0) {
+                Log.record(TAG, "好友排行榜为空，跳过");
                 return;
             }
+            Log.record(TAG, "开始处理其他好友，共" + totalData.length() + "个");
             List<String> idList = new ArrayList<>();
-            for (int pos = 20; pos < totalDatas.length(); pos++) {
-                JSONObject friend = totalDatas.getJSONObject(pos);
+            // for (int pos = 20; pos < totalDatas.length(); pos++) {
+            //     JSONObject friend = totalDatas.getJSONObject(pos);
+            for (int pos = 20; pos < totalData.length(); pos++) {
+                JSONObject friend = totalData.getJSONObject(pos);
                 String userId = friend.getString("userId");
                 if (Objects.equals(userId, selfId)) continue; //如果是自己则跳过
                 idList.add(userId);
                 if (idList.size() == 20) {
-                    processLastdEnergy(idList, "");//20个id 一次处理
+                    // processLastdEnergy(idList, "");//20个id 一次处理
+                    processLastEnergy(idList, "");//20个id 一次处理
                     idList.clear();
                 }
             }
             tc.countDebug("分批处理其他好友");
             if (!idList.isEmpty()) {
-                processLastdEnergy(idList, "");
+                // processLastdEnergy(idList, "");
+                processLastEnergy(idList, "");
             }
             tc.countDebug("分批处理其他好友空");
             Log.record(TAG, "收取好友能量完成！");
@@ -1189,21 +1291,71 @@ public class AntForest extends ModelTask {
 
     /**
      * 收取排名靠后的能量
+     * <p>
+     * 该方法处理一批用户的能量收集：
+     * 1. 调用fillUserRobFlag API获取用户能量信息
+     * 2. 遍历每个用户并处理其能量
+     * 3. 包含重试机制，最多尝试3次，每次重试间隔2秒
+     * </p>
      *
-     * @param userIds 用户id列表
+     * @param userIds 用户id列表（最多20个）
+     * @param flag 标志，"pk"表示PK榜好友，""表示普通好友
      */
-    private void processLastdEnergy(List<String> userIds, String flag) {
+    // private void processLastdEnergy(List<String> userIds, String flag) {
+    private void processLastEnergy(List<String> userIds, String flag) {
         try {
             if (errorWait) return;
+            /*
             String jsonStr;
             if (flag.equals("pk")) {
                 jsonStr = AntForestRpcCall.fillUserRobFlag(new JSONArray(userIds), true);
             } else {
                 jsonStr = AntForestRpcCall.fillUserRobFlag(new JSONArray(userIds));
+            */
+            // 添加重试机制，最多尝试3次
+            String jsonStr = null;
+            JSONObject batchObj = null;
+            boolean success = false;
+            
+            for (int retry = 0; retry < 3 && !success; retry++) {
+                if (retry > 0) {
+                    Log.record(TAG, "获取好友能量信息第" + (retry + 1) + "次尝试");
+                    // 重试前等待一段时间
+                    GlobalThreadPools.sleep(2000);
+                }
+                
+                try {
+                    if (flag.equals("pk")) {
+                        jsonStr = AntForestRpcCall.fillUserRobFlag(new JSONArray(userIds), true);
+                    } else {
+                        jsonStr = AntForestRpcCall.fillUserRobFlag(new JSONArray(userIds));
+                    }
+                    
+                    if (StringUtil.isEmpty(jsonStr)) {
+                        Log.error(TAG, "获取好友能量信息返回为空，准备重试");
+                        continue;
+                    }
+                    
+                    batchObj = new JSONObject(jsonStr);
+                    success = true;
+                } catch (Exception e) {
+                    Log.error(TAG, "获取好友能量信息异常，准备重试: " + e.getMessage());
+                }
             }
-            JSONObject batchObj = new JSONObject(jsonStr);
+            
+            if (!success) {
+                Log.error(TAG, "获取好友能量信息失败，已重试3次，放弃");
+                return;
+            }
+            // JSONObject batchObj = new JSONObject(jsonStr);
             JSONArray friendList = batchObj.optJSONArray("friendRanking");
-            if (friendList == null) return;
+            // if (friendList == null) return;
+            if (friendList == null) {
+                Log.record(TAG, "好友能量列表为空");
+                return;
+            }
+            
+            Log.record(TAG, "开始处理" + friendList.length() + "个好友的能量");
             for (int i = 0; i < friendList.length(); i++) {
                 JSONObject friendObj = friendList.getJSONObject(i);
                 processEnergy(friendObj, flag);
@@ -1217,9 +1369,15 @@ public class AntForest extends ModelTask {
 
     /**
      * 处理单个好友 - 收能量
-     * 最终判断是否收能量步骤
+     * <p>
+     * 该方法是能量收集的最终决策点，根据不同条件判断是否需要收取能量：
+     * 1. 区分普通好友和PK好友的处理逻辑
+     * 2. 检查是否需要收集能量、帮助保护或领取礼盒
+     * 3. 根据条件调用相应的方法执行具体操作
+     * </p>
      *
-     * @param obj 好友/PK好友 的JSON对象
+     * @param obj 好友/PK好友的JSON对象，包含能量信息
+     * @param flag 标志，"pk"表示PK榜好友，""表示普通好友
      */
     private void processEnergy(JSONObject obj, String flag) {
         try {
@@ -1233,7 +1391,8 @@ public class AntForest extends ModelTask {
                     return;
                 } else {
                     if (obj.optBoolean("canCollectEnergy")) {
-                        long canCollectLaterTime = obj.getLong("canCollectLaterTime");
+                        // long canCollectLaterTime = obj.getLong("canCollectLaterTime");
+                        long canCollectLaterTime = obj.optLong("canCollectLaterTime", -1);
                         if (canCollectLaterTime > 0 && canCollectLaterTime - System.currentTimeMillis() < checkIntervalInt) {//如果收取时间在执行时间范围内，则可以收取
                             canCollect = true;
                         }
@@ -1245,7 +1404,8 @@ public class AntForest extends ModelTask {
                 }
             } else {
                 if (Objects.equals(userId, selfId)) return;//如果是自己，则跳过
-                boolean needCollectEnergy = (collectEnergy.getValue() > 0 ) && !dontCollectMap.contains(userId); //开启了收能量功能并且不在排除名单中
+                // boolean needCollectEnergy = (collectEnergy.getValue() > 0 ) && !dontCollectMap.contains(userId); //开启了收能量功能并且不在排除名单中
+                boolean needCollectEnergy = (collectEnergy.getValue() > 0 ) && !dsontCollectMap.contains(userId); //开启了收能量功能并且不在排除名单中
                 boolean needHelpProtect = helpFriendCollectType.getValue() != HelpFriendCollectType.NONE && obj.optBoolean("canProtectBubble") && Status.canProtectBubbleToday(selfId);
                 // Log.forest("needHelpProtect:"+needHelpProtect+" value:"+helpFriendCollectType.getValue()+" can:"+friendObj.optBoolean("canProtectBubble")+" has:" + Status.canProtectBubbleToday(selfId));
                 boolean needCollectGiftBox = collectGiftBox.getValue() && obj.optBoolean("canCollectGiftBox");
@@ -1256,7 +1416,8 @@ public class AntForest extends ModelTask {
                 boolean canCollect = false;
                 if (needCollectEnergy) {
                     if (obj.optBoolean("canCollectEnergy")) {
-                        long canCollectLaterTime = obj.getLong("canCollectLaterTime");
+                        // long canCollectLaterTime = obj.getLong("canCollectLaterTime");
+                        long canCollectLaterTime = obj.optLong("canCollectLaterTime", -1);
                         if (canCollectLaterTime > 0 && canCollectLaterTime - System.currentTimeMillis() < checkIntervalInt) {//如果收取时间在执行时间范围内，则可以收取
                             canCollect = true;
                         }
@@ -1447,12 +1608,16 @@ public class AntForest extends ModelTask {
                             long sleep;
                             if (needDouble) {
                                 collectEnergyEntity.unsetNeedDouble();
-                                sleep = doubleCollectIntervalEntity.getInterval() - System.currentTimeMillis() + collectEnergyLockLimit.get();
+                                // sleep = doubleCollectIntervalEntity.getInterval() - System.currentTimeMillis() + collectEnergyLockLimit.get();
+                                Integer interval = doubleCollectIntervalEntity.getInterval();
+                                sleep = (interval != null ? interval : 1000) - System.currentTimeMillis() + collectEnergyLockLimit.get();
                             } else if (needRetry) {
                                 collectEnergyEntity.unsetNeedRetry();
                                 sleep = retryIntervalInt - System.currentTimeMillis() + collectEnergyLockLimit.get();
                             } else {
-                                sleep = collectIntervalEntity.getInterval() - System.currentTimeMillis() + collectEnergyLockLimit.get();
+                                // sleep = collectIntervalEntity.getInterval() - System.currentTimeMillis() + collectEnergyLockLimit.get();
+                                Integer interval = collectIntervalEntity.getInterval();
+                                sleep = (interval != null ? interval : 1000) - System.currentTimeMillis() + collectEnergyLockLimit.get();
                             }
                             if (sleep > 0) {
                                 GlobalThreadPools.sleep(sleep);
@@ -2436,13 +2601,16 @@ public class AntForest extends ModelTask {
         return null; // 未找到或出错时返回 null
     }
 
-    private JSONObject showBag() {
+    // private JSONObject showBag() {
+    private void showBag() {
         JSONObject bagObject = queryPropList();
         if (Objects.isNull(bagObject)) {
-            return null;
+            // return null;
+            return;
         }
         try {
-            JSONArray forestPropVOList = bagObject.getJSONArray("forestPropVOList");
+            // JSONArray forestPropVOList = bagObject.getJSONArray("forestPropVOList");
+            JSONArray forestPropVOList = Objects.requireNonNull(bagObject).getJSONArray("forestPropVOList");
             for (int i = 0; i < forestPropVOList.length(); i++) {
                 JSONObject forestPropVO = forestPropVOList.getJSONObject(i);
                 JSONObject propConfigVO = forestPropVO.getJSONObject("propConfigVO");
@@ -2455,7 +2623,7 @@ public class AntForest extends ModelTask {
             Log.printStackTrace(TAG, e);
         }
 
-        return null; // 未找到或出错时返回 null
+        // return null; // 未找到或出错时返回 null
     }
 
     /**

@@ -21,14 +21,38 @@ import fansirsqi.xposed.sesame.util.StringUtil;
 public class AntForestRpcCall {
     private static String VERSION = "";
 
+    /**
+     * 初始化API版本号
+     * <p>
+     * 根据支付宝版本号设置合适的API版本参数
+     * </p>
+     */
     public static void init() {
         AlipayVersion alipayVersion = ApplicationHook.getAlipayVersion();
+        /*
         if (alipayVersion.compareTo(new AlipayVersion("10.5.88.8000")) > 0) {
             VERSION = "20240403";
         } else if (alipayVersion.compareTo(new AlipayVersion("10.3.96.8100")) > 0) {
             VERSION = "20230501";
         } else {
             VERSION = "20230501";
+        */
+        Log.record("AntForestRpcCall", "当前支付宝版本: " + alipayVersion.toString());
+        // 默认版本号
+        VERSION = "20230501";
+        try {
+            // 根据支付宝版本设置不同的API版本号
+            if (alipayVersion.compareTo(new AlipayVersion("10.7.30.8000")) > 0) {
+                VERSION = "20250108";  // 2025年版本
+            } else if (alipayVersion.compareTo(new AlipayVersion("10.5.88.8000")) > 0) {
+                VERSION = "20240403";  // 2024年版本
+            } else if (alipayVersion.compareTo(new AlipayVersion("10.3.96.8100")) > 0) {
+                VERSION = "20230501";  // 2023年版本
+            }
+            Log.record("AntForestRpcCall", "使用API版本: " + VERSION);
+        } catch (Exception e) {
+            Log.error("AntForestRpcCall", "版本初始化异常，使用默认版本: " + VERSION);
+            Log.printStackTrace(e);
         }
     }
 
