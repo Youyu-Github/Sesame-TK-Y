@@ -126,13 +126,13 @@ jobs:
           NORMAL_FILE: ${{ steps.extract_apks.outputs.signed_normal }}
           COMPATIBLE_FILE: ${{ steps.extract_apks.outputs.signed_compatible }}
           COMMIT_MESSAGE: |+
-            *New push to github\!*         
+            *Github 推送了新版本 \!*         
             ```
             ${{ github.event.head_commit.message }}
             ```Branch: `${{ github.ref_name }}`
             *下载说明:*
-              *Normal* 为正常版本，适用于 `Android 8.0` 及以上的系统  
-              *Compatible* 为兼容版本，适用于 `Android 7.0` 及以下的系统，最低支持 `Android 5.1`
+              * - Normal* 为正常版本，适用于 `Android 8.0` 及以上的系统  
+              * - Compatible* 为兼容版本，适用于 `Android 7.0` 及以下的系统，最低支持 `Android 5.1`
         run: |
           ESCAPED=$(python3 -c 'import json, os, urllib.parse; print(urllib.parse.quote(json.dumps(os.environ["COMMIT_MESSAGE"])))')
           curl -v "https://api.telegram.org/bot${BOT_TOKEN}/sendMediaGroup?chat_id=${CHANNEL_ID}&media=%5B%7B%22type%22:%22document%22,%20%22media%22:%22attach://normal.apk%22,%22parse_mode%22:%22MarkdownV2%22,%22caption%22:${ESCAPED}%7D,%20%7B%22type%22:%22document%22,%22media%22:%22attach://compatible.apk%22%7D%5D" \
