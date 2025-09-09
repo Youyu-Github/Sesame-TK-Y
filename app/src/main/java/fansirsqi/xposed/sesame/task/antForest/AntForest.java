@@ -425,7 +425,9 @@ public class AntForest extends ModelTask {
                 now = Calendar.getInstance();
                 hour = now.get(Calendar.HOUR_OF_DAY);
                 minute = now.get(Calendar.MINUTE);
-                if (!(TaskCommon.IS_ENERGY_TIME || hour == 7 && minute < 30)) {
+                if (!(TaskCommon.IS_ENERGY_TIME || 
+                      (hour == 0 && minute >= 0 && minute < 10) || 
+                      (hour == 7 && minute >= 0 && minute < 35))) {
                     Log.record(TAG, "当前不在只收能量时间段，退出循环");
                     break;
                 }
