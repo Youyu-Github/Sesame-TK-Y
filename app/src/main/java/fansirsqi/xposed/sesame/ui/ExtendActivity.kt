@@ -99,6 +99,49 @@ class ExtendActivity : BaseActivity() {
         )
         //调试功能往里加
         if (BuildConfig.DEBUG) {
+            // 新增：RPC 调试入口（Method + requestData）
+            extendFunctions.add(
+                ExtendFunctionItem("RPC调试") {
+                    // 构建包含两个输入框的自定义视图
+                    val container = android.widget.LinearLayout(this).apply {
+                        orientation = android.widget.LinearLayout.VERTICAL
+                        setPadding(48, 24, 48, 0)
+                    }
+                    val etMethod = EditText(this).apply {
+                        hint = "Method 例如：alipay.antforest.forest.h5.queryMiscInfo"
+                        setText("")
+                    }
+                    val etRequestData = EditText(this).apply {
+                        hint = "requestData 例如：[{}]"
+                        setText("")
+                        minLines = 4
+                        maxLines = 8
+                        setHorizontallyScrolling(false)
+                    }
+                    container.addView(etMethod)
+                    container.addView(etRequestData)
+                    AlertDialog.Builder(this)
+                        .setTitle("RPC调试")
+                        .setView(container)
+                        .setPositiveButton(R.string.ok) { _, _ ->
+                            val method = etMethod.text?.toString()?.trim().orEmpty()
+                            val requestData = etRequestData.text?.toString()?.trim().orEmpty()
+                            if (method.isEmpty() || requestData.isEmpty()) {
+                                ToastUtil.showToast(this, "Method 和 requestData 不能为空")
+                                return@setPositiveButton
+                            }
+                            // 通过广播交由支付宝进程执行，避免本进程无 rpcBridge 的问题
+                            val intent = Intent("com.eg.android.AlipayGphone.sesame.rpctest")
+                            intent.putExtra("method", method)
+                            intent.putExtra("data", requestData)
+                            intent.putExtra("type", "Rpc")
+                            sendBroadcast(intent)
+                            ToastUtil.showToast(this, "已发送，请在调试日志查看结果")
+                        }
+                        .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
+                        .show()
+                }
+            )
             extendFunctions.add(
                 ExtendFunctionItem("写入光盘") {
                     AlertDialog.Builder(this)

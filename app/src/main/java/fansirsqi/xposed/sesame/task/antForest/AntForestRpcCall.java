@@ -1,5 +1,7 @@
 package fansirsqi.xposed.sesame.task.antForest;
 
+import static fansirsqi.xposed.sesame.task.antForest.AntForest.TAG;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -19,35 +21,24 @@ import fansirsqi.xposed.sesame.util.StringUtil;
  * 森林 RPC 调用类
  */
 public class AntForestRpcCall {
-    private static String VERSION = "";
+    private static String VERSION = "20250813";
 
-    /**
-     * 初始化API版本号
-     * <p>
-     * 根据支付宝版本号设置合适的API版本参数
-     * </p>
-     */
     public static void init() {
         AlipayVersion alipayVersion = ApplicationHook.getAlipayVersion();
-        /*
-        if (alipayVersion.compareTo(new AlipayVersion("10.5.88.8000")) > 0) {
-            VERSION = "20240403";
-        } else if (alipayVersion.compareTo(new AlipayVersion("10.3.96.8100")) > 0) {
-            VERSION = "20230501";
-        } else {
-            VERSION = "20230501";
-        */
         Log.record("AntForestRpcCall", "当前支付宝版本: " + alipayVersion.toString());
-        // 默认版本号
-        VERSION = "20230501";
         try {
-            // 根据支付宝版本设置不同的API版本号
-            if (alipayVersion.compareTo(new AlipayVersion("10.7.30.8000")) > 0) {
-                VERSION = "20250108";  // 2025年版本
-            } else if (alipayVersion.compareTo(new AlipayVersion("10.5.88.8000")) > 0) {
-                VERSION = "20240403";  // 2024年版本
-            } else if (alipayVersion.compareTo(new AlipayVersion("10.3.96.8100")) > 0) {
-                VERSION = "20230501";  // 2023年版本
+            switch (alipayVersion.getVersionString()) {
+                case "10.7.30.8000":
+                    VERSION = "20250813";  // 2025年版本
+                    break;
+                case "10.5.88.8000":
+                    VERSION = "20240403";  // 2024年版本
+                    break;
+                case "10.3.96.8100":
+                    VERSION = "20230501";  // 2023年版本
+                    break;
+                default:
+                    VERSION = "20250813";
             }
             Log.record("AntForestRpcCall", "使用API版本: " + VERSION);
         } catch (Exception e) {
@@ -368,6 +359,80 @@ public class AntForestRpcCall {
         return RequestManager.requestString("alipay.antforest.forest.h5.queryAnimalPropList", new JSONArray().put(jo).toString());
     }
 
+    /**
+     * 创建使用道具的请求数据
+     *
+     * @param propGroup     道具组
+     * @param propId        道具ID
+     * @param propType      道具类型
+     * @param secondConfirm 是否为确认调用（续用时传 true，不传则为null）
+     * @return 请求的JSONObject
+     * @throws JSONException JSON异常
+     */
+    private static JSONObject createConsumePropRequestData(String propGroup, String propId, String propType, Boolean secondConfirm) throws JSONException {
+        JSONObject jo = new JSONObject();
+        if (propGroup != null && !propGroup.isEmpty()) {
+            jo.put("propGroup", propGroup);
+        }
+        jo.put("propId", propId);
+        jo.put("propType", propType);
+        jo.put("sToken", System.currentTimeMillis() + "_" + RandomUtil.getRandomString(8));
+        if (secondConfirm != null) {
+            jo.put("secondConfirm", secondConfirm);
+        }
+        jo.put("source", "chInfo_ch_appcenter__chsub_9patch");
+        jo.put("timezoneId", "Asia/Shanghai");
+
+        jo.put("version", VERSION); // Hardcode version for consumeProp based on logs
+        return jo;
+    }
+
+    /**
+     * 调用蚂蚁森林 RPC 使用道具 (可续写/二次确认)
+     *
+     * @param propGroup     道具组
+     * @param propId        道具ID
+     * @param propType      道具类型
+     * @param secondConfirm 是否为确认调用
+     * @return RPC 响应字符串
+     */
+    public static String consumeProp(String propGroup, String propId, String propType, boolean secondConfirm) throws JSONException {
+        JSONObject requestData = createConsumePropRequestData(propGroup, propId, propType, secondConfirm);
+       // Log.record(TAG, "requestData: " + "["+requestData+"]");
+        return RequestManager.requestString(
+                "alipay.antforest.forest.h5.consumeProp",
+                "["+requestData+"]"
+        );
+    }
+
+    /**
+     * 调用蚂蚁森林 RPC 使用道具 (不可续写/直接使用)
+     *
+     * @param propGroup 道具组
+     * @param propId    道具ID
+     * @param propType  道具类型
+     * @return RPC 响应字符串
+     */
+    public static String consumeProp2(String propGroup, String propId, String propType) throws JSONException {
+        JSONObject requestData = createConsumePropRequestData(propGroup, propId, propType, null);
+        return RequestManager.requestString(
+                "alipay.antforest.forest.h5.consumeProp",
+                new JSONArray().put(requestData).toString()
+        );
+    }
+
+    /**
+     * 调用蚂蚁森林 RPC 使用道具 (旧方法，为兼容性保留)
+     *
+     * @param propId        道具ID
+     * @param propType      道具类型
+     * @param secondConfirm 是否为确认调用（续用时传 true）
+     * @return RPC 响应字符串
+     */
+    public static String consumeProp(String propId, String propType, boolean secondConfirm) throws JSONException {
+        return consumeProp("", propId, propType, secondConfirm);
+    }
+    /*
     public static String consumeProp(String propGroup, String propType, Boolean replace) throws JSONException {
         JSONObject jo = new JSONObject();
         jo.put("propGroup", propGroup);
@@ -377,6 +442,7 @@ public class AntForestRpcCall {
         jo.put("source", "chInfo_ch_appcenter__chsub_9patch");
         return RequestManager.requestString("alipay.antforest.forest.h5.consumeProp", new JSONArray().put(jo).toString());
     }
+    */
 
     public static String giveProp(String giveConfigId, String propId, String targetUserId) throws JSONException {
         JSONObject jo = new JSONObject();
@@ -852,5 +918,27 @@ public class AntForestRpcCall {
         params.put("taskType", taskType);
         String args = "[" + params + "]";
         return RequestManager.requestString("com.alipay.antieptask.finishTaskopengreen", args);
+    }
+
+    /**
+     * 根据道具类型获取道具组
+     * @param propType 道具类型
+     * @return 道具组
+     */
+    public static String getPropGroup(String propType) {
+        if (propType.contains("SHIELD")) {
+            return "shield";
+        } else if (propType.contains("DOUBLE_CLICK")) {
+            return "doubleClick";
+        } else if (propType.contains("STEALTH")) {
+            return "stealthCard";
+        } else if (propType.contains("BOMB_CARD")) {
+            return "energyBombCard";
+        } else if (propType.contains("ROB_EXPAND")) {
+            return "robExpandCard";
+        } else if (propType.contains("BUBBLE_BOOST")) {
+            return "bubbleBoostCard";
+        }
+        return ""; // 默认返回空字符串
     }
 }

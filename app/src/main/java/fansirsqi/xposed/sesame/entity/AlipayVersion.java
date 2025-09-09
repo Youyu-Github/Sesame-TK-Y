@@ -48,4 +48,9 @@ public class AlipayVersion implements Comparable<AlipayVersion> {
         // 如果所有对应段都相等，返回长度比较结果
         return compareResult;
     }
+    
+    @Override
+    public String toString() {
+        return versionString;
+    }
 }

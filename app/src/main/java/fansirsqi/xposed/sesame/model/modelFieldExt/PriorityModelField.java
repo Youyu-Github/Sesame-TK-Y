@@ -49,6 +49,10 @@ public class PriorityModelField extends ChoiceModelField {
         return choiceArray;
     }
 
+    public boolean isEnable() {
+        return getValue() > 0;
+    }
+
     @Override
     public View getView(Context context) {
         Button btn = new Button(context);
