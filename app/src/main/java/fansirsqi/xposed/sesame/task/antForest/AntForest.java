@@ -411,11 +411,11 @@ public class AntForest extends ModelTask {
 
         // boolean isEnergyTime = TaskCommon.IS_ENERGY_TIME || (hour == 7 && minute >= 0 && minute < 30);
         boolean isEnergyTime = TaskCommon.IS_ENERGY_TIME || 
-                      (hour == 0 && minute >= 0 && minute < 12) || 
+                      (hour == 0 && minute >= 0 && minute < 10) || 
                       (hour == 7 && minute >= 0 && minute < 35);
 
         if (isEnergyTime) {
-            Log.record(TAG, "⏸ 当前为只收能量时间【00:00-00:12、07:00-07:35】，开始循环收取自己、好友和PK好友的能量");
+            Log.record(TAG, "⏸ 当前为只收能量时间【00:00-00:10、07:00-07:35】，开始循环收取自己、好友和PK好友的能量");
 
             while (true) {
                 // 每次循环更新状态
@@ -718,6 +718,43 @@ public class AntForest extends ModelTask {
             String str_totalCollected = "本次总 收:" + totalCollected + "g 帮:" + totalHelpCollected + "g 浇:" + totalWatered + "g";
             Notify.updateLastExecText(str_totalCollected);
         }
+    }
+
+    /**
+     * 每日重置
+     */
+    private void checkAndUpdateCounters() {
+        long currentTime = System.currentTimeMillis();
+        long midnight = getMidnightTime(); // 计算当前日期的午夜时间戳
+
+        if (currentTime >= midnight) {
+            // 如果时间已经过了午夜，重置计数器
+            resetTaskCounters();
+            Log.record(TAG, "午夜重置计数器");
+        }
+    }
+
+    // 判断当前时间是否已经过午夜
+    private boolean isMidnight() {
+        long currentTime = System.currentTimeMillis();
+        long midnightTime = getMidnightTime();
+        return currentTime >= midnightTime;
+    }
+
+    // 获取午夜时间戳
+    private long getMidnightTime() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTimeInMillis();
+    }
+
+    // 重置任务计数器（你需要根据具体任务的计数器来调整）
+    private void resetTaskCounters() {
+        taskCount.set(0); // 重置任务计数
+        Log.record(TAG, "任务计数器已重置");
     }
 
     /**
@@ -3089,6 +3126,7 @@ public class AntForest extends ModelTask {
     /**
      * 使用能量保护罩，一般是限时保护罩，打开青春特权森林道具领取
      */
+    /*
     private void useShieldCard(JSONObject bagObject) {
         try {
             Log.record(TAG, "尝试使用保护罩...");
@@ -3114,6 +3152,69 @@ public class AntForest extends ModelTask {
                 Log.record(TAG, "尝试能量保护罩(ENERGY_SHIELD)...");
                 jo = findPropBag(bagObject, "ENERGY_SHIELD");
             }
+            if (jo != null) {
+                Log.runtime(TAG, "找到保护罩，准备使用: " + jo);
+                if (usePropBag(jo)) {
+                    return; // 使用成功，直接返回
+                }
+            }
+            Log.record(TAG, "背包中未找到任何可用保护罩。");
+            // 如果未使用成功，也刷新一次
+            updateSelfHomePage();
+        } catch (Throwable th) {
+            Log.error(TAG + "使用能量保护罩， err");
+            Log.printStackTrace(th);
+        }
+    }
+    */
+    private void useShieldCard(JSONObject bagObject) {
+        try {
+            Log.record(TAG, "尝试使用保护罩...");
+            JSONObject jo = null;
+            
+            // 1. 优先尝试 LIMIT_TIME_ENERGY_SHIELD_TREE
+            Log.record(TAG, "优先尝试森林保护罩(LIMIT_TIME_ENERGY_SHIELD_TREE)...");
+            jo = findPropBag(bagObject, "LIMIT_TIME_ENERGY_SHIELD_TREE");
+            if (jo == null) {
+                Log.record(TAG, "背包中没有森林保护罩(LIMIT_TIME_ENERGY_SHIELD_TREE)，继续查找其他类型...");
+                if (youthPrivilege.getValue()) {
+                    Log.runtime(TAG, "尝试通过青春特权获取森林保护罩...");
+                    if (Privilege.INSTANCE.youthPrivilege()) {
+                        jo = findPropBag(querySelfHome(), "LIMIT_TIME_ENERGY_SHIELD_TREE");
+                    }
+                }
+            }
+            
+            // 2. 尝试 LIMIT_TIME_ENERGY_SHIELD
+            if (jo == null) {
+                Log.record(TAG, "尝试限时能量保护罩(LIMIT_TIME_ENERGY_SHIELD)...");
+                jo = findPropBag(bagObject, "LIMIT_TIME_ENERGY_SHIELD");
+                if (jo == null && shieldCardConstant.getValue()) {
+                    Log.record(TAG, "尝试通过活力值兑换限时能量保护罩...");
+                    if (exchangeEnergyShield()) {
+                        jo = findPropBag(querySelfHome(), "LIMIT_TIME_ENERGY_SHIELD");
+                    }
+                }
+            }
+            
+            // 3. 尝试 shubao3rd_ENERGY_SHIELD
+            if (jo == null) {
+                Log.record(TAG, "尝试树宝保护罩(shubao3rd_ENERGY_SHIELD)...");
+                jo = findPropBag(bagObject, "shubao3rd_ENERGY_SHIELD");
+            }
+            
+            // 4. 尝试 ENERGY_SHIELD
+            if (jo == null) {
+                Log.record(TAG, "尝试普通能量保护罩(ENERGY_SHIELD)...");
+                jo = findPropBag(bagObject, "ENERGY_SHIELD");
+            }
+
+            // 5. 最后尝试 MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE
+            if (jo == null) {
+                Log.record(TAG, "尝试敦煌飞天保护罩(MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE)...");
+                jo = findPropBag(bagObject, "MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE");
+            }
+
             if (jo != null) {
                 Log.runtime(TAG, "找到保护罩，准备使用: " + jo);
                 if (usePropBag(jo)) {
