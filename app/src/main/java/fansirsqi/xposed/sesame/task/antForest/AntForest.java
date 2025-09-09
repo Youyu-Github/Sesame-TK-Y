@@ -202,6 +202,7 @@ public class AntForest extends ModelTask {
     private BooleanModelField pkEnergy; // PK能量
     private PriorityModelField collectProp;
     // private BooleanModelField collectProp;
+    private IntegerModelField cycleinterval; // 循环间隔
     
     /**
      * 异常返回检测开关
@@ -360,10 +361,12 @@ public class AntForest extends ModelTask {
         modelFields.addField(advanceTime = new IntegerModelField("advanceTime", "提前时间(毫秒)", 0, Integer.MIN_VALUE, 500));
         modelFields.addField(tryCount = new IntegerModelField("tryCount", "尝试收取(次数)", 1, 0, 5));
         modelFields.addField(retryInterval = new IntegerModelField("retryInterval", "重试间隔(毫秒)", 1200, 0, 10000));
+        modelFields.addField(cycleinterval = new IntegerModelField("cycleinterval", "循环间隔(毫秒)", 5000, 0, 10000));
         modelFields.addField(showBagList = new BooleanModelField("showBagList", "显示背包内容", false));
         return modelFields;
     }
 
+    /*
     @Override
     public Boolean check() {
         if (RuntimeInfo.getInstance().getLong(RuntimeInfo.RuntimeInfoKey.ForestPauseTime) > System.currentTimeMillis()) {
@@ -376,6 +379,87 @@ public class AntForest extends ModelTask {
             return true;
         }
     }
+    */
+    @Override
+    public Boolean check() {
+        long currentTime = System.currentTimeMillis();
+
+        // -----------------------------
+        // 先更新时间状态，保证 IS_ENERGY_TIME 正确
+        // -----------------------------
+        TaskCommon.update();
+
+        // 1️⃣ 异常等待状态
+        long forestPauseTime = RuntimeInfo.getInstance().getLong(RuntimeInfo.RuntimeInfoKey.ForestPauseTime);
+        if (forestPauseTime > currentTime) {
+            Log.record(getName() + "任务-异常等待中，暂不执行检测！");
+            return false;
+        }
+
+        // 2️⃣ 模块休眠时间
+        if (TaskCommon.IS_MODULE_SLEEP_TIME) {
+            Log.record(TAG, "💤 模块休眠时间【" + BaseModel.getModelSleepTime().getValue() + "】停止执行" + getName() + "任务！");
+            return false;
+        }
+
+        // -----------------------------
+        // 3️⃣ 只收能量时间段判断
+        // -----------------------------
+        Calendar now = Calendar.getInstance();
+        int hour = now.get(Calendar.HOUR_OF_DAY);
+        int minute = now.get(Calendar.MINUTE);
+
+        // boolean isEnergyTime = TaskCommon.IS_ENERGY_TIME || (hour == 7 && minute >= 0 && minute < 30);
+        boolean isEnergyTime = TaskCommon.IS_ENERGY_TIME || 
+                      (hour == 0 && minute >= 0 && minute < 12) || 
+                      (hour == 7 && minute >= 0 && minute < 35);
+
+        if (isEnergyTime) {
+            Log.record(TAG, "⏸ 当前为只收能量时间【00:00-00:12、07:00-07:35】，开始循环收取自己、好友和PK好友的能量");
+
+            while (true) {
+                // 每次循环更新状态
+                TaskCommon.update();
+
+                // 如果不在能量时间段，退出循环
+                now = Calendar.getInstance();
+                hour = now.get(Calendar.HOUR_OF_DAY);
+                minute = now.get(Calendar.MINUTE);
+                if (!(TaskCommon.IS_ENERGY_TIME || hour == 7 && minute < 30)) {
+                    Log.record(TAG, "当前不在只收能量时间段，退出循环");
+                    break;
+                }
+
+                // 收取自己能量
+                JSONObject selfHomeObj = querySelfHome();
+                if (selfHomeObj != null) {
+                    collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self");
+                }
+
+                // 收取好友和PK好友能量
+                collectFriendEnergy();
+                collectPKEnergy();
+
+                // 循环间隔
+                try {
+                    int sleepMillis = cycleinterval.getValue();
+                    Thread.sleep(sleepMillis);
+                } catch (InterruptedException e) {
+                    Log.printStackTrace(TAG, "收能量时发生错误", e);
+                    break;
+                }
+            }
+
+            Log.record(TAG, "只收能量时间循环结束");
+            return false; // 只收能量期间不执行正常任务
+        }
+
+        // -----------------------------
+        // 4️⃣ 正常任务执行
+        // -----------------------------
+        return true;
+    }
+
 
     /*
     @Override
@@ -456,6 +540,28 @@ public class AntForest extends ModelTask {
                 showBag();
             }
             /// lzw add end
+            
+            // 每次运行时检查并更新计数器
+            checkAndUpdateCounters();
+            // 午夜强制任务
+            if (isMidnight()) {
+                JSONObject selfHomeObj = querySelfHome();
+                if (selfHomeObj != null) {
+                    collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self");  // 收自己
+                }
+                collectFriendEnergy();  // 好友能量收取
+                collectPKEnergy();      // PK好友能量
+                Log.record(TAG, "午夜任务刷新，强制执行收取PK好友能量和好友能量");
+            }
+
+            errorWait = false;
+
+            // 计数器和时间记录
+            if (isMonday()) _is_monday = true;
+            TimeCounter tc = new TimeCounter(TAG);
+
+            if (showBagList.getValue()) showBag();
+
             Log.record(TAG, "执行开始-蚂蚁" + getName());
             Statistics.load();
             totalCollected = Statistics.getData(Statistics.TimeType.DAY, Statistics.DataType.COLLECTED);
@@ -464,11 +570,13 @@ public class AntForest extends ModelTask {
             
             taskCount.set(0);
             selfId = UserMap.getCurrentUid();
+
             usePropBeforeCollectEnergy(selfId);
             tc.countDebug("使用道具卡");
 
             collectPKEnergy();
             tc.countDebug("收PK榜森友能量");
+
             collectFriendEnergy();
             tc.countDebug("收取好友能量");
 
