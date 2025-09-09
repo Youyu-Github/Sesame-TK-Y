@@ -2396,6 +2396,7 @@ public class AntForest extends ModelTask {
      * 例如：2355 表示 23 小时 55 分钟，0955 可直接写为 955。
      * 校验规则：0 ≤ HH ≤ 99，0 ≤ mm ≤ 59；非法值将回退为 23 小时。
      */
+    /*
     @SuppressLint("DefaultLocale")
     private boolean shouldRenewShield(long shieldEnd, long nowMillis) {
         int hours = 23, minutes = 0;
@@ -2414,6 +2415,45 @@ public class AntForest extends ModelTask {
         Log.record(TAG, "[保护罩] 剩余= " + formatTimeDifference(remain) + ", 阈值=" + String.format("%02d小时%02d分", hours, minutes));
         boolean needRenew = remain <= thresholdMs;
         Log.record(TAG, "[保护罩] 比较: "+remain+" <= "+thresholdMs+" == " + needRenew);
+        return needRenew;
+    }
+    */
+    @SuppressLint("DefaultLocale")
+    private boolean shouldRenewShield(long shieldEnd, long nowMillis) {
+        // 设置阈值为23小时59分钟
+        int hours = 23;
+        int minutes = 59;
+        
+        // 如果配置了自定义阈值，则使用自定义值
+        if (SHIELD_RENEW_THRESHOLD_HHMM >= 0 && SHIELD_RENEW_THRESHOLD_HHMM <= 9959) {
+            try {
+                // 正确解析小时和分钟部分
+                hours = SHIELD_RENEW_THRESHOLD_HHMM / 100;
+                minutes = SHIELD_RENEW_THRESHOLD_HHMM % 100;
+            } catch (Exception ignored) {
+                // 解析失败时使用默认值
+                hours = 23;
+                minutes = 59;
+            }
+        }
+        
+        // 计算阈值毫秒数
+        long thresholdMs = hours * ONE_HOUR_MS + minutes * 60_000L;
+        
+        if (shieldEnd <= nowMillis) { // 未生效或已过期
+            Log.record(TAG, "[保护罩] 未生效/已过期，立即续写；end=" + 
+                    TimeUtil.getCommonDate(shieldEnd) + ", now=" + 
+                    TimeUtil.getCommonDate(nowMillis));
+            return true;
+        }
+        
+        long remain = shieldEnd - nowMillis;
+        Log.record(TAG, "[保护罩] 剩余= " + formatTimeDifference(remain) + 
+                ", 阈值=" + String.format("%02d小时%02d分", hours, minutes));
+        
+        boolean needRenew = remain <= thresholdMs;
+        Log.record(TAG, "[保护罩] 比较: "+remain+" <= "+thresholdMs+" == " + needRenew);
+        
         return needRenew;
     }
     
