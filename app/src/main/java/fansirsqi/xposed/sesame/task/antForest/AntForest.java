@@ -3,6 +3,8 @@ package fansirsqi.xposed.sesame.task.antForest;
 import static fansirsqi.xposed.sesame.task.antForest.ForestUtil.hasBombCard;
 import static fansirsqi.xposed.sesame.task.antForest.ForestUtil.hasShield;
 
+import android.annotation.SuppressLint;
+
 import androidx.annotation.NonNull;
 
 import com.fasterxml.jackson.core.type.TypeReference;
