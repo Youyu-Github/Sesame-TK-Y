@@ -531,15 +531,6 @@ public class AntForest extends ModelTask {
     public void run() {
         try {
             errorWait = false;
-            /// lzw add begin
-            if(isMonday()) {
-                _is_monday = true;
-            }
-            TimeCounter tc = new TimeCounter(TAG);
-            if(showBagList.getValue()) {
-                showBag();
-            }
-            /// lzw add end
             
             // 每次运行时检查并更新计数器
             checkAndUpdateCounters();
@@ -557,10 +548,15 @@ public class AntForest extends ModelTask {
             errorWait = false;
 
             // 计数器和时间记录
-            if (isMonday()) _is_monday = true;
+            /// lzw add begin
+            if(isMonday()) {
+                _is_monday = true;
+            }
             TimeCounter tc = new TimeCounter(TAG);
-
-            if (showBagList.getValue()) showBag();
+            if(showBagList.getValue()) {
+                showBag();
+            }
+            /// lzw add end
 
             Log.record(TAG, "执行开始-蚂蚁" + getName());
             Statistics.load();
