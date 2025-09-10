@@ -921,10 +921,10 @@ public class AntForestRpcCall {
     }
 
     /**
-     * 根据道具类型获取道具组
-     * @param propType 道具类型
-     * @return 道具组
-     */
+    * 根据道具类型获取道具组
+    * @param propType 道具类型
+    * @return 道具组
+    */
     public static String getPropGroup(String propType) {
         if (propType.contains("SHIELD")) {
             return "shield";
@@ -932,12 +932,12 @@ public class AntForestRpcCall {
             return "doubleClick";
         } else if (propType.contains("STEALTH")) {
             return "stealthCard";
-        } else if (propType.contains("BOMB_CARD")) {
+        } else if (propType.contains("BOMB_CARD") || propType.contains("NO_EXPIRE")) {
             return "energyBombCard";
         } else if (propType.contains("ROB_EXPAND")) {
             return "robExpandCard";
         } else if (propType.contains("BUBBLE_BOOST")) {
-            return "bubbleBoostCard";
+            return "boost";
         }
         return ""; // 默认返回空字符串
     }
