@@ -361,7 +361,7 @@ public class AntForest extends ModelTask {
         modelFields.addField(advanceTime = new IntegerModelField("advanceTime", "提前时间(毫秒)", 0, Integer.MIN_VALUE, 500));
         modelFields.addField(tryCount = new IntegerModelField("tryCount", "尝试收取(次数)", 1, 0, 5));
         modelFields.addField(retryInterval = new IntegerModelField("retryInterval", "重试间隔(毫秒)", 1200, 0, 10000));
-        modelFields.addField(cycleinterval = new IntegerModelField("cycleinterval", "循环间隔(毫秒)", 5000, 0, 10000));
+        modelFields.addField(cycleinterval = new IntegerModelField("cycleinterval", "循环间隔(毫秒)", 10000, 0, 60000));
         modelFields.addField(showBagList = new BooleanModelField("showBagList", "显示背包内容", false));
         return modelFields;
     }
@@ -542,8 +542,10 @@ public class AntForest extends ModelTask {
                 if (selfHomeObj != null) {
                     collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self");  // 收自己
                 }
-                collectFriendEnergy();  // 好友能量收取
-                collectPKEnergy();      // PK好友能量
+                selfId = UserMap.getCurrentUid();
+                usePropBeforeCollectEnergy(selfId); // 使用道具卡
+                collectFriendEnergy(); // 好友能量收取
+                collectPKEnergy(); // PK好友能量
                 Log.record(TAG, "午夜任务刷新，强制执行收取PK好友能量和好友能量");
             }
 
@@ -567,8 +569,8 @@ public class AntForest extends ModelTask {
             totalWatered = Statistics.getData(Statistics.TimeType.DAY, Statistics.DataType.WATERED);
             
             taskCount.set(0);
-            selfId = UserMap.getCurrentUid();
 
+            selfId = UserMap.getCurrentUid();
             usePropBeforeCollectEnergy(selfId);
             tc.countDebug("使用道具卡");
 
@@ -3105,6 +3107,14 @@ public class AntForest extends ModelTask {
                     }
                 }
                 if (jo == null) {
+                    Log.runtime(TAG, "未找到限时双击卡，尝试查找3天长效双击卡...");
+                    jo = findPropBag(bagObject, "PKS_ENERGY_DOUBLE_CLICK_3DAYS");
+                }
+                if (jo == null) {
+                    Log.runtime(TAG, "未找到限时双击卡，尝试查找7天长效双击卡...");
+                    jo = findPropBag(bagObject, "8ZN_ENERGY_DOUBLE_CLICK_7DAYS");
+                }
+                if (jo == null) {
                     Log.runtime(TAG, "未找到限时双击卡，尝试查找普通双击卡...");
                     jo = findPropBag(bagObject, "ENERGY_DOUBLE_CLICK");
                 }
@@ -3478,6 +3488,14 @@ public class AntForest extends ModelTask {
             jo = findPropBag(bag, "SHAMO_ROB_EXPAND_CARD_1.5_1DAYS");
             if (jo != null && usePropBag(jo)) {
                 robExpandCardEndTime = System.currentTimeMillis() + 1000 * 60 * 5;
+            }
+            jo = findPropBag(bag, "LG_ROB_EXPAND_CARD_1.1_7DAYS"); // 7天1.1倍能量翻倍卡
+            if (jo != null && usePropBag(jo)) {
+                robExpandCardEndTime = System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7;
+            }
+            jo = findPropBag(bag, "8ZN_ROB_EXPAND_CARD_1.5_14DAYS"); // 14天1.5倍能量翻倍卡
+            if (jo != null && usePropBag(jo)) {
+                robExpandCardEndTime = System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 14;
             }
         } catch (Throwable th) {
             Log.runtime(TAG, "useBubbleBoostCard err");
