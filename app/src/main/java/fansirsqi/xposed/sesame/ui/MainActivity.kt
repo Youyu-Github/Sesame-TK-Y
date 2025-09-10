@@ -44,6 +44,7 @@ import fansirsqi.xposed.sesame.util.maps.UserMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -69,7 +70,7 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         ToastUtil.init(this) // 初始化全局 Context
 
-
+        clearLogsOnStart()
         setContentView(R.layout.activity_main)
         oneWord = findViewById(R.id.one_word)
         val deviceInfo: ComposeView = findViewById(R.id.device_info)
@@ -429,6 +430,41 @@ class MainActivity : BaseActivity() {
             startActivity(intent)
         } else {
             Detector.tips(this, "缺少必要依赖！")
+        }
+    }
+
+    private fun clearLogsOnStart() {
+        try {
+            val logDir = Files.LOG_DIR
+            var deletedCount = 0
+            if (logDir != null && logDir.exists() && logDir.isDirectory) {
+                val logsToDelete = listOf("runtime", "record", "system")
+                // Delete main log files
+                logsToDelete.forEach { logName ->
+                    val logFile = File(logDir, "$logName.log")
+                    if (logFile.exists() && logFile.delete()) {
+                        deletedCount++
+                    }
+                }
+
+                // Delete backup log files
+                val bakDir = File(logDir, "bak")
+                if (bakDir.exists() && bakDir.isDirectory) {
+                    bakDir.listFiles()?.forEach { file ->
+                        val fileName = file.name
+                        if (logsToDelete.any { logName -> fileName.startsWith("$logName-") }) {
+                            if (file.delete()) {
+                                deletedCount++
+                            }
+                        }
+                    }
+                }
+            }
+            if (deletedCount > 0) {
+                Toast.makeText(this, "清除了 $deletedCount 个旧日志文件", Toast.LENGTH_SHORT).show()
+            }
+        } catch (t: Throwable) {
+            Log.printStackTrace(t)
         }
     }
 
