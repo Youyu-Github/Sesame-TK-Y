@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+// import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -28,18 +28,51 @@ import fansirsqi.xposed.sesame.util.StringUtil;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * 抽象任务模型类
+ * 
+ * 这是Sesame-TK框架中的核心任务执行类，提供了以下功能：
+ * 1. 任务生命周期管理（启动、停止、暂停）
+ * 2. 子任务管理（添加、移除、执行）
+ * 3. 任务执行统计和监控
+ * 4. 支持顺序和并行两种执行模式
+ * 5. 线程池管理和任务调度
+ * 6. 中断处理和错误恢复
+ * 
+ * 主要组件：
+ * - MAIN_TASK_MAP: 跟踪正在运行的主任务
+ * - MAIN_THREAD_POOL: 主任务线程池
+ * - childTaskMap: 子任务映射表
+ * - childTaskExecutor: 子任务执行器
+ * - run_cents: 任务运行次数计数器
+ * 
+ * 使用方式：
+ * 继承此类并实现抽象方法：getName(), getFields(), check(), run()
+ * 
+ * @author Sesame-TK Team
+ */
 public abstract class ModelTask extends Model {
+
+    /** 主任务映射表，用于跟踪正在运行的任务及其对应的线程 */
     private static final Map<ModelTask, Thread> MAIN_TASK_MAP = new ConcurrentHashMap<>();
+
+    /** 主任务线程池，用于执行异步任务 */
     private static final ThreadPoolExecutor MAIN_THREAD_POOL =
             new ThreadPoolExecutor(getModelArray().length, Integer.MAX_VALUE,
                     30L, TimeUnit.SECONDS,
                     new SynchronousQueue<>(),
                     new ThreadPoolExecutor.CallerRunsPolicy());
+    /** 日志标签 */
     private static final String TAG = "ModelTask";
 
+    /** 子任务映射表，存储当前任务的所有子任务 */
     private final Map<String, ChildModelTask> childTaskMap = new ConcurrentHashMap<>();
+
+    /** 子任务执行器，负责管理和执行子任务 */
     private ChildTaskExecutor childTaskExecutor;
-    private int run_cnts = 0;
+
+    /** 任务运行次数计数器 */
+    private int run_cents = 0;
 
     @Getter
     private final Runnable mainRunnable = new Runnable() {
@@ -47,31 +80,40 @@ public abstract class ModelTask extends Model {
 
         @Override
         public void run() {
+            // 防止重复执行
             if (MAIN_TASK_MAP.get(task) != null) {
                 return;
             }
+            // 记录当前任务和线程的映射关系
             MAIN_TASK_MAP.put(task, Thread.currentThread());
             try {
+                // 更新状态显示
                 Notify.setStatusTextExec(task.getName());
+                // 执行具体任务逻辑
                 task.run();
             } catch (Exception e) {
+                // 记录异常信息
                 Log.printStackTrace(e);
             } finally {
+                // 清理任务映射和状态
                 MAIN_TASK_MAP.remove(task);
                 Notify.updateNextExecText(-1);
             }
         }
     };
 
+    /** 默认构造函数 */
     public ModelTask() {
     }
 
-    public void addRunCnts() {
-        run_cnts += 1;
+    /** 增加任务运行次数 */
+    public void addRunCents() {
+        run_cents += 1;
     }
 
-    public int getRunCnts() {
-        return run_cnts;
+    /** 获取任务运行次数 */
+    public int getRunCents() {
+        return run_cents;
     }
 
     /**
@@ -87,6 +129,7 @@ public abstract class ModelTask extends Model {
      *
      * @return 任务ID
      */
+    /** 获取任务ID，默认使用toString()方法 */
     public String getId() {
         return toString();
     }
@@ -96,6 +139,7 @@ public abstract class ModelTask extends Model {
      *
      * @return 任务类型为TASK
      */
+    /** 获取模型类型，固定返回TASK */
     public ModelType getType() {
         return ModelType.TASK;
     }
@@ -105,6 +149,7 @@ public abstract class ModelTask extends Model {
      *
      * @return 任务名称
      */
+    /** 获取任务名称，子类必须实现 */
     public abstract String getName();
 
     /**
@@ -112,6 +157,7 @@ public abstract class ModelTask extends Model {
      *
      * @return 任务字段
      */
+    /** 获取任务字段配置，子类必须实现 */
     public abstract ModelFields getFields();
 
     /**
@@ -119,6 +165,7 @@ public abstract class ModelTask extends Model {
      *
      * @return Boolean值，表示是否通过检查
      */
+    /** 检查任务是否可以执行，子类必须实现 */
     public abstract Boolean check();
 
     /**
@@ -126,6 +173,7 @@ public abstract class ModelTask extends Model {
      *
      * @return Boolean值，表示是否为同步任务
      */
+    /** 判断是否为同步任务，默认返回true */
     public Boolean isSync() {
         return true;
     }
@@ -133,6 +181,7 @@ public abstract class ModelTask extends Model {
     /**
      * 执行任务
      */
+    /** 执行任务的具体逻辑，子类必须实现 */
     public abstract void run();
 
     /**
@@ -141,6 +190,7 @@ public abstract class ModelTask extends Model {
      * @param childId 子任务ID
      * @return 是否包含该子任务
      */
+    /** 检查是否存在指定ID的子任务 */
     public Boolean hasChildTask(String childId) {
         return childTaskMap.containsKey(childId);
     }
@@ -151,14 +201,14 @@ public abstract class ModelTask extends Model {
      * @param childId 子任务ID
      * @return 子任务对象
      */
-    public ChildModelTask getChildTask(String childId) {
-        return childTaskMap.get(childId);
-    }
+    // public ChildModelTask getChildTask(String childId) {
+    //     return childTaskMap.get(childId);
+    // }
 
     /**
      * 添加子任务
-     *
-     * @param childTask 子任务对象
+     * * 支持Android N及以上版本的并发安全操作
+     * @param childTask 要添加的子任务
      */
     public void addChildTask(ChildModelTask childTask) {
         String childId = childTask.getId();
@@ -216,18 +266,18 @@ public abstract class ModelTask extends Model {
      *
      * @return 子任务数量
      */
-    public Integer countChildTask() {
-        return childTaskMap.size();
-    }
+    // public Integer countChildTask() {
+    //     return childTaskMap.size();
+    // }
 
     /**
      * 启动任务
      *
      * @return 是否成功启动任务
      */
-    public Boolean startTask() {
-        return startTask(false);
-    }
+    // public Boolean startTask() {
+    //     return startTask(false);
+    // }
 
     /**
      * 启动任务
@@ -270,6 +320,7 @@ public abstract class ModelTask extends Model {
                 Log.printStackTrace(e);
             }
         }
+
         if (childTaskExecutor != null) {
             childTaskExecutor.clearAllChildTask();
         }
@@ -281,9 +332,9 @@ public abstract class ModelTask extends Model {
     /**
      * 启动所有任务
      */
-    public static void startAllTask() {
-        startAllTask(false);
-    }
+    // public static void startAllTask() {
+    //     startAllTask(false);
+    // }
 
     /**
      * 启动所有任务
@@ -308,7 +359,7 @@ public abstract class ModelTask extends Model {
         private final AtomicInteger successCount = new AtomicInteger(0);
         private final AtomicInteger failureCount = new AtomicInteger(0);
         private final AtomicInteger skippedCount = new AtomicInteger(0);
-        
+
         public TaskExecutionStats() {
             this.startTime = System.currentTimeMillis();
         }
@@ -333,6 +384,7 @@ public abstract class ModelTask extends Model {
         
         public void recordSkipped(String taskName) {
             skippedCount.incrementAndGet();
+            Log.debug("任务[" + taskName + "]被跳过");
         }
         
         public void complete() {
@@ -377,7 +429,8 @@ public abstract class ModelTask extends Model {
          * @param force 是否强制执行
          * @return 成功执行的任务数量
          */
-        public static int executeTasksInParallel(List<ModelTask> tasks, boolean force) {
+        /*
+         public static int executeTasksInParallel(List<ModelTask> tasks, boolean force) {
             if (tasks == null || tasks.isEmpty()) {
                 return 0;
             }
@@ -417,10 +470,12 @@ public abstract class ModelTask extends Model {
             
             return successCount.get();
         }
+        */
         
         /**
          * 关闭执行器
          */
+        /*
         public static void shutdown() {
             PARALLEL_EXECUTOR.shutdown();
             try {
@@ -432,6 +487,7 @@ public abstract class ModelTask extends Model {
                 Thread.currentThread().interrupt();
             }
         }
+        */
     }
 
     /**
@@ -466,7 +522,7 @@ public abstract class ModelTask extends Model {
                     if (model != null && ModelType.TASK == model.getType()) {
                         ModelTask task = (ModelTask) model;
                         String taskName = task.getName();
-                        task.addRunCnts();
+                        task.addRunCents();
                         int model_priority = model.getPriority();
 
                         if (run_cnt < model_priority) {
@@ -528,7 +584,7 @@ public abstract class ModelTask extends Model {
                     ParallelTaskExecutor.PARALLEL_EXECUTOR.execute(() -> {
                         String taskName = task.getName();
                         try {
-                            task.addRunCnts();
+                            task.addRunCents();
                             int taskPriority = task.getPriority();
                             
                             if (finalRun_cnt < taskPriority) {
@@ -550,13 +606,31 @@ public abstract class ModelTask extends Model {
                 }
                 
                 try {
+                    Thread currentThread = Thread.currentThread();
+                    String threadName = currentThread.getName();
+                    long threadId = currentThread.getId();
+                    Log.error(TAG, "开始等待第" + run_cnt + "轮任务完成，线程信息: [ID=" + threadId + ", Name=" + threadName + "]");
                     boolean completed = latch.await(10, TimeUnit.MINUTES);
                     if (!completed) {
-                        Log.error(TAG, "等待任务超过10分钟，部分任务可能未完成");
+                        Log.error(TAG, "等待任务超过10分钟，部分任务可能未完成，线程信息: [ID=" + threadId + ", Name=" + threadName + "]");
+                    } else {
+                        Log.debug(TAG, "第" + run_cnt + "轮所有任务已完成，线程信息: [ID=" + threadId + ", Name=" + threadName + "]");
                     }
                 } catch (InterruptedException e) {
-                    Log.error(TAG,"等待任务完成被中断:" +e.getMessage() );
-                    Thread.currentThread().interrupt();
+                    Thread currentThread = Thread.currentThread();
+                    Log.error(TAG, "第" + run_cnt + "轮任务等待被中断，但继续等待: " + e.getMessage() );
+                    try {
+                        // 重新等待，缩短超时时间到60秒
+                        boolean completed = latch.await(60, TimeUnit.SECONDS);
+                        if (!completed) {
+                            Log.error(TAG, "重新等待后仍超时，线程信息: [ID=" + currentThread.getId() + ", Name=" + currentThread.getName() + "]");
+                        } else {
+                            Log.debug(TAG, "重新等待后任务完成，线程信息: [ID=" + currentThread.getId() + ", Name=" + currentThread.getName() + "]");
+                        }
+                        Thread.currentThread().interrupt();
+                    } catch (InterruptedException e2) {
+                        Log.error(TAG, "重新等待时再次被中断，放弃等待");
+                    }
                 }
                 
                 Log.record(TAG,"第" + run_cnt + "轮结束");
@@ -584,10 +658,10 @@ public abstract class ModelTask extends Model {
     /**
      * 启动所有任务（默认使用顺序执行模式，保持向后兼容）
      */
-    public static void startAllTask(Boolean force) {
+    // public static void startAllTask(Boolean force) {
         // 默认使用顺序执行模式，可以通过配置更改
-        startAllTask(force, TaskExecutionMode.SEQUENTIAL);
-    }
+    //     startAllTask(force, TaskExecutionMode.SEQUENTIAL);
+    // }
 
     /**
      * 停止所有任务
@@ -643,9 +717,9 @@ public abstract class ModelTask extends Model {
             this(id, null, runnable, 0L);
         }
 
-        public ChildModelTask(String id, String group, Runnable runnable) {
-            this(id, group, runnable, 0L);
-        }
+        // public ChildModelTask(String id, String group, Runnable runnable) {
+        //     this(id, group, runnable, 0L);
+        // }
 
         public ChildModelTask(String id, String group, Runnable runnable, Long execTime) {
             if (StringUtil.isEmpty(id)) {

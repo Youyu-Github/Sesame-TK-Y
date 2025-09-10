@@ -595,16 +595,16 @@ public class AntForest extends ModelTask {
                     wateringBubbles(selfHomeObj);//浇水金球
                     tc.countDebug("收取浇水金球");
                 }
-                if (getRunCnts() >= collectProp.getValue()) {
+                if (getRunCents() >= collectProp.getValue()) {
                     givenProps(selfHomeObj);//收取道具
                     tc.countDebug("收取道具");
                 }
-                if (getRunCnts() >= userPatrol.getValue()) {
+                if (getRunCents() >= userPatrol.getValue()) {
                     queryUserPatrol();//动物巡护任务[保护地巡护]
                     tc.countDebug("动物巡护任务");
                 }
                 //森林巡护
-                if (canConsumeAnimalProp &&  (getRunCnts() >= consumeAnimalProp.getValue())) {
+                if (canConsumeAnimalProp &&  (getRunCents() >= consumeAnimalProp.getValue())) {
                     queryAndConsumeAnimal();
                     tc.countDebug("森林巡护");
                 } else {
@@ -616,7 +616,7 @@ public class AntForest extends ModelTask {
                 tc.countDebug("收取动物派遣能量");
 
                 //合成动物碎片
-                if (getRunCnts() >= combineAnimalPiece.getValue()) {
+                if (getRunCents() >= combineAnimalPiece.getValue()) {
                     queryAnimalAndPiece();
                     tc.countDebug("合成动物碎片");
                 }
@@ -627,12 +627,12 @@ public class AntForest extends ModelTask {
 //                }
 
                 //森林任务
-                if (getRunCnts() >= receiveForestTaskAward.getValue()) {
+                if (getRunCents() >= receiveForestTaskAward.getValue()) {
                     receiveTaskAward();
                     tc.countDebug("森林任务");
                 }
                 //绿色行动
-                if (getRunCnts() >= ecoLife.getValue()) {
+                if (getRunCents() >= ecoLife.getValue()) {
                     EcoLife.ecoLife();
                     tc.countDebug("绿色行动");
                 }
@@ -640,12 +640,12 @@ public class AntForest extends ModelTask {
                 waterFriends();
                 tc.countDebug("给好友浇水");
                 //赠送道具
-                if(getRunCnts() >= giveProp.getValue()) {
+                if(getRunCents() >= giveProp.getValue()) {
                     giveProp();
                     tc.countDebug("赠送道具");
                 }
                 //活力值兑换开关
-                if (getRunCnts() >= vitalityExchange.getValue()) {
+                if (getRunCents() >= vitalityExchange.getValue()) {
                     handleVitalityExchange();
                     tc.countDebug("活力值兑换");
                 }
@@ -659,13 +659,13 @@ public class AntForest extends ModelTask {
                     tc.countDebug("能量雨");
                 }
                 // 森林集市
-                if ((getRunCnts() >= ForestMarket.getValue())) {
+                if ((getRunCents() >= ForestMarket.getValue())) {
                     GreenLife.ForestMarket("GREEN_LIFE");
                     GreenLife.ForestMarket("ANTFOREST");
                     tc.countDebug("森林集市");
                 }
                 //医疗健康
-                if (getRunCnts() >= medicalHealth.getValue()) {
+                if (getRunCents() >= medicalHealth.getValue()) {
                     // 医疗健康 绿色医疗 16g*6能量
                     if (medicalHealthOption.getValue().contains("FEEDS")) {
                         Healthcare.queryForestEnergy("FEEDS");
@@ -689,7 +689,7 @@ public class AntForest extends ModelTask {
                     Privilege.INSTANCE.studentSignInRedEnvelope();
                     tc.countDebug("青春特权每日签到红包");
                 }
-                 if (getRunCnts() >= forestChouChouLe.getValue()) {
+                if (getRunCents() >= forestChouChouLe.getValue()) {
                     ForestChouChouLe chouChouLe = new ForestChouChouLe();
                     chouChouLe.chouChouLe();
                     tc.countDebug("抽抽乐");
@@ -1951,6 +1951,7 @@ public class AntForest extends ModelTask {
                                 collectEnergy(collectEnergyEntity);
                                 return;
                             }
+                            
                             JSONObject userHome = collectEnergyEntity.getUserHome();
                             if (userHome == null) {
                                 return;

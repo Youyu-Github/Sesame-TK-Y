@@ -430,13 +430,13 @@ class AntFarm : ModelTask() {
                 tc.countDebug("遣返")
             }
 
-            if (getRunCnts() >= receiveFarmToolReward!!.value) {
+            if (getRunCents() >= receiveFarmToolReward!!.value) {
                 receiveToolTaskReward()
                 tc.countDebug("收取道具奖励")
             }
 
             // if (recordFarmGame!!.value) {
-            if (getRunCnts() >= recordFarmGame!!.value) {
+            if (getRunCents() >= recordFarmGame!!.value) {
                 for (time in farmGameTime!!.value) {
                     if (TimeUtil.checkNowInTimeRange(time)) {
                         recordFarmGame(GameType.starGame)
@@ -456,7 +456,7 @@ class AntFarm : ModelTask() {
                 tc.countDebug("小鸡厨房")
             }
 
-            if (getRunCnts() >= chickenDiary!!.value) {
+            if (getRunCents() >= chickenDiary!!.value) {
                 doChickenDiary()
                 tc.countDebug("小鸡日记")
             }
@@ -475,7 +475,8 @@ class AntFarm : ModelTask() {
                 handleDonation(donationCount!!.value)
                 tc.countDebug("每日捐蛋")
             }
-            if (getRunCnts() >= receiveFarmTaskAward!!.value) {
+
+            if (getRunCents() >= receiveFarmTaskAward!!.value) {
                 doFarmTasks()
                 tc.countDebug("饲料任务")
                 receiveFarmAwards()
@@ -489,7 +490,7 @@ class AntFarm : ModelTask() {
             tc.countDebug("喂食")
 
             // 到访小鸡送礼
-            if (getRunCnts() >= visitAnimal!!.value) {
+            if (getRunCents() >= visitAnimal!!.value) {
                 visitAnimal();
                 tc.countDebug("到访小鸡送礼");
                 // 送麦子
@@ -500,25 +501,25 @@ class AntFarm : ModelTask() {
             feedFriend()
             tc.countDebug("帮好友喂鸡")
             // 通知好友赶鸡
-            if (getRunCnts() >= notifyFriend!!.value) {
+            if (getRunCents() >= notifyFriend!!.value) {
                 notifyFriend()
                 tc.countDebug("通知好友赶鸡")
             }
 
             // 抽抽乐
-            if (getRunCnts() >= enableChouchoule!!.value) {
+            if (getRunCents() >= enableChouchoule!!.value) {
                 val ccl = ChouChouLe()
                 ccl.chouchoule()
                 tc.countDebug("抽抽乐")
             }
 
             // 雇佣小鸡
-            // if (getRunCnts() >= hireAnimal!!.value) {
             if (hireAnimal!!.value) {
                 hireAnimal()
                 tc.countDebug("雇佣小鸡")
             }
-            if (getRunCnts() >= getFeed!!.value) {
+            // if (getRunCnts() >= getFeed!!.value) {
+            if (getRunCents() >= getFeed!!.value) {
                 letsGetChickenFeedTogether()
                 tc.countDebug("一起拿饲料")
             }
@@ -529,12 +530,12 @@ class AntFarm : ModelTask() {
                 tc.countDebug("家庭任务")
             }
             // 开宝箱
-            if (getRunCnts() >= enableDdrawGameCenterAward!!.value) {
+            if (getRunCents() >= enableDdrawGameCenterAward!!.value) {
                 drawGameCenterAward()
                 tc.countDebug("开宝箱")
             }
             // 小鸡乐园道具兑换
-            if (getRunCnts() >= paradiseCoinExchangeBenefit!!.value) {
+            if (getRunCents() >= paradiseCoinExchangeBenefit!!.value) {
                 paradiseCoinExchangeBenefit()
                 tc.countDebug("小鸡乐园道具兑换")
             }

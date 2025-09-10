@@ -416,8 +416,8 @@ public class AntForestRpcCall {
     public static String consumeProp2(String propGroup, String propId, String propType) throws JSONException {
         JSONObject requestData = createConsumePropRequestData(propGroup, propId, propType, null);
         return RequestManager.requestString(
-                "alipay.antforest.forest.h5.consumeProp",
-                new JSONArray().put(requestData).toString()
+            "alipay.antforest.forest.h5.consumeProp",
+                  "["+requestData+"]"
         );
     }
 
