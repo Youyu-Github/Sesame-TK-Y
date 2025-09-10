@@ -608,7 +608,7 @@ public abstract class ModelTask extends Model {
                 try {
                     Thread currentThread = Thread.currentThread();
                     String threadName = currentThread.getName();
-                    long threadId = currentThread.getId();
+                    long threadId = currentThread.threadId();
                     Log.error(TAG, "开始等待第" + run_cnt + "轮任务完成，线程信息: [ID=" + threadId + ", Name=" + threadName + "]");
                     boolean completed = latch.await(10, TimeUnit.MINUTES);
                     if (!completed) {
@@ -623,9 +623,9 @@ public abstract class ModelTask extends Model {
                         // 重新等待，缩短超时时间到60秒
                         boolean completed = latch.await(60, TimeUnit.SECONDS);
                         if (!completed) {
-                            Log.error(TAG, "重新等待后仍超时，线程信息: [ID=" + currentThread.getId() + ", Name=" + currentThread.getName() + "]");
+                            Log.error(TAG, "重新等待后仍超时，线程信息: [ID=" + currentThread.threadId() + ", Name=" + currentThread.getName() + "]");
                         } else {
-                            Log.debug(TAG, "重新等待后任务完成，线程信息: [ID=" + currentThread.getId() + ", Name=" + currentThread.getName() + "]");
+                            Log.debug(TAG, "重新等待后任务完成，线程信息: [ID=" + currentThread.threadId() + ", Name=" + currentThread.getName() + "]");
                         }
                         Thread.currentThread().interrupt();
                     } catch (InterruptedException e2) {
@@ -658,10 +658,10 @@ public abstract class ModelTask extends Model {
     /**
      * 启动所有任务（默认使用顺序执行模式，保持向后兼容）
      */
-    // public static void startAllTask(Boolean force) {
+    public static void startAllTask(Boolean force) {
         // 默认使用顺序执行模式，可以通过配置更改
-    //     startAllTask(force, TaskExecutionMode.SEQUENTIAL);
-    // }
+        startAllTask(force, TaskExecutionMode.SEQUENTIAL);
+    }
 
     /**
      * 停止所有任务
