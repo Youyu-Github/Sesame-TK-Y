@@ -70,7 +70,7 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         ToastUtil.init(this) // 初始化全局 Context
 
-        clearLogsOnStart()
+        // clearLogsOnStart()
         setContentView(R.layout.activity_main)
         oneWord = findViewById(R.id.one_word)
         val deviceInfo: ComposeView = findViewById(R.id.device_info)
@@ -433,6 +433,8 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    // 清除日志 第73行有关联
+    /*
     private fun clearLogsOnStart() {
         try {
             val logDir = Files.LOG_DIR
@@ -467,6 +469,7 @@ class MainActivity : BaseActivity() {
             Log.printStackTrace(t)
         }
     }
+    */
 
     fun updateSubTitle(runType: String) {
         baseTitle = ViewAppInfo.appTitle + "[" + runType + "]"
