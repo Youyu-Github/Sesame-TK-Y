@@ -47,8 +47,10 @@ object AntFarmRpcCall {
         args.put("userId", userId)
         args.put("userToken", "")
         args.put("version", VERSION)
-        val pamras = "[" + args + "]"
-        return requestString("com.alipay.antfarm.enterFarm", pamras)
+        // val pamras = "[" + args + "]"
+        // return requestString("com.alipay.antfarm.enterFarm", pamras)
+        val paras = "[" + args + "]"
+        return requestString("com.alipay.antfarm.enterFarm", paras)
     }
 
 

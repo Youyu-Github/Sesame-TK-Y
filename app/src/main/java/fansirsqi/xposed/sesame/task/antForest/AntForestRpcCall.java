@@ -55,9 +55,9 @@ public class AntForestRpcCall {
             arg.put("rankType", "energyRank");
             arg.put("version", VERSION);
             String param = "[" + arg + "]";
-            JSONObject jorelationLocal = new JSONObject();
-            jorelationLocal.put("pathList", new JSONArray().put("friendRanking").put("myself").put("totalDatas"));
-            String relationLocal = "[" + jorelationLocal + "]";
+            JSONObject correlationLocal = new JSONObject();
+            correlationLocal.put("pathList", new JSONArray().put("friendRanking").put("myself").put("totalDatas"));
+            String relationLocal = "[" + correlationLocal + "]";
             return RequestManager.requestString("alipay.antmember.forest.h5.queryEnergyRanking", param, relationLocal);
         } catch (Exception e) {
             return "";

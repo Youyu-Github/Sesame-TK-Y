@@ -1,12 +1,21 @@
 package fansirsqi.xposed.sesame.task;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import fansirsqi.xposed.sesame.model.BaseModel;
 import fansirsqi.xposed.sesame.model.Model;
@@ -274,27 +283,300 @@ public abstract class ModelTask extends Model {
      *
      * @param force 是否强制启动
      */
-    public static void startAllTask(Boolean force) {
+    /**
+     * 任务执行模式
+     */
+    public enum TaskExecutionMode {
+        SEQUENTIAL,  // 顺序执行
+        PARALLEL     // 并行执行
+    }
+
+    /**
+     * 任务执行统计类
+     */
+    public static class TaskExecutionStats {
+        private final long startTime;
+        private long endTime;
+        private final Map<String, Long> taskExecutionTimes = new ConcurrentHashMap<>();
+        private final AtomicInteger successCount = new AtomicInteger(0);
+        private final AtomicInteger failureCount = new AtomicInteger(0);
+        private final AtomicInteger skippedCount = new AtomicInteger(0);
+        
+        public TaskExecutionStats() {
+            this.startTime = System.currentTimeMillis();
+        }
+        
+        public void recordTaskStart(String taskName) {
+            taskExecutionTimes.put(taskName, System.currentTimeMillis());
+        }
+        
+        public void recordTaskEnd(String taskName, boolean success) {
+            Long startTime = taskExecutionTimes.get(taskName);
+            if (startTime != null) {
+                long executionTime = System.currentTimeMillis() - startTime;
+                if (success) {
+                    successCount.incrementAndGet();
+                    Log.debug("任务[" + taskName + "]执行成功，耗时: " + executionTime + "ms");
+                } else {
+                    failureCount.incrementAndGet();
+                    Log.error("任务[" + taskName + "]执行失败，耗时: " + executionTime + "ms");
+                }
+            }
+        }
+        
+        public void recordSkipped(String taskName) {
+            skippedCount.incrementAndGet();
+        }
+        
+        public void complete() {
+            this.endTime = System.currentTimeMillis();
+        }
+        
+        @SuppressLint("DefaultLocale")
+        public String getSummary() {
+            long totalTime = endTime - startTime;
+            return String.format("任务执行统计 - 总耗时: %dms, 成功: %d, 失败: %d, 跳过: %d",
+                    totalTime, successCount.get(), failureCount.get(), skippedCount.get());
+        }
+    }
+
+    /**
+     * 并行任务执行器
+     */
+    public static class ParallelTaskExecutor {
+        // 创建可配置的线程池
+        private static final ThreadPoolExecutor PARALLEL_EXECUTOR = new ThreadPoolExecutor(
+                // 核心线程数 - 可根据CPU核心数动态设置
+                Math.max(2, Runtime.getRuntime().availableProcessors()),
+                // 最大线程数
+                Math.max(4, Runtime.getRuntime().availableProcessors() * 2),
+                // 空闲线程存活时间
+                60L, TimeUnit.SECONDS,
+                // 工作队列
+                new LinkedBlockingQueue<>(100),
+                // 线程工厂
+                r -> {
+                    Thread t = new Thread(r, "parallel-task-thread");
+                    t.setDaemon(true); // 设为守护线程
+                    return t;
+                },
+                // 拒绝策略
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
+        
+        /**
+         * 并行执行任务列表
+         * @param tasks 待执行的任务列表
+         * @param force 是否强制执行
+         * @return 成功执行的任务数量
+         */
+        public static int executeTasksInParallel(List<ModelTask> tasks, boolean force) {
+            if (tasks == null || tasks.isEmpty()) {
+                return 0;
+            }
+            
+            // 使用CountDownLatch等待所有任务完成
+            CountDownLatch latch = new CountDownLatch(tasks.size());
+            AtomicInteger successCount = new AtomicInteger(0);
+            
+            // 提交所有任务到线程池
+            for (ModelTask task : tasks) {
+                PARALLEL_EXECUTOR.execute(() -> {
+                    try {
+                        task.addRunCnts();
+                        if (task.isEnable() && task.check() && task.startTask(force)) {
+                            successCount.incrementAndGet();
+                            Log.record("并行执行任务[" + task.getName() + "]成功");
+                        }
+                    } catch (Exception e) {
+                        Log.error("并行执行任务[" + task.getName() + "]失败: " + e.getMessage());
+                        Log.printStackTrace(e);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+            
+            try {
+                // 等待所有任务完成，设置最大等待时间
+                boolean allCompleted = latch.await(5, TimeUnit.MINUTES);
+                if (!allCompleted) {
+                    Log.record("部分任务执行超时，继续执行下一轮");
+                }
+            } catch (InterruptedException e) {
+                Log.error("等待任务完成被中断: " + e.getMessage());
+                Thread.currentThread().interrupt();
+            }
+            
+            return successCount.get();
+        }
+        
+        /**
+         * 关闭执行器
+         */
+        public static void shutdown() {
+            PARALLEL_EXECUTOR.shutdown();
+            try {
+                if (!PARALLEL_EXECUTOR.awaitTermination(30, TimeUnit.SECONDS)) {
+                    PARALLEL_EXECUTOR.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                PARALLEL_EXECUTOR.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * 按优先级分组收集任务
+     */
+    private static Map<Integer, List<ModelTask>> collectTasksByPriorityGroups() {
+        Map<Integer, List<ModelTask>> priorityGroups = new HashMap<>();
+        
+        for (Model model : getModelArray()) {
+            if (model != null && ModelType.TASK == model.getType()) {
+                ModelTask task = (ModelTask) model;
+                int priority = model.getPriority();
+                
+                priorityGroups.computeIfAbsent(priority, k -> new ArrayList<>()).add(task);
+            }
+        }
+        
+        return priorityGroups;
+    }
+
+    /**
+     * 启动所有任务 - 顺序执行版本（原始实现）
+     */
+    public static void startAllTaskSequential(Boolean force) {
         Notify.setStatusTextExec();
-        for (int run_cnt=1;run_cnt<=2;run_cnt++) {
-            Log.record("第"+run_cnt+"轮开始");
-            for (Model model : getModelArray()) {
-                if (model != null) {
-                    if (ModelType.TASK == model.getType()) {
-                        ((ModelTask) model).addRunCnts();
-                         int model_priority = ((ModelTask) model).getPriority();
+        TaskExecutionStats stats = new TaskExecutionStats();
+        
+        try {
+            for (int run_cnt = 1; run_cnt <= 2; run_cnt++) {
+                Log.record("第" + run_cnt + "轮开始 (顺序执行)");
+                for (Model model : getModelArray()) {
+                    if (model != null && ModelType.TASK == model.getType()) {
+                        ModelTask task = (ModelTask) model;
+                        String taskName = task.getName();
+                        task.addRunCnts();
+                        int model_priority = model.getPriority();
+
                         if (run_cnt < model_priority) {
-                            Log.record("模块["+((ModelTask) model).getName()+"]优先级:"+model_priority+" 第"+run_cnt+"轮跳过");
+                            stats.recordSkipped(taskName);
+                            Log.record("模块[" + taskName + "]优先级:" + model_priority + " 第" + run_cnt + "轮跳过");
                             continue;
                         }
-                        if (((ModelTask) model).startTask(force)) {
-                            GlobalThreadPools.sleep(10);
+                        try {
+                            stats.recordTaskStart(taskName);
+                            boolean success = task.startTask(force);
+                            stats.recordTaskEnd(taskName, success);
+                            if (success) {
+                                GlobalThreadPools.sleep(10);
+                            }
+                        } catch (Exception e) {
+                            Log.error("执行任务[" + taskName + "]时发生错误: " + e.getMessage());
+                            Log.printStackTrace(e);
+                            stats.recordTaskEnd(taskName, false);
                         }
                     }
                 }
+                Log.record("第" + run_cnt + "轮结束");
             }
-            Log.record("第"+run_cnt+"轮结束");
+        } catch (Exception e) {
+            Log.error("顺序启动任务时发生错误: " + e.getMessage());
+            Log.printStackTrace(e);
+        } finally {
+            stats.complete();
+            Log.record(stats.getSummary());
         }
+    }
+
+    /**
+     * 启动所有任务 - 并行执行版本
+     */
+    public static void startAllTaskParallel(Boolean force) {
+        Notify.setStatusTextExec();
+        TaskExecutionStats stats = new TaskExecutionStats();
+        
+        try {
+            // 按优先级分组收集任务
+            Map<Integer, List<ModelTask>> priorityGroups = collectTasksByPriorityGroups();
+            
+            // 按优先级顺序执行任务组（优先级间串行，同优先级内并行）
+            for (int run_cnt = 1; run_cnt <= 2; run_cnt++) {
+                Log.record("第" + run_cnt + "轮开始 (并行执行)");
+                
+                List<ModelTask> currentRoundTasks = priorityGroups.getOrDefault(run_cnt, Collections.emptyList());
+                assert currentRoundTasks != null;
+                if (currentRoundTasks.isEmpty()) {
+                    Log.record("第" + run_cnt + "轮没有匹配的任务");
+                    continue;
+                }
+                
+                CountDownLatch latch = new CountDownLatch(currentRoundTasks.size());
+                
+                for (ModelTask task : currentRoundTasks) {
+                    int finalRun_cnt = run_cnt;
+                    ParallelTaskExecutor.PARALLEL_EXECUTOR.execute(() -> {
+                        String taskName = task.getName();
+                        try {
+                            task.addRunCnts();
+                            int taskPriority = task.getPriority();
+                            
+                            if (finalRun_cnt < taskPriority) {
+                                stats.recordSkipped(taskName);
+                                Log.record("模块[" + taskName + "]优先级:" + taskPriority + " 第" + finalRun_cnt + "轮跳过");
+                            } else {
+                                stats.recordTaskStart(taskName);
+                                boolean success = task.startTask(force);
+                                stats.recordTaskEnd(taskName, success);
+                            }
+                        } catch (Exception e) {
+                            Log.error("执行任务[" + taskName + "]时发生错误: " + e.getMessage());
+                            Log.printStackTrace(e);
+                            stats.recordTaskEnd(taskName, false);
+                        } finally {
+                            latch.countDown();
+                        }
+                    });
+                }
+                
+                try {
+                    latch.await(10, TimeUnit.MINUTES);
+                } catch (InterruptedException e) {
+                    Log.error("等待任务完成被中断");
+                    Thread.currentThread().interrupt();
+                }
+                
+                Log.record("第" + run_cnt + "轮结束");
+            }
+            } catch (Exception e) {
+            Log.error("并行启动任务时发生错误: " + e.getMessage());
+            Log.printStackTrace(e);
+        } finally {
+            stats.complete();
+            Log.record(stats.getSummary());
+        }
+    }
+
+    /**
+     * 启动所有任务，支持选择执行模式
+     */
+    public static void startAllTask(Boolean force, TaskExecutionMode mode) {
+        if (mode == TaskExecutionMode.PARALLEL) {
+            startAllTaskParallel(force);
+        } else {
+            startAllTaskSequential(force);
+        }
+    }
+
+    /**
+     * 启动所有任务（默认使用顺序执行模式，保持向后兼容）
+     */
+    public static void startAllTask(Boolean force) {
+        // 默认使用顺序执行模式，可以通过配置更改
+        startAllTask(force, TaskExecutionMode.SEQUENTIAL);
     }
 
     /**
