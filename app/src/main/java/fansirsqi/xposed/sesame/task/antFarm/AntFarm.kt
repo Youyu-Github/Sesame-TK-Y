@@ -420,12 +420,12 @@ class AntFarm : ModelTask() {
             listFarmTool() //装载道具信息
             tc.countDebug("装载道具信息")
 
-            // if (getRunCnts() >= rewardFriend!!.value) {
+            // if (getRunCents() >= rewardFriend!!.value) {
             if (rewardFriend!!.value) {
                 rewardFriend()
                 tc.countDebug("打赏好友")
             }
-            if (getRunCnts() >= sendBackAnimal!!.value) {
+            if (getRunCents() >= sendBackAnimal!!.value) {
                 sendBackAnimal()
                 tc.countDebug("遣返")
             }
@@ -449,7 +449,7 @@ class AntFarm : ModelTask() {
                 tc.countDebug("游戏改分(星星球、登山赛、飞行赛、揍小鸡)")
             }
 
-            if (getRunCnts() >= kitchen!!.value) {
+            if (getRunCents() >= kitchen!!.value) {
                 collectDailyFoodMaterial()
                 collectDailyLimitedFoodMaterial()
                 cook()
@@ -518,7 +518,7 @@ class AntFarm : ModelTask() {
                 hireAnimal()
                 tc.countDebug("雇佣小鸡")
             }
-            // if (getRunCnts() >= getFeed!!.value) {
+
             if (getRunCents() >= getFeed!!.value) {
                 letsGetChickenFeedTogether()
                 tc.countDebug("一起拿饲料")
