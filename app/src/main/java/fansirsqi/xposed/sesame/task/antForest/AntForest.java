@@ -3485,6 +3485,10 @@ public class AntForest extends ModelTask {
             if (jo != null && usePropBag(jo)) {
                 robExpandCardEndTime = System.currentTimeMillis() + 1000 * 60 * 5;
             }
+            jo = findPropBag(bag, "SHAMO_ROB_EXPAND_CARD_1.1_1DAYS");
+            if (jo != null && usePropBag(jo)) {
+                robExpandCardEndTime = System.currentTimeMillis() + 1000 * 60 * 5;
+            }
             jo = findPropBag(bag, "SHAMO_ROB_EXPAND_CARD_1.5_1DAYS");
             if (jo != null && usePropBag(jo)) {
                 robExpandCardEndTime = System.currentTimeMillis() + 1000 * 60 * 5;
