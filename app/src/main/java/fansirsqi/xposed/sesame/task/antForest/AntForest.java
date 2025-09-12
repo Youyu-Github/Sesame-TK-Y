@@ -424,7 +424,7 @@ public class AntForest extends ModelTask {
                       hour == 7 && minute < 35;
 
         if (isEnergyTime) {
-            Log.record(TAG, "⏸ 当前为只收能量时间【00:00-00:10、07:00-07:35】，开始循环收取自己、好友和PK好友的能量");
+            Log.record(TAG, "⏸ 当前为只收能量时间【00:00-00:10、07:00-07:35】，开始循环收取自己、好友和PK森友的能量");
 
             while (true) {
                 // 每次循环更新状态
@@ -446,24 +446,19 @@ public class AntForest extends ModelTask {
                 if (selfHomeObj != null) {
                     collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self");
                 }
-
                 selfId = UserMap.getCurrentUid();
                 usePropBeforeCollectEnergy(selfId); // 使用道具卡
-                // 收取好友和PK好友能量
-                collectFriendEnergy();
-                collectPKEnergy();
-
+                collectFriendEnergy(); // 好友能量收取
+                collectPKEnergy(); // PK森友能量
                 // 循环间隔
                 int sleepMillis = cycleinterval.getValue();
                 GlobalThreadPools.sleep(sleepMillis);
             }
-
             Log.record(TAG, "只收能量时间循环结束");
             return false; // 只收能量期间不执行正常任务
         }
         return true;
     }
-
 
     /*
     @Override
@@ -547,8 +542,8 @@ public class AntForest extends ModelTask {
                 selfId = UserMap.getCurrentUid();
                 usePropBeforeCollectEnergy(selfId); // 使用道具卡
                 collectFriendEnergy(); // 好友能量收取
-                collectPKEnergy(); // PK好友能量
-                Log.record(TAG, "午夜任务刷新，强制执行收取PK好友能量和好友能量");
+                collectPKEnergy(); // PK森友能量
+                Log.record(TAG, "午夜任务刷新，强制执行收取PK森友能量和好友能量");
             }
 
             errorWait = false;
@@ -1315,7 +1310,7 @@ public class AntForest extends ModelTask {
         }
         
         final int bubbleCount = waitingBubbles.size();
-        Log.record(TAG, "开始为用户[" + userName + "]添加" + bubbleCount + "个蹲点任务");
+        Log.foresttimer(TAG, "开始为用户[" + userName + "]添加" + bubbleCount + "个蹲点任务");
 
         // 创建计数器用于跟踪任务完成情况
         final AtomicInteger completedTasks = new AtomicInteger(0);
@@ -1333,14 +1328,14 @@ public class AntForest extends ModelTask {
                 try {
                     if (!hasChildTask(tid)) {
                         addChildTask(new EnergyTimerTask(userId, bubbleId, produceTime));
-                        Log.record(TAG,
+                        Log.foresttimer(TAG,
                                 "✅添加蹲点⏰ -> [" + finalUserName + "]"
                                         + " bubble=" + bubbleId
                                         + " 成熟时间/蹲守时间=" + TimeUtil.getCommonDate(produceTime)
                                         + " 剩余=" + (remainingTime / 1000) + "秒"
                                         + " tid=" + tid);
                     } else {
-                        Log.record(TAG,
+                        Log.foresttimer(TAG,
                                 "⚠️蹲点⏰已存在 -> [" + finalUserName + "]"
                                         + " bubble=" + bubbleId
                                         + " 成熟时间/蹲守时间=" + TimeUtil.getCommonDate(produceTime)
@@ -1353,7 +1348,7 @@ public class AntForest extends ModelTask {
                     // 任务计数增加，用于统计完成情况
                     int completed = completedTasks.incrementAndGet();
                     if (completed == bubbleCount) {
-                        Log.record(TAG, "用户[" + finalUserName + "]的所有蹲点任务已并行添加完成");
+                        Log.foresttimer(TAG, "用户[" + finalUserName + "]的所有蹲点任务已并行添加完成");
                     }
                 }
             });
@@ -1394,10 +1389,10 @@ public class AntForest extends ModelTask {
                     pkEnergy.setValue(false);
                 }
                 collectUserEnergy(pkObject, "pk");
-                //继续处理靠后的PK好友
+                //继续处理靠后的PK森友
                 JSONArray totalData = pkObject.optJSONArray("totalData");
                 if (totalData == null || totalData.length() == 0) {
-                    Log.runtime(TAG, "pk好友排行榜为空，跳过");
+                    Log.runtime(TAG, "PK森友排行榜为空，跳过");
                     return;
                 }
 
@@ -1538,7 +1533,7 @@ public class AntForest extends ModelTask {
      * </p>
      *
      * @param userIds 用户id列表（最多20个）
-     * @param flag 标志，"pk"表示PK榜好友，""表示普通好友
+     * @param flag 标志，"pk"表示PK榜森友，""表示普通好友
      */
     // private void processLastdEnergy(List<String> userIds, String flag) {
     private void processLastEnergy(List<String> userIds, String flag) {
@@ -1610,13 +1605,13 @@ public class AntForest extends ModelTask {
      * 处理单个好友 - 收能量
      * <p>
      * 该方法是能量收集的最终决策点，根据不同条件判断是否需要收取能量：
-     * 1. 区分普通好友和PK好友的处理逻辑
+     * 1. 区分普通好友和PK森友的处理逻辑
      * 2. 检查是否需要收集能量、帮助保护或领取礼盒
      * 3. 根据条件调用相应的方法执行具体操作
      * </p>
      *
-     * @param obj 好友/PK好友的JSON对象，包含能量信息
-     * @param flag 标志，"pk"表示PK榜好友，""表示普通好友
+     * @param obj 好友/PK森友的JSON对象，包含能量信息
+     * @param flag 标志，"pk"表示PK榜森友，""表示普通好友
      */
     private void processEnergy(JSONObject obj, String flag) {
         try {
@@ -1632,13 +1627,13 @@ public class AntForest extends ModelTask {
             boolean isPk = "pk".equals(flag);
 
             if (isPk) {
-                userName = "PK榜好友|" + userName;
+                userName = "PK榜森友|" + userName;
             }
             // Log.record(TAG, "  processEnergy 开始处理用户: [" + userName + "], 类型: " + (isPk ? "PK" : "普通"));
             if (isPk) {
                 boolean needCollectEnergy = (collectEnergy.getValue() > 0) && pkEnergy.getValue();
                 if (!needCollectEnergy) {
-                    Log.record(TAG, "    PK好友: [" + userName + "], 不满足收取条件，跳过");
+                    Log.record(TAG, "    PK森友: [" + userName + "], 不满足收取条件，跳过");
                     return;
                 }
 

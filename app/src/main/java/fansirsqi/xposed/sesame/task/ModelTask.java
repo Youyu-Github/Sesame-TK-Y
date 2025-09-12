@@ -377,14 +377,17 @@ public abstract class ModelTask extends Model {
                     Log.debug("任务[" + taskName + "]执行成功，耗时: " + executionTime + "ms");
                 } else {
                     failureCount.incrementAndGet();
-                    Log.error("任务[" + taskName + "]执行失败，耗时: " + executionTime + "ms");
+                    // Log.error("任务[" + taskName + "]执行失败，耗时: " + executionTime + "ms");
+                    Log.debug("任务[" + taskName + "]已关闭，跳过执行，耗时: " + executionTime + "ms");
                 }
             }
         }
         
         public void recordSkipped(String taskName) {
+            long executionTime = System.currentTimeMillis() - startTime;
             skippedCount.incrementAndGet();
-            Log.debug("任务[" + taskName + "]被跳过");
+            // Log.debug("任务[" + taskName + "]被跳过");
+            Log.debug("任务[" + taskName + "]因优先级被跳过，耗时: " + executionTime + "ms");
         }
         
         public void complete() {
@@ -394,7 +397,8 @@ public abstract class ModelTask extends Model {
         @SuppressLint("DefaultLocale")
         public String getSummary() {
             long totalTime = endTime - startTime;
-            return String.format("任务执行统计 - 总耗时: %dms, 成功: %d, 失败: %d, 跳过: %d",
+            // return String.format("任务执行统计 - 总耗时: %dms, 成功: %d, 失败: %d, 跳过: %d",
+            return String.format("优先级任务执行统计 - 总耗时: %dms, 共计成功: %d, 功能关闭: %d, 共计跳过: %d",
                     totalTime, successCount.get(), failureCount.get(), skippedCount.get());
         }
     }

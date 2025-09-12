@@ -305,7 +305,7 @@ object AntFarmRpcCall {
         }
         
         // 记录完整的请求参数
-        Log.record(TAG, "请求参数: $requestParams")
+        // Log.record(TAG, "请求参数: $requestParams")
         
         return requestString("com.alipay.antfarm.initFarmGame", requestParams)
     }

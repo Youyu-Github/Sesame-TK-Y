@@ -16,6 +16,7 @@ public class Log {
     private static final Logger RECORD_LOGGER;
     private static final Logger DEBUG_LOGGER;
     private static final Logger FOREST_LOGGER;
+    private static final Logger FORESTTIMER_LOGGER;
     private static final Logger FARM_LOGGER;
     private static final Logger OTHER_LOGGER;
     private static final Logger ERROR_LOGGER;
@@ -28,6 +29,7 @@ public class Log {
         RECORD_LOGGER = LoggerFactory.getLogger("record");
         DEBUG_LOGGER = LoggerFactory.getLogger("debug");
         FOREST_LOGGER = LoggerFactory.getLogger("forest");
+        FORESTTIMER_LOGGER = LoggerFactory.getLogger("foresttimer");
         FARM_LOGGER = LoggerFactory.getLogger("farm");
         OTHER_LOGGER = LoggerFactory.getLogger("other");
         ERROR_LOGGER = LoggerFactory.getLogger("error");
@@ -78,6 +80,15 @@ public class Log {
 
     public static void forest(String TAG, String msg) {
         forest("[" + TAG + "]: " + msg);
+    }
+
+    public static void foresttimer(String msg) {
+        runtime(msg);
+        FORESTTIMER_LOGGER.info("{}", msg);
+    }
+
+    public static void foresttimer(String TAG, String msg) {
+        foresttimer("[" + TAG + "]: " + msg);
     }
 
     public static void farm(String msg) {

@@ -400,8 +400,8 @@ public class AntForestRpcCall {
         JSONObject requestData = createConsumePropRequestData(propGroup, propId, propType, secondConfirm);
        // Log.record(TAG, "requestData: " + "["+requestData+"]");
         return RequestManager.requestString(
-                "alipay.antforest.forest.h5.consumeProp",
-                "["+requestData+"]"
+            "alipay.antforest.forest.h5.consumeProp",
+                      "["+requestData+"]"
         );
     }
 

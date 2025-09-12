@@ -17,7 +17,7 @@ public class Logback {
 
 
     public static List<String> logNames = List.of(
-            "runtime", "system", "record", "debug", "forest",
+            "runtime", "system", "record", "debug", "forest", "foresttimer",
             "farm", "other", "error", "capture");
 
     public static void configureLogbackDirectly() {
