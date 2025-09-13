@@ -3778,6 +3778,66 @@ public class AntForest extends ModelTask {
     }
 
     /**
+     * 统一获取和缓存用户名的方法
+     * @param userId 用户ID
+     * @param userHomeObj 用户主页对象（可选）
+     * @param fromTag 来源标记（可选）
+     * @return 用户名
+     */
+    private String cacheCollectedMap(String userId, JSONObject userHomeObj, String fromTag) {
+        // 1. 尝试从缓存获取
+        String userName = cacheCollectedMap.get(userId);
+        if (userName != null && !userName.equals(userId)) { // 如果缓存的不是userId本身
+            return userName;
+        }
+        
+        // 2. 根据上下文解析
+        userName = resolveUserNameFromContext(userId, userHomeObj, fromTag);
+        // 3. Fallback处理
+        if (userName == null || userName.isEmpty()) {
+            userName = userId;
+        }
+        
+        // 4. 存入缓存
+        cacheCollectedMap.put(userId, userName);
+        return userName;
+    }
+
+    /**
+     * 统一获取用户名的简化方法（无上下文）
+     */
+    private String cacheCollectedMap(String userId) {
+        return cacheCollectedMap(userId, null, null);
+    }
+
+    /**
+     * 从上下文中解析用户名
+     */
+    private String resolveUserNameFromContext(String userId, JSONObject userHomeObj, String fromTag) {
+        String userName = null;
+        
+        if ("pk".equals(fromTag) && userHomeObj != null) {
+            JSONObject userEnergy = userHomeObj.optJSONObject("userEnergy");
+            if (userEnergy != null) {
+                userName = "PK榜好友|" + userEnergy.optString("displayName");
+            }
+        } else {
+            userName = UserMap.getMaskName(userId);
+            if ((userName == null || userName.equals(userId)) && userHomeObj != null) {
+                JSONObject userEnergy = userHomeObj.optJSONObject("userEnergy");
+                if (userEnergy != null) {
+                    String displayName = userEnergy.optString("displayName");
+                    if (!displayName.isEmpty()) {
+                        userName = displayName;
+                    }
+                }
+            }
+        }
+        
+        return userName;
+    }
+
+    /**
      * 获取能量收取任务ID
      */
     public static String getEnergyTimerTid(String uid, long bid) {
