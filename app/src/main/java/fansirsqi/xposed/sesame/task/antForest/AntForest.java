@@ -458,6 +458,7 @@ public class AntForest extends ModelTask {
                 collectPKEnergy(); // PK森友能量
                 // 循环间隔
                 int sleepMillis = cycleinterval.getValue();
+                Log.record(TAG, "只收能量时间循环间隔: " + sleepMillis + "毫秒");
                 GlobalThreadPools.sleep(sleepMillis);
             }
             Log.record(TAG, "只收能量时间循环结束");

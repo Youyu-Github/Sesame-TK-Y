@@ -161,6 +161,17 @@ object DataCache {
         if (init) return true
         val oldFile = Files.getTargetFileofDir(Files.MAIN_DIR, FILENAME)
         val targetFile = Files.getTargetFileofDir(FILE_PATH, FILENAME)
+        val tempFile = File(targetFile.parent, "${targetFile.name}.tmp")
+        if (tempFile.exists()) {
+            if (targetFile.exists()) {
+                targetFile.delete()
+            }
+            if (tempFile.renameTo(targetFile)) {
+                Log.runtime(TAG, "从临时文件恢复成功。")
+            } else {
+                Log.error(TAG, "从临时文件恢复失败。")
+            }
+        }
         var success = false
         try {
             if (targetFile.exists()) {

@@ -14,6 +14,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.thread
 import kotlin.concurrent.write
+import com.fasterxml.jackson.databind.exc.MismatchedInputException
 
 object DataStore {
     private val mapper = jacksonObjectMapper()
@@ -96,8 +97,17 @@ object DataStore {
 
     private fun loadFromDisk() {
         if (storageFile.length() == 0L) return
-        val loaded: Map<String, Any> = mapper.readValue(storageFile)
-        data.putAll(loaded)
+        // val loaded: Map<String, Any> = mapper.readValue(storageFile)
+        // data.putAll(loaded)
+        lock.write {
+            try {
+                val loaded: Map<String, Any> = mapper.readValue(storageFile)
+                data.clear()
+                data.putAll(loaded)
+            } catch (e: MismatchedInputException) {
+                // Ignore, may be caused by file being written
+            }
+        }
     }
 
     private val prettyPrinter = DefaultPrettyPrinter().apply {
@@ -106,7 +116,19 @@ object DataStore {
     }
 
     private fun saveToDisk() {
-        storageFile.writeText(mapper.writer(prettyPrinter).writeValueAsString(data))
+        // storageFile.writeText(mapper.writer(prettyPrinter).writeValueAsString(data))
+        val tempFile = File(storageFile.parentFile, storageFile.name + ".tmp")
+        try {
+            tempFile.writeText(mapper.writer(prettyPrinter).writeValueAsString(data))
+            if (storageFile.exists()) {
+                storageFile.delete()
+            }
+            tempFile.renameTo(storageFile)
+        } catch (e: Exception) {
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
+        }
     }
 
     private fun startWatcher() {
