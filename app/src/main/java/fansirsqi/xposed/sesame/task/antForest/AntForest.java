@@ -226,6 +226,12 @@ public class AntForest extends ModelTask {
     private final Map<String, Long> emptyForestCache = new ConcurrentHashMap<>();
 
     /**
+     * 跳过用户缓存，用于记录有保护罩或其他需要跳过的用户
+     * Key: 用户ID，Value: 跳过原因（如"baohuzhao"表示有保护罩）
+     */
+    private final Map<String, String> skipUsersCache = new ConcurrentHashMap<>();
+
+    /**
      * 加速器定时
      */
     private ListModelField.ListJoinCommaToStringModelField bubbleBoostTime;
@@ -715,6 +721,8 @@ public class AntForest extends ModelTask {
             cacheCollectedMap.clear();
             // 清空本轮的空森林缓存，以便下一轮（如下次"执行间隔"到达）重新检查所有好友
             emptyForestCache.clear();
+            // 清空跳过用户缓存，下一轮重新检测保护罩状态
+            skipUsersCache.clear();
             String str_totalCollected = "本次总 收:" + totalCollected + "g 帮:" + totalHelpCollected + "g 浇:" + totalWatered + "g";
             Notify.updateLastExecText(str_totalCollected);
         }
