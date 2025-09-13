@@ -1886,10 +1886,12 @@ public class AntForest extends ModelTask {
                         String resultCode = jo.getString("resultCode");
                         if (!"SUCCESS".equalsIgnoreCase(resultCode)) {
                             if ("PARAM_ILLEGAL2".equals(resultCode)) {
-                                Log.record(TAG, "[" + cacheCollectedMap.get(userId) + "]" + "能量已被收取,取消重试 错误:" + jo.getString("resultDesc"));
+                                // Log.record(TAG, "[" + cacheCollectedMap.get(userId) + "]" + "能量已被收取,取消重试 错误:" + jo.getString("resultDesc"));
+                                Log.record(TAG, "[" + cacheCollectedMap(userId) + "]" + "能量已被收取,取消重试 错误:" + jo.getString("resultDesc"));
                                 return;
                             }
-                            Log.record(TAG, "[" + cacheCollectedMap.get(userId) + "]" + jo.getString("resultDesc"));
+                            // Log.record(TAG, "[" + cacheCollectedMap.get(userId) + "]" + jo.getString("resultDesc"));
+                            Log.record(TAG, "[" + cacheCollectedMap(userId) + "]" + jo.getString("resultDesc"));
                             if (tryCount < tryCountInt) {
                                 collectEnergyEntity.setNeedRetry();
                                 collectEnergy(collectEnergyEntity);
@@ -1910,7 +1912,8 @@ public class AntForest extends ModelTask {
                             if (collected > 0) {
                                 int randomIndex = random.nextInt(emojiList.size());
                                 String randomEmoji = emojiList.get(randomIndex);
-                                String str = "一键收取️" + randomEmoji + collected + "g[" + cacheCollectedMap.get(userId) + "]#";
+                                // String str = "一键收取️" + randomEmoji + collected + "g[" + cacheCollectedMap.get(userId) + "]#";
+                                String str = "一键收取️" + randomEmoji + collected + "g[" + cacheCollectedMap(userId) + "]#";
                                 totalCollected += collected;
                                 if (needDouble) {
                                     Log.forest(str + "耗时[" + spendTime + "]ms[双击]");
@@ -1921,7 +1924,8 @@ public class AntForest extends ModelTask {
                                 }
                                 Statistics.addData(Statistics.DataType.COLLECTED, collected);
                             } else {
-                                Log.record(TAG, "一键收取❌[" + cacheCollectedMap.get(userId) + "]的能量失败" + " " + "，UserID：" + userId + "，BubbleId：" + newBubbleIdList);
+                                // Log.record(TAG, "一键收取❌[" + cacheCollectedMap.get(userId) + "]的能量失败" + " " + "，UserID：" + userId + "，BubbleId：" + newBubbleIdList);
+                                Log.record(TAG, "一键收取❌[" + cacheCollectedMap(userId) + "]的能量失败" + " " + "，UserID：" + userId + "，BubbleId：" + newBubbleIdList);
                             }
                             if (!newBubbleIdList.isEmpty()) {
                                 collectEnergyEntity.setRpcEntity(AntForestRpcCall.batchEnergyRpcEntity("", userId, newBubbleIdList));
@@ -1935,7 +1939,8 @@ public class AntForest extends ModelTask {
                             if (collected > 0) {
                                 int randomIndex = random.nextInt(emojiList.size());
                                 String randomEmoji = emojiList.get(randomIndex);
-                                String str = "普通收取" + randomEmoji + collected + "g[" + cacheCollectedMap.get(userId) + "]";
+                                // String str = "普通收取" + randomEmoji + collected + "g[" + cacheCollectedMap.get(userId) + "]";
+                                String str = "普通收取" + randomEmoji + collected + "g[" + cacheCollectedMap(userId) + "]";
                                 totalCollected += collected;
                                 if (needDouble) {
                                     Log.forest(str + "耗时[" + spendTime + "]ms[双击]");
@@ -1946,7 +1951,8 @@ public class AntForest extends ModelTask {
                                 }
                                 Statistics.addData(Statistics.DataType.COLLECTED, collected);
                             } else {
-                                Log.record(TAG, "普通收取❌[" + cacheCollectedMap.get(userId) + "]的能量失败");
+                                // Log.record(TAG, "普通收取❌[" + cacheCollectedMap.get(userId) + "]的能量失败");
+                                Log.record(TAG, "普通收取❌[" + cacheCollectedMap(userId) + "]的能量失败");
                                 Log.runtime(TAG, "，UserID：" + userId + "，BubbleId：" + bubble.getLong("id"));
                             }
                             if (bubble.getBoolean("canBeRobbedAgain")) {
