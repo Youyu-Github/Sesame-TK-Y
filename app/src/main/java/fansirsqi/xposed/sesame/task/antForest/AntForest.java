@@ -2545,15 +2545,15 @@ public class AntForest extends ModelTask {
         // 炸弹卡续用阈值为3天
         long BOMB_RENEW_THRESHOLD = 3 * ONE_DAY;
         if (bombEnd <= nowMillis) { // 未生效或少于三天
-            Log.runtime(TAG, "[炸弹卡] 未生效/少于三天，立即续用；end=" + TimeUtil.getCommonDate(bombEnd) + ", now=" + TimeUtil.getCommonDate(nowMillis));
+            Log.runtime(TAG, "[炸弹卡]💣未生效/少于三天，立即续用；end=" + TimeUtil.getCommonDate(bombEnd) + ", now=" + TimeUtil.getCommonDate(nowMillis));
             return true;
         }
         long remain = bombEnd - nowMillis;
-        Log.runtime(TAG, "[炸弹卡] 剩余= " + formatTimeDifference(remain) + ", 阈值=" + formatTimeDifference(BOMB_RENEW_THRESHOLD));
+        Log.runtime(TAG, "[炸弹卡]💣剩余= " + formatTimeDifference(remain) + ", 阈值=" + formatTimeDifference(BOMB_RENEW_THRESHOLD));
 
         // 如果剩余时间小于阈值且当前总时长未超过最大有效期，则需要续用
         boolean needRenew = remain <= BOMB_RENEW_THRESHOLD && (bombEnd - nowMillis + remain) <= MAX_BOMB_DURATION;
-        Log.runtime(TAG, "[炸弹卡] 比较: " + remain + " <= " + BOMB_RENEW_THRESHOLD + " == " + needRenew +
+        Log.runtime(TAG, "[炸弹卡]💣比较: " + remain + " <= " + BOMB_RENEW_THRESHOLD + " == " + needRenew +
                 ", 总时长检查: " + (bombEnd - nowMillis + remain) + " <= " + MAX_BOMB_DURATION);
         return needRenew;
     }
@@ -2571,16 +2571,16 @@ public class AntForest extends ModelTask {
         long DOUBLE_RENEW_THRESHOLD = 31 * ONE_DAY;
         
         if (doubleEnd <= nowMillis) { // 未生效或少于三十一天
-            Log.runtime(TAG, "[双击卡] 未生效/少于三十一天，立即续用；end=" + TimeUtil.getCommonDate(doubleEnd) + ", now=" + TimeUtil.getCommonDate(nowMillis));
+            Log.runtime(TAG, "[双击卡]🔄未生效/少于三十一天，立即续用；end=" + TimeUtil.getCommonDate(doubleEnd) + ", now=" + TimeUtil.getCommonDate(nowMillis));
             return true;
         }
         
         long remain = doubleEnd - nowMillis;
-        Log.runtime(TAG, "[双击卡] 剩余= " + formatTimeDifference(remain) + ", 阈值=" + formatTimeDifference(DOUBLE_RENEW_THRESHOLD));
+        Log.runtime(TAG, "[双击卡]🔄剩余= " + formatTimeDifference(remain) + ", 阈值=" + formatTimeDifference(DOUBLE_RENEW_THRESHOLD));
         
         // 如果剩余时间小于阈值且当前总时长未超过最大有效期，则需要续用
         boolean needRenew = remain <= DOUBLE_RENEW_THRESHOLD;
-        Log.runtime(TAG, "[双击卡] 比较: " + remain + " <= " + DOUBLE_RENEW_THRESHOLD + " == " + needRenew);
+        Log.runtime(TAG, "[双击卡]🔄比较: " + remain + " <= " + DOUBLE_RENEW_THRESHOLD + " == " + needRenew);
         return needRenew;
     }
     
