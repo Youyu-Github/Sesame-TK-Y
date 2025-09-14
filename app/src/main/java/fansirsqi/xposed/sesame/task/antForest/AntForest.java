@@ -139,7 +139,7 @@ public class AntForest extends ModelTask {
      * 一天毫秒数
      */
     private static final long ONE_DAY = 24 * ONE_HOUR_MS;
-    /** 保护罩续写阈值（HHmm），例如 2355 表示 23小时55分 */
+    /** 保护罩续用阈值（HHmm），例如 2355 表示 23小时55分 */
     private static final int SHIELD_RENEW_THRESHOLD_HHMM = 2359;
     
     private BooleanModelField expiredEnergy; // 收取过期能量
@@ -2451,7 +2451,7 @@ public class AntForest extends ModelTask {
                     if (needStealth) useStealthCard(bagObject);
                     if (needBubbleBoostCard) useCardBoot(bubbleBoostTime.getValue(), "加速卡", this::useBubbleBoostCard);
                     if (needShield) {
-                        Log.runtime(TAG, "尝试使用保护罩罩");
+                        Log.runtime(TAG, "尝试使用保护罩");
                         useShieldCard(bagObject);
                     } else if (needEnergyBombCard) {
                         Log.runtime(TAG, "准备使用能量炸弹卡");
@@ -2516,19 +2516,19 @@ public class AntForest extends ModelTask {
         // 计算阈值毫秒数
         long thresholdMs = hours * ONE_HOUR_MS + minutes * 60_000L;
         
-        if (shieldEnd <= nowMillis) { // 未生效或已过期
-            Log.record(TAG, "[保护罩] 未生效/已过期，立即续写；end=" + 
+        if (shieldEnd <= nowMillis) { // 未生效或小于一天
+            Log.record(TAG, "[保护罩]🛡未生效/少于一天，立即续保；end=" + 
                     TimeUtil.getCommonDate(shieldEnd) + ", now=" + 
                     TimeUtil.getCommonDate(nowMillis));
             return true;
         }
         
         long remain = shieldEnd - nowMillis;
-        Log.record(TAG, "[保护罩] 剩余= " + formatTimeDifference(remain) + 
+        Log.record(TAG, "[保护罩]🛡剩余= " + formatTimeDifference(remain) + 
                 ", 阈值=" + String.format("%02d小时%02d分", hours, minutes));
         
         boolean needRenew = remain <= thresholdMs;
-        Log.record(TAG, "[保护罩] 比较: "+remain+" <= "+thresholdMs+" == " + needRenew);
+        Log.record(TAG, "[保护罩]🛡比较: "+remain+" <= "+thresholdMs+" == " + needRenew);
 
         return needRenew;
     }
@@ -2544,8 +2544,8 @@ public class AntForest extends ModelTask {
         long MAX_BOMB_DURATION = 4 * ONE_DAY;
         // 炸弹卡续用阈值为3天
         long BOMB_RENEW_THRESHOLD = 3 * ONE_DAY;
-        if (bombEnd <= nowMillis) { // 未生效或已过期
-            Log.runtime(TAG, "[炸弹卡] 未生效/已过期，立即续写；end=" + TimeUtil.getCommonDate(bombEnd) + ", now=" + TimeUtil.getCommonDate(nowMillis));
+        if (bombEnd <= nowMillis) { // 未生效或少于三天
+            Log.runtime(TAG, "[炸弹卡] 未生效/少于三天，立即续用；end=" + TimeUtil.getCommonDate(bombEnd) + ", now=" + TimeUtil.getCommonDate(nowMillis));
             return true;
         }
         long remain = bombEnd - nowMillis;
@@ -2570,8 +2570,8 @@ public class AntForest extends ModelTask {
         // 双击卡续用阈值为31天
         long DOUBLE_RENEW_THRESHOLD = 31 * ONE_DAY;
         
-        if (doubleEnd <= nowMillis) { // 未生效或已过期
-            Log.runtime(TAG, "[双击卡] 未生效/已过期，立即续写；end=" + TimeUtil.getCommonDate(doubleEnd) + ", now=" + TimeUtil.getCommonDate(nowMillis));
+        if (doubleEnd <= nowMillis) { // 未生效或少于三十一天
+            Log.runtime(TAG, "[双击卡] 未生效/少于三十一天，立即续用；end=" + TimeUtil.getCommonDate(doubleEnd) + ", now=" + TimeUtil.getCommonDate(nowMillis));
             return true;
         }
         
@@ -3081,7 +3081,7 @@ public class AntForest extends ModelTask {
                 Log.record(TAG, "查成功, 状态: " + status);
 
                 if ("NEED_CONFIRM_CAN_PROLONG".equals(status)) {
-                    // 情况1: 需要二次确认 (真正的续写)
+                    // 情况1: 需要二次确认 (真正的续用)
                     Log.record(TAG, "需要二次确认，发送确认请求...");
                     GlobalThreadPools.sleep(2000);
                     String confirmResponseStr = AntForestRpcCall.consumeProp(propGroup, propId, propType, true);
