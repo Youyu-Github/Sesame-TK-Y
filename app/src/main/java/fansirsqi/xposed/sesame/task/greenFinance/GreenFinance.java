@@ -451,12 +451,12 @@ public class GreenFinance extends ModelTask {
                     GlobalThreadPools.sleep(1500);
                     JSONObject jsonObject = new JSONObject(str);
                     if (!jsonObject.optBoolean("success")) {
-                        Log.other("绿色经营🙋，好友金币巡查失败");
+                        Log.other("绿色经营🙋好友金币巡查失败");
                         break;
                     }
                     JSONObject result = jsonObject.getJSONObject("result");
                     if (result.getBoolean("lastPage")) {
-                        Log.other("绿色经营🙋，好友金币巡查完成");
+                        Log.other("绿色经营🙋好友金币巡查完成");
                         Status.greenFinancePointFriend();
                         return;
                     }
