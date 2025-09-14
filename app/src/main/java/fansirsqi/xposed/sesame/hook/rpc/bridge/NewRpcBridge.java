@@ -181,12 +181,12 @@ public class NewRpcBridge implements RpcBridge {
                                                 if (!(Boolean) XposedHelpers.callMethod(obj, "containsKey", "success")
                                                         && !(Boolean) XposedHelpers.callMethod(obj, "containsKey", "isSuccess")) {
                                                     rpcEntity.setError();
-                                                    Log.error(TAG, "new rpc response | id: " + rpcEntity.hashCode() + " | method: " + rpcEntity.getRequestMethod() + "\n " +
+                                                    Log.error(TAG, "new rpc response1 | id: " + rpcEntity.hashCode() + " | method: " + rpcEntity.getRequestMethod() + "\n " +
                                                             "args: " + rpcEntity.getRequestData() + " |\n data: " + rpcEntity.getResponseString());
                                                 }
                                             } catch (Exception e) {
                                                 rpcEntity.setError();
-                                                Log.error(TAG, "new rpc response | id: " + rpcEntity.hashCode() + " | method: " + rpcEntity.getRequestMethod() +
+                                                Log.error(TAG, "new rpc response2 | id: " + rpcEntity.hashCode() + " | method: " + rpcEntity.getRequestMethod() +
                                                         " err:");
                                                 Log.printStackTrace(e);
                                             }

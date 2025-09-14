@@ -69,26 +69,35 @@ public class ResChecker {
 
     @NonNull
     private static String getString(StackTraceElement[] stackTrace) {
-        String callerInfo = "";
-        // 寻找第一个非ResChecker类且非Java系统类的调用者（真正的业务代码调用位置）
+        StringBuilder callerInfo = new StringBuilder();
+        int foundCount = 0;
+        // 最多显示4层调用栈
+        final int MAX_STACK_DEPTH = 4;
+        final String PROJECT_PACKAGE = "fansirsqi.xposed.sesame";
+        
+        // 寻找项目包名下的调用者
         for (StackTraceElement element : stackTrace) {
             String className = element.getClassName();
-            // 跳过ResChecker类和Java系统类
-            if (!className.contains("ResChecker") &&
-                    !className.startsWith("java.lang.") &&
-                    !className.startsWith("java.util.") &&
-                    className.contains("fansirsqi.xposed.sesame")) {
-                // 获取简化的类名（不含包名）
-                String simpleClassName = className.substring(className.lastIndexOf('.') + 1);
-                callerInfo = simpleClassName + "." + element.getMethodName() + ":" + element.getLineNumber();
-                break;
+            // 只显示项目包名下的类，跳过ResChecker
+            if (className.startsWith(PROJECT_PACKAGE) && !className.contains("ResChecker")) {
+                // 获取类名（保留项目包名后的部分）
+                String relativeClassName = className.substring(PROJECT_PACKAGE.length() + 1);
+                if (foundCount > 0) {
+                    callerInfo.append(" <- ");
+                }
+                callerInfo.append(relativeClassName)
+                         .append(".")
+                         .append(element.getMethodName())
+                         .append(":")
+                         .append(element.getLineNumber());
+                
+                foundCount++;
+                if (foundCount >= MAX_STACK_DEPTH) {
+                    break;
+                }
             }
         }
-
-        if (callerInfo.isEmpty()) {
-            callerInfo = "未知来源";
-        }
-        return callerInfo;
+        return callerInfo.toString();
     }
 
     /**
