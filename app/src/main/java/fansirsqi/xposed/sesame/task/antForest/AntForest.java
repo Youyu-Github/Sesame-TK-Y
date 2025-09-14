@@ -119,7 +119,7 @@ public class AntForest extends ModelTask {
      */
     private volatile long energyBombCardEndTime = 0;
     /**
-     * 1.1倍能量卡结束时间
+     * 能量翻倍卡结束时间
      */
     private volatile long robExpandCardEndTime = 0;
     /// lzw add begin
@@ -198,8 +198,8 @@ public class AntForest extends ModelTask {
     private PriorityModelField ecoLife;
     private PriorityModelField giveProp;
 
-    private ChoiceModelField robExpandCard;//1.1倍能量卡
-    private ListModelField robExpandCardTime; //1.1倍能量卡时间
+    private ChoiceModelField robExpandCard;//能量翻倍卡
+    private ListModelField robExpandCardTime; //能量翻倍卡时间
     private BooleanModelField pkEnergy; // PK能量
     private PriorityModelField collectProp;
     // private BooleanModelField collectProp;
@@ -324,8 +324,8 @@ public class AntForest extends ModelTask {
         modelFields.addField(energyBombCardType = new ChoiceModelField("energyBombCardType", "炸弹卡开关 | 消耗类型", applyPropType.CLOSE,
                 applyPropType.nickNames, "若开启了保护罩，则不会使用炸弹卡"));
 
-        modelFields.addField(robExpandCard = new ChoiceModelField("robExpandCard", "1.1倍能量卡开关 | 消耗类型", applyPropType.CLOSE, applyPropType.nickNames));
-        modelFields.addField(robExpandCardTime = new ListModelField.ListJoinCommaToStringModelField("robExpandCardTime", "1.1倍能量卡 | 使用时间/不能范围",
+        modelFields.addField(robExpandCard = new ChoiceModelField("robExpandCard", "能量翻倍卡开关 | 消耗类型", applyPropType.CLOSE, applyPropType.nickNames));
+        modelFields.addField(robExpandCardTime = new ListModelField.ListJoinCommaToStringModelField("robExpandCardTime", "能量翻倍卡 | 使用时间/不能范围",
                 ListUtil.newArrayList("0700", "0730", "1200", "1230", "1700", "1730", "2000", "2030", "2359")));
 
         modelFields.addField(stealthCard = new ChoiceModelField("stealthCard", "隐身卡开关 | 消耗类型", applyPropType.CLOSE, applyPropType.nickNames));
@@ -2042,10 +2042,10 @@ public class AntForest extends ModelTask {
                         energyBombCardEndTime = userUsingProp.getLong("endTime");
                         Log.runtime(TAG, "能量炸弹卡剩余时间⏰：" + formatTimeDifference(energyBombCardEndTime - System.currentTimeMillis()));
                         break;
-                    case "robExpandCard": // 1.1倍能量卡
+                    case "robExpandCard": // 能量翻倍卡
                         String extInfo = userUsingProp.optString("extInfo");
                         robExpandCardEndTime = userUsingProp.getLong("endTime");
-                        Log.runtime(TAG, "1.1倍能量卡剩余时间⏰：" + formatTimeDifference(robExpandCardEndTime - System.currentTimeMillis()));
+                        Log.runtime(TAG, "能量翻倍卡剩余时间⏰：" + formatTimeDifference(robExpandCardEndTime - System.currentTimeMillis()));
                         if (!extInfo.isEmpty()) {
                             JSONObject extInfoObj = new JSONObject(extInfo);
                             double leftEnergy = Double.parseDouble(extInfoObj.optString("leftEnergy", "0"));
@@ -2055,7 +2055,7 @@ public class AntForest extends ModelTask {
                                 JSONObject jo = new JSONObject(AntForestRpcCall.collectRobExpandEnergy(propId, propType));
                                 if (ResChecker.checkRes(TAG, jo)) {
                                     int collectEnergy = jo.optInt("collectEnergy");
-                                    Log.forest("额外能量🌳[" + collectEnergy + "g][1.1倍能量卡]");
+                                    Log.forest("额外能量🌳[" + collectEnergy + "g][能量翻倍卡]");
                                     Statistics.addData(Statistics.DataType.COLLECTED, collectEnergy);
                                 }
                             }
@@ -2410,7 +2410,7 @@ public class AntForest extends ModelTask {
              * 2. 获取当前时间及各类道具的到期时间，计算剩余时间。
              * 3. 根据以下条件判断是否需要使用特定道具:
              *    - needDouble: 双击卡开关已打开，且当前没有生效的双击卡。
-             *    - needrobExpand: 1.1倍能量卡开关已打开，且当前没有生效的卡。
+             *    - needrobExpand: 能量翻倍卡开关已打开，且当前没有生效的卡。
              *    - needStealth: 隐身卡开关已打开，且当前没有生效的隐身卡。
              *    - needShield: 保护罩开关已打开，炸弹卡开关已关闭，且保护罩剩余时间不足一天。
              *    - needEnergyBombCard: 炸弹卡开关已打开，保护罩开关已关闭，且炸弹卡剩余时间不足三天。
@@ -2447,7 +2447,7 @@ public class AntForest extends ModelTask {
                     // Log.runtime(TAG, "bagObject=" + (bagObject == null ? "null" : bagObject.toString()));
 
                     if (needDouble) useDoubleCard(bagObject);
-                    if (needrobExpand) useCardBoot(robExpandCardTime.getValue(), "1.1倍能量卡", this::userobExpandCard);
+                    if (needrobExpand) useCardBoot(robExpandCardTime.getValue(), "能量翻倍卡", this::userobExpandCard);
                     if (needStealth) useStealthCard(bagObject);
                     if (needBubbleBoostCard) useCardBoot(bubbleBoostTime.getValue(), "加速卡", this::useBubbleBoostCard);
                     if (needShield) {
