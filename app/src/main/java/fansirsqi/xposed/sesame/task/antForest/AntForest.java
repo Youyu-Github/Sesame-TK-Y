@@ -557,10 +557,11 @@ public class AntForest extends ModelTask {
 
             // 计数器和时间记录
             /// lzw add begin
-            //if(isMonday()) {
-            //    _is_monday = true;
-            //}
-            _is_monday = true;
+            if(isMonday()) {
+                _is_monday = true;
+            }
+            // if (isMonday()) _is_monday = true;
+            // _is_monday = true;
             TimeCounter tc = new TimeCounter(TAG);
             if(showBagList.getValue()) {
                 showBag();
@@ -1229,11 +1230,11 @@ public class AntForest extends ModelTask {
             }
             // 5. 先添加蹲点任务（无论是否有保护罩都要蹲点，因为保护罩会过期）
             scheduleWaitingBubbles(userId, waitingBubbles, userName);
-            // 6. 检查是否有能量罩保护（影响当前收取，但不影响蹲点）
+            // 6. 检查是否有保护罩保护（影响当前收取，但不影响蹲点）
             boolean hasProtection = false;
             if (!isSelf) {
                 if (hasShield(userHomeObj, serverTime)) {
-                    Log.record(TAG, "[" + userName + "]被能量罩🛡保护着哟，跳过当前收取但已添加蹲点");
+                    Log.record(TAG, "[" + userName + "]被保护罩🛡保护着哟，跳过当前收取但已添加蹲点");
                     hasProtection = true;
                     return userHomeObj;
                 }
@@ -1642,7 +1643,7 @@ public class AntForest extends ModelTask {
             if (isPk) {
                 boolean needCollectEnergy = (collectEnergy.getValue() > 0) && pkEnergy.getValue();
                 if (!needCollectEnergy) {
-                    Log.record(TAG, "    PK森友: [" + userName + "], 不满足收取条件，跳过");
+                    Log.record(TAG, "PK森友: [" + userName + "], 不满足收取条件，跳过");
                     return;
                 }
 
@@ -1654,7 +1655,7 @@ public class AntForest extends ModelTask {
                 // Log.forest("needHelpProtect:"+needHelpProtect+" value:"+helpFriendCollectType.getValue()+" can:"+friendObj.optBoolean("canProtectBubble")+" has:" + Status.canProtectBubbleToday(selfId));
                 boolean needCollectGiftBox = collectGiftBox.getValue() && obj.optBoolean("canCollectGiftBox");
                 if (!needCollectEnergy && !needHelpProtect && !needCollectGiftBox) {
-                    Log.record(TAG, "    普通好友: [" + userName + "], 所有条件不满足，跳过");
+                    Log.record(TAG, "普通好友: [" + userName + "], 所有条件都不满足，跳过");
                     return;
                 }
                 JSONObject userHomeObj = null;
@@ -3176,13 +3177,35 @@ public class AntForest extends ModelTask {
                     jo = findPropBag(bagObject, "8ZN_ENERGY_DOUBLE_CLICK_7DAYS");
                 }
                 if (jo == null) {
+                    Log.runtime(TAG, "未找到限时双击卡，尝试查找31天长效双击卡...");
+                    jo = findPropBag(bagObject, "ENERGY_DOUBLE_CLICK_31DAYS");
+                }
+                if (jo == null) {
                     Log.runtime(TAG, "未找到限时双击卡，尝试查找普通双击卡...");
                     jo = findPropBag(bagObject, "ENERGY_DOUBLE_CLICK");
                 }
                 if (jo != null) {
                     Log.runtime(TAG, "找到双击卡，准备使用: " + jo);
                     if (usePropBag(jo)) {
-                        doubleEndTime = System.currentTimeMillis() + 1000 * 60 * 5;
+                        long duration = 0;
+                        String propId = jo.optString("propId");
+                        switch (propId) {
+                            case "PKS_ENERGY_DOUBLE_CLICK_3DAYS":
+                                duration = 1000L * 60 * 60 * 24 * 3; // 3天
+                                break;
+                            case "8ZN_ENERGY_DOUBLE_CLICK_7DAYS":
+                                duration = 1000L * 60 * 60 * 24 * 7; // 7天
+                                break;
+                            case "ENERGY_DOUBLE_CLICK_31DAYS":
+                                duration = 1000L * 60 * 60 * 24 * 31; // 31天
+                                break;
+                            case "ENERGY_DOUBLE_CLICK":
+                                duration = 1000L * 60 * 5; // 5分钟
+                                break;
+                            default:
+                                duration = 1000 * 60 * 5; // 默认5分钟
+                        }
+                        doubleEndTime = System.currentTimeMillis() + duration;
                         Status.DoubleToday();
                     }
                 } else {
@@ -3282,12 +3305,12 @@ public class AntForest extends ModelTask {
             JSONObject jo = null;
             
             // 1. 优先尝试 LIMIT_TIME_ENERGY_SHIELD_TREE
-            Log.record(TAG, "优先尝试森林保护罩(LIMIT_TIME_ENERGY_SHIELD_TREE)...");
+            Log.record(TAG, "优先尝试青春特权限时森林保护罩(LIMIT_TIME_ENERGY_SHIELD_TREE)...");
             jo = findPropBag(bagObject, "LIMIT_TIME_ENERGY_SHIELD_TREE");
             if (jo == null) {
-                Log.record(TAG, "背包中没有森林保护罩(LIMIT_TIME_ENERGY_SHIELD_TREE)，继续查找其他类型...");
+                Log.record(TAG, "背包中没有青春特权限时森林保护罩(LIMIT_TIME_ENERGY_SHIELD_TREE)，继续查找其他类型...");
                 if (youthPrivilege.getValue()) {
-                    Log.runtime(TAG, "尝试通过青春特权获取森林保护罩...");
+                    Log.runtime(TAG, "尝试通过青春特权获取限时森林保护罩...");
                     if (Privilege.INSTANCE.youthPrivilege()) {
                         jo = findPropBag(querySelfHome(), "LIMIT_TIME_ENERGY_SHIELD_TREE");
                     }
