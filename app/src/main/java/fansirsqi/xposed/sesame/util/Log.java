@@ -165,5 +165,9 @@ public class Log {
         error(msg, stackTrace);
     }
 
+    public static void printStack(String TAG) {
+        String stackTrace = "stack: " + android.util.Log.getStackTraceString(new Exception("获取当前堆栈" + TAG+ ":"));
+        system(stackTrace);
+    }
 
 }

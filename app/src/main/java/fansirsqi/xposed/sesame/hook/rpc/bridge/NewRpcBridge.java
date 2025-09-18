@@ -265,7 +265,9 @@ public class NewRpcBridge implements RpcBridge {
             } while (count < tryCount);
             return null;
         } finally {
-            Log.system(TAG, "New RPC\n方法: " + rpcEntity.getRequestMethod() + "\n参数: " + rpcEntity.getRequestData() + "\n数据: " + rpcEntity.getResponseString() + "\n");
+            // Log.system(TAG, "New RPC\n方法: " + rpcEntity.getRequestMethod() + "\n参数: " + rpcEntity.getRequestData() + "\n数据: " + rpcEntity.getResponseString() + "\n");
+            Log.system(TAG, "New RPC\n方法: " + rpcEntity.getRequestMethod() + "\n参数: " + rpcEntity.getRequestData() + "\n数据: " + rpcEntity.getResponseString() + "\n"+"\n"+"堆栈:"+new Exception().getStackTrace()[1].toString());
+            Log.printStack(TAG);
         }
     }
 }
