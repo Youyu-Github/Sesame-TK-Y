@@ -227,7 +227,7 @@ public class AntStall extends ModelTask {
             Log.record(TAG,"执行结束-" + getName());
         }
     }
-    private void sendBack(String billNo, String seatId, String shopId, String shopUserId) {
+    private void sendBack(String billNo, String seatId, String shopId, String shopUserId, Set<String> sentUserId) {
         String s = AntStallRpcCall.shopSendBackPre(billNo, seatId, shopId, shopUserId);
         try {
             JSONObject jo = new JSONObject(s);
@@ -244,7 +244,7 @@ public class AntStall extends ModelTask {
                     Log.record(TAG,"sendBack err:" + " " + s);
                 }
                 if (stallInviteShop.getValue()) {
-                    inviteOpen(seatId);
+                    inviteOpen(seatId, sentUserId);
                 }
             } else {
                 Log.record(TAG,"sendBackPre err:" + " " + s);
@@ -254,7 +254,7 @@ public class AntStall extends ModelTask {
             Log.printStackTrace(TAG, t);
         }
     }
-    private void inviteOpen(String seatId) {
+    private void inviteOpen(String seatId, Set<String> sentUserId) {
         String s = AntStallRpcCall.rankInviteOpen();
         try {
             JSONObject jo = new JSONObject(s);
@@ -270,11 +270,15 @@ public class AntStall extends ModelTask {
                     if (!isInviteShop) {
                         continue;
                     }
+                    if (sentUserId.contains(friendUserId)) {
+                        continue;
+                    }
                     if (friend.getBoolean("canInviteOpenShop")) {
                         s = AntStallRpcCall.oneKeyInviteOpenShop(friendUserId, seatId);
                         jo = new JSONObject(s);
                         if (ResChecker.checkRes(TAG + "蚂蚁新村邀请好友开店失败:", jo)) {
                             Log.farm("蚂蚁新村⛪邀请[" + UserMap.getMaskName(friendUserId) + "]开店成功");
+                            sentUserId.add(friendUserId);
                             return;
                         }
                     }
@@ -289,11 +293,24 @@ public class AntStall extends ModelTask {
     }
     private void sendBack(JSONObject seatsMap) {
         try {
+            Set<String> sentUserId = new LinkedHashSet<>();
+            for (int i = 1; i <= 2; i++) {
+                JSONObject seat = seatsMap.getJSONObject("GUEST_0" + i);
+                if ("BUSY".equals(seat.getString("status"))) {
+                    String rentLastUser = seat.optString("rentLastUser");
+                    if (!StringUtil.isEmpty(rentLastUser)) {
+                        sentUserId.add(rentLastUser);
+                    }
+                }
+            }
             for (int i = 1; i <= 2; i++) {
                 JSONObject seat = seatsMap.getJSONObject("GUEST_0" + i);
                 String seatId = seat.getString("seatId");
-                if ("FREE".equals(seat.getString("status")) && stallInviteShop.getValue()) {
-                    inviteOpen(seatId);
+                if ("FREE".equals(seat.getString("status"))) {
+                    if (stallInviteShop.getValue()) {
+                        Log.record(TAG, "摊位[" + i + "]空闲，尝试邀请好友...");
+                        inviteOpen(seatId, sentUserId);
+                    }
                     continue;
                 }
                 // 请走小摊 未开启直接跳过
@@ -306,35 +323,32 @@ public class AntStall extends ModelTask {
                 }
                 // 白名单直接跳过
                 if (stallWhiteList.getValue().contains(rentLastUser)) {
+                    Log.record(TAG, "好友[" + UserMap.getMaskName(rentLastUser) + "]在白名单中，跳过请走。");
                     continue;
                 }
                 String rentLastBill = seat.getString("rentLastBill");
                 String rentLastShop = seat.getString("rentLastShop");
                 // 黑名单直接赶走
                 if (stallBlackList.getValue().contains(rentLastUser)) {
-                    sendBack(rentLastBill, seatId, rentLastShop, rentLastUser);
+                    Log.record(TAG, "好友[" + UserMap.getMaskName(rentLastUser) + "]在黑名单中，立即请走。");
+                    sendBack(rentLastBill, seatId, rentLastShop, rentLastUser, sentUserId);
                     continue;
                 }
                 long bizStartTime = seat.getLong("bizStartTime");
                 long endTime = bizStartTime + stallAllowOpenTime.getValue() * 60 * 1000;
                 if (System.currentTimeMillis() > endTime) {
-                    sendBack(rentLastBill, seatId, rentLastShop, rentLastUser);
+                    Log.record(TAG, "好友[" + UserMap.getMaskName(rentLastUser) + "]摆摊超时，立即请走。");
+                    sendBack(rentLastBill, seatId, rentLastShop, rentLastUser, sentUserId);
                 } else {
                     String taskId = "SB|" + seatId;
                     if (!hasChildTask(taskId)) {
                         addChildTask(new ChildModelTask(taskId, "SB", () -> {
                             if (stallAllowOpenReject.getValue()) {
-                                sendBack(rentLastBill, seatId, rentLastShop, rentLastUser);
+                                sendBack(rentLastBill, seatId, rentLastShop, rentLastUser, sentUserId);
                             }
                         }, endTime));
                         Log.record(TAG,"添加蹲点请走⛪在[" + TimeUtil.getCommonDate(endTime) + "]执行");
-                    } /*else {
-                        addChildTask(new ChildModelTask(taskId, "SB", () -> {
-                            if (stallAllowOpenReject.getValue()) {
-                                sendBack(rentLastBill, seatId, rentLastShop, rentLastUser);
-                            }
-                        }, endTime));
-                    }*/
+                    }
                 }
             }
         } catch (Throwable t) {
@@ -372,6 +386,11 @@ public class AntStall extends ModelTask {
             JSONObject jo = new JSONObject(s);
             if (ResChecker.checkRes(TAG + "查询蚂蚁新村店铺列表失败:", jo)) {
                 JSONArray astUserShopList = jo.getJSONArray("astUserShopList");
+                if (astUserShopList.length() == 0) {
+                    Log.record(TAG, "没有正在摆摊的小摊可收。");
+                    return;
+                }
+                Log.record(TAG, "检查 " + astUserShopList.length() + " 个小摊的收摊时间...");
                 for (int i = 0; i < astUserShopList.length(); i++) {
                     JSONObject shop = astUserShopList.getJSONObject(i);
                     if ("OPEN".equals(shop.getString("status"))) {
@@ -382,6 +401,7 @@ public class AntStall extends ModelTask {
                         String rentLastBill = shop.getString("rentLastBill");
                         String rentLastUser = shop.getString("rentLastUser");
                         if (System.currentTimeMillis() > shopTime) {
+                            Log.record(TAG, "小摊[" + shopId + "]摆摊时间已到，执行收摊。");
                             shopClose(shopId, rentLastBill, rentLastUser);
                         } else {
                             String taskId = "SH|" + shopId;
@@ -427,12 +447,17 @@ public class AntStall extends ModelTask {
                         shopIds.add(astUserShop.getString("shopId"));
                     }
                 }
+                if (shopIds.isEmpty()) {
+                    Log.record(TAG, "没有空闲的小摊可用于摆摊。");
+                    return;
+                }
+                Log.record(TAG, "找到 " + shopIds.size() + " 个空闲小摊，开始寻找好友村庄...");
                 rankCoinDonate(shopIds);
             } else {
-                Log.record(TAG,"closeShop err:" + " " + s);
+                Log.record(TAG,"openShop err:" + " " + s);
             }
         } catch (Throwable t) {
-            Log.runtime(TAG, "closeShop err:");
+            Log.runtime(TAG, "openShop err:");
             Log.printStackTrace(TAG, t);
         }
     }
@@ -481,6 +506,7 @@ public class AntStall extends ModelTask {
     }
     private void friendHomeOpen(List<Seat> seats, Queue<String> shopIds) {
         seats.sort((e1, e2) -> e2.hot - e1.hot);
+        String currentUid = UserMap.getCurrentUid();
         for (Seat seat : seats) {
             String shopId = shopIds.poll();
             if (shopId == null) {
@@ -492,13 +518,22 @@ public class AntStall extends ModelTask {
                 JSONObject jo = new JSONObject(s);
                 if ("SUCCESS".equals(jo.optString("resultCode"))) {
                     JSONObject seatsMap = jo.getJSONObject("seatsMap");
-                    JSONObject guest = seatsMap.getJSONObject("GUEST_01");
-                    if (guest.getBoolean("canOpenShop")) {
-                        openShop(guest.getString("seatId"), userId, shopId);
+                    // 修复B_OPEN_SHOP_LIMIT错误：在尝试摆摊前，先检查自己是否已经在这个好友的村庄里占用了摊位。
+                    // 如果已经存在一个摊位，则跳过此好友，避免在同一好友家重复摆摊导致接口报错。
+                    JSONObject guest1 = seatsMap.getJSONObject("GUEST_01");
+                    String rentUser1 = guest1.optString("rentLastUser");
+                    JSONObject guest2 = seatsMap.getJSONObject("GUEST_02");
+                    String rentUser2 = guest2.optString("rentLastUser");
+                    if (Objects.equals(currentUid, rentUser1) || Objects.equals(currentUid, rentUser2)) {
+                        Log.record(TAG, "已在[" + UserMap.getMaskName(userId) + "]家摆摊，跳过");
+                        continue;
+                    }
+                    if (guest1.getBoolean("canOpenShop")) {
+                        openShop(guest1.getString("seatId"), userId, shopId);
                     } else {
-                        guest = seatsMap.getJSONObject("GUEST_02");
-                        if (guest.getBoolean("canOpenShop")) {
-                            openShop(guest.getString("seatId"), userId, shopId);
+                        guest2 = seatsMap.getJSONObject("GUEST_02");
+                        if (guest2.getBoolean("canOpenShop")) {
+                            openShop(guest2.getString("seatId"), userId, shopId);
                         }
                     }
                 } else {
@@ -545,15 +580,18 @@ public class AntStall extends ModelTask {
             }
             JSONObject signListModel = jo.getJSONObject("signListModel");
             if (!signListModel.getBoolean("currentKeySigned")) {
+                Log.record(TAG, "开始执行每日签到...");
                 signToday();
             }
             JSONArray taskModels = jo.getJSONArray("taskModels");
+            Log.record(TAG, "开始检查 " + taskModels.length() + " 个新村任务...");
             for (int i = 0; i < taskModels.length(); i++) {
                 try {
                     JSONObject task = taskModels.getJSONObject(i);
                     String taskStatus = task.getString("taskStatus");
                     String taskType = task.getString("taskType");
                     if ("FINISHED".equals(taskStatus)) {
+                        Log.record(TAG, "任务[" + taskType + "]已完成，尝试领取奖励...");
                         receiveTaskAward(taskType);
                         continue;
                     }
@@ -743,9 +781,15 @@ public class AntStall extends ModelTask {
     private void assistFriend() {
         try {
             if (!Status.canAntStallAssistFriendToday()) {
+                Log.record(TAG, "今日新村助力次数已用完。");
                 return;
             }
             Set<String> friendSet = assistFriendList.getValue();
+            if (friendSet.isEmpty()) {
+                Log.record(TAG, "未设置新村助力好友列表。");
+                return;
+            }
+            Log.record(TAG, "开始为 " + friendSet.size() + " 位好友进行新村助力...");
             for (String uid : friendSet) {
                 String shareId = Base64.encodeToString((uid + "-" + RandomUtil.getRandomInt(5) + "ANUTSALTML_2PA_SHARE").getBytes(), Base64.NO_WRAP);
                 String str = AntStallRpcCall.achieveBeShareP2P(shareId);
@@ -850,14 +894,19 @@ public class AntStall extends ModelTask {
                 return;
             }
             JSONArray roadList = jo.getJSONArray("roadList");
+            boolean hasNewVillage = false;
             for (int i = 0; i < roadList.length(); i++) {
                 JSONObject road = roadList.getJSONObject(i);
                 // 检查 status 字段是否为 "NEW"
                 if (!"NEW".equals(road.getString("status"))) {
-                    return;
+                    continue;
                 }
+                hasNewVillage = true;
                 String villageName = road.getString("villageName");
                 Log.farm("蚂蚁新村⛪[进入:" + villageName + "]成功");
+            }
+            if (!hasNewVillage) {
+                Log.record(TAG, "所有村庄都已解锁，无需进入下一村。");
             }
         } catch (Throwable t) {
             Log.runtime(TAG, "roadmap err:");
@@ -877,6 +926,8 @@ public class AntStall extends ModelTask {
                     if (ResChecker.checkRes(TAG + "蚂蚁新村收集肥料失败:", jo)) {
                         Log.farm("蚂蚁新村⛪获得肥料" + manure + "g");
                     }
+                } else {
+                    Log.record(TAG, "没有可收取的肥料。");
                 }
             } else {
                 Log.record(TAG,"collectManure err:" + " " + s);
@@ -962,8 +1013,10 @@ public class AntStall extends ModelTask {
     private void pasteTicket() {
         try {
             if (!Status.canPasteTicketTime()) {
+                Log.record(TAG, "未到贴罚单时间或今日已贴完。");
                 return;
             }
+            Log.record(TAG, "开始巡逻，寻找可贴罚单的好友...");
             while (true) {
                 try {
                     String str = AntStallRpcCall.nextTicketFriend();
@@ -973,12 +1026,13 @@ public class AntStall extends ModelTask {
                         return;
                     }
                     if (jsonObject.getInt("canPasteTicketCount") == 0) {
-                        Log.farm("蚂蚁新村👍[今日罚单已贴完]");
+                        Log.record(TAG,"蚂蚁新村👍[今日罚单已贴完]");
                         Status.pasteTicketTime();
                         return;
                     }
                     String friendId = jsonObject.optString("friendUserId");
                     if (friendId.isEmpty()) {
+                        Log.record(TAG, "没有更多可贴罚单的好友了。");
                         return;
                     }
                     boolean isStallTicket = stallTicketList.getValue().contains(friendId);
