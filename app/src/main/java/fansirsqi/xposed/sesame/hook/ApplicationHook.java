@@ -933,14 +933,14 @@ public class ApplicationHook {
                     case "com.eg.android.AlipayGphone.sesame.restart":
                         String userId = intent.getStringExtra("userId");
                         if (StringUtil.isEmpty(userId) || Objects.equals(UserMap.getCurrentUid(), userId)) {
-                            initHandler(true);
+                            new Thread(() -> initHandler(true)).start();
                         }
                         break;
                     case "com.eg.android.AlipayGphone.sesame.execute":
-                        initHandler(false);
+                        new Thread(() -> initHandler(false)).start();
                         break;
                     case "com.eg.android.AlipayGphone.sesame.reLogin":
-                        reLogin();
+                        new Thread(ApplicationHook::reLogin).start();
                         break;
                     case "com.eg.android.AlipayGphone.sesame.status":
                         try {
@@ -957,16 +957,19 @@ public class ApplicationHook {
                         }
                         break;
                     case "com.eg.android.AlipayGphone.sesame.rpctest":
-                        try {
-                            String method = intent.getStringExtra("method");
-                            String data = intent.getStringExtra("data");
-                            String type = intent.getStringExtra("type");
-                            DebugRpc rpcInstance = new DebugRpc(); // 创建实例
-                            rpcInstance.start(method, data, type); // 通过实例调用非静态方法
-                        } catch (Throwable th) {
-                            Log.runtime(TAG, "sesame 测试RPC请求失败:");
-                            Log.printStackTrace(TAG, th);
-                        }
+                        new Thread(() -> {
+                                try {
+                                    String method = intent.getStringExtra("method");
+                                    String data = intent.getStringExtra("data");
+                                    String type = intent.getStringExtra("type");
+                                    Log.runtime(TAG, "收到RPC测试请求 - Method: " + method + ", Type: " + type);
+                                    DebugRpc rpcInstance = new DebugRpc();
+                                    rpcInstance.start(method, data, type);
+                                } catch (Throwable th) {
+                                    Log.runtime(TAG, "sesame 测试RPC请求失败:");
+                                    Log.printStackTrace(TAG, th);
+                                }
+                            }).start();
                         break;
                     default:
                         throw new IllegalStateException("Unexpected value: " + action);
