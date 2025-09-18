@@ -43,6 +43,8 @@ class HtmlViewerActivity : BaseActivity() {
     private var refreshHandler: Handler? = null
     private var refreshRunnable: Runnable? = null
     private var isRefreshing: Boolean = false
+    private var logFileName: String? = null
+    private var logFileSize: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +52,7 @@ class HtmlViewerActivity : BaseActivity() {
         setContentView(R.layout.activity_html_viewer)
         WatermarkView.Companion.install(this)
         install(this)
+        
         // 初始化 WebView 和进度条
         mWebView = findViewById(R.id.mwv_webview)
         progressBar = findViewById(R.id.pgb_webview)
@@ -106,11 +109,27 @@ class HtmlViewerActivity : BaseActivity() {
                         baseSubtitle = "Loading..."
                         progressBar!!.visibility = View.VISIBLE
                     } else {
-                        baseSubtitle = mWebView!!.getTitle()
+                        // 设置副标题为"日志查看 >>> 文件名 (大小)"
+                        val subtitle = "日志查看 >>> $logFileName (${formatFileSize(logFileSize)})"
+                        baseSubtitle = subtitle
                         progressBar!!.visibility = View.GONE
+                        
+                        // 将文件信息传递给WebView
+                        mWebView?.evaluateJavascript(
+                            "setFileInfo('$logFileName', $logFileSize)", 
+                            null
+                        )
                     }
                 }
             })
+    }
+
+    // 格式化文件大小
+    private fun formatFileSize(size: Long): String {
+        if (size <= 0) return "0B"
+        val units = arrayOf("B", "KB", "MB", "GB", "TB")
+        val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
+        return String.format("%.1f %s", size / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
     }
 
     // 日志实时显示 开始
@@ -152,7 +171,6 @@ class HtmlViewerActivity : BaseActivity() {
     }
     // 日志实时显示 结束
 
-    // 添加了日志实时显示，后续删除需要更改到private fun stopRefreshing
     override fun onResume() {
         super.onResume()
         // 安全设置WebView
@@ -184,14 +202,16 @@ class HtmlViewerActivity : BaseActivity() {
                 val currentUri = intent.data
                 uri = currentUri
                 if (currentUri != null && webView != null) {
-                    /*
-                    webView.loadUrl(currentUri.toString())
-                    // 如果是日志文件，则启动定时刷新
-                    if (uri!!.toString().endsWith(".log")) {
-                        startRefreshing()
+                    // 获取文件名和大小
+                    if (currentUri.scheme?.equals("file", ignoreCase = true) == true) {
+                        val path = currentUri.path
+                        if (path != null && path.endsWith(".log")) {
+                            val file = File(path)
+                            logFileName = file.name
+                            logFileSize = file.length()
+                        }
                     }
-                    */
-
+                    
                     /// 日志实时显示 begin
                     webSettings?.javaScriptEnabled = true
                     webSettings?.domStorageEnabled = true // 可选
@@ -205,30 +225,24 @@ class HtmlViewerActivity : BaseActivity() {
                                 supportActionBar?.subtitle = "Loading..."
                                 progressBar?.visibility = View.VISIBLE
                             } else {
-                                // 替换 setBaseSubtitle
-                                supportActionBar?.subtitle = webView.title ?: ""
+                                // 设置副标题为"日志查看 >>> 文件名 (大小)"
+                                val subtitle = "日志查看 >>> $logFileName (${formatFileSize(logFileSize)})"
+                                supportActionBar?.subtitle = subtitle
                                 progressBar?.visibility = View.GONE
 
                                 // ★★ 页面已就绪：把现有文件一次性灌入 ★★
                                 if (currentUri.scheme?.equals("file", ignoreCase = true) == true) {
                                     val path = currentUri.path
                                     if (path != null && path.endsWith(".log")) {
-                                        // 替换 readAllTextSafe 和 toJsString
-                                        // val all = readFileContent(path) // 实现文件读取
-                                        // val jsArg = escapeJsString(all) // 实现JS字符串转义
                                         val all = readAllTextSafe(path)
                                         val jsArg = toJsString(all)
 
                                         webView.evaluateJavascript("setFullText($jsArg)", null)
 
                                         // 然后启动增量监听（你在 MyWebView 里实现的）
-                                        
                                         if (webView is MyWebView) {
                                             webView.startWatchingIncremental(path)
-                                            // 或者 webView.startWatchingWithObserver(path)
                                         }
-                                        
-                                        webView.startWatchingIncremental(path)
                                     }
                                 }
                             }
@@ -238,11 +252,6 @@ class HtmlViewerActivity : BaseActivity() {
                 }
                 
                 canClear = intent.getBooleanExtra("canClear", false)
-                /*
-                if (currentUri != null && currentUri.toString().endsWith(".log")) {
-                    startRefreshing()
-                }
-                */
             }
         } catch (e: Exception) {
             Log.error(TAG, "WebView设置异常: " + e.message)
@@ -259,54 +268,6 @@ class HtmlViewerActivity : BaseActivity() {
             ""
         }
     }
-
-    /*
-    /// 日志实时显示 begin
-    // 添加缺失的方法实现
-    private fun escapeJsString(input: String): String {
-        return JSONObject.quote(input) // 需要导入 org.json.JSONObject
-    }
-    /// 日志实时显示 end
-
-    override fun onPause() {
-        super.onPause()
-        stopRefreshing()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        stopRefreshing()
-    }
-
-    /// 日志实时显示 begin
-    private fun startRefreshing() {
-        if (refreshHandler == null) {
-            refreshHandler = Handler(Looper.getMainLooper())
-        }
-        if (refreshRunnable == null) {
-            refreshRunnable = Runnable {
-                mWebView?.reload()
-                // 继续定时刷新，每隔5秒刷新一次
-                refreshHandler?.postDelayed(refreshRunnable!!, 5000)
-            }
-        }
-        if (!isRefreshing) {
-            refreshHandler?.postDelayed(refreshRunnable!!, 5000)
-            isRefreshing = true
-//            ToastUtil.makeText(this, "已开启日志实时刷新", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun stopRefreshing() {
-        if (isRefreshing) {
-            refreshHandler?.removeCallbacks(refreshRunnable!!)
-            isRefreshing = false
-//            ToastUtil.makeText(this, "已关闭日志实时刷新", Toast.LENGTH_SHORT).show()
-        }
-    }
-    */
-    /// 日志实时显示 end
-
 
     /**
      * 配置 WebView 的设置项
@@ -334,15 +295,6 @@ class HtmlViewerActivity : BaseActivity() {
         menu.add(0, 4, 4, getString(R.string.copy_the_url))
         menu.add(0, 5, 5, getString(R.string.scroll_to_top))
         menu.add(0, 6, 6, getString(R.string.scroll_to_bottom))
-        /*
-        if (uri != null && uri!!.toString().endsWith(".log")) {
-            if (isRefreshing) {
-                menu.add(0, 7, 7, "关闭实时刷新")
-            } else {
-                menu.add(0, 7, 7, "开启实时刷新")
-            }
-        }
-        */
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -365,14 +317,6 @@ class HtmlViewerActivity : BaseActivity() {
 
             6 ->                 // 滚动到底部
                 mWebView!!.scrollToBottom()
-            /*
-            7 ->                 // 切换实时刷新
-                if (isRefreshing) {
-                    stopRefreshing()
-                } else {
-                    startRefreshing()
-                }
-            */
         }
         invalidateOptionsMenu() // 刷新菜单以更新文本
         return true
@@ -415,6 +359,11 @@ class HtmlViewerActivity : BaseActivity() {
                     val file = File(path)
                     if (Files.clearFile(file)) {
                         ToastUtil.makeText(this, "文件已清空", Toast.LENGTH_SHORT).show()
+                        // 更新文件大小
+                        logFileSize = file.length()
+                        // 更新副标题
+                        val subtitle = "日志查看 >>> $logFileName (${formatFileSize(logFileSize)})"
+                        supportActionBar?.subtitle = subtitle
                         mWebView!!.reload()
                     }
                 }
@@ -480,9 +429,6 @@ class HtmlViewerActivity : BaseActivity() {
                 // 使用安全的属性设置方式
                 webView.webChromeClient = null
                 
-                // 使用 Java 方法设置 null（绕过 Kotlin 类型检查）
-                // webView.WebViewClient(null)
-                
                 webView.destroy()
             } catch (ignore: Throwable) {
                 // 空捕获块
@@ -490,12 +436,4 @@ class HtmlViewerActivity : BaseActivity() {
         }
         super.onDestroy()
     }
-    // 日志实时显示
-
-    
-    /*
-    companion object {
-        private val TAG: String = HtmlViewerActivity::class.java.getSimpleName()
-    }
-    */
 }

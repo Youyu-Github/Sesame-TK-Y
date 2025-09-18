@@ -1,122 +1,453 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="utf-8" />
-    <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-    />
-    <title>Log Viewer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>日志查看器</title>
     <style>
         :root {
-          --bg: #0b0b0c;
-          --fg: #e6e6e6;
-          --muted: #9aa0a6;
+            --bg: #0b0b0c;
+            --fg: #e6e6e6;
+            --muted: #9aa0a6;
+            --search-highlight: yellow;
+            --current-highlight: #ff9800;
+            --toolbar-bg: rgba(0,0,0,0.08);
+            --toolbar-border: rgba(255,255,255,0.08);
+            --button-bg: rgba(255, 255, 255, 0.05);
+            --toolbar-height: 38px;
+            --searchbar-height: 38px;
         }
+        
         @media (prefers-color-scheme: light) {
-          :root {
-            --bg: #ffffff;
-            --fg: #1f1f1f;
-            --muted: #666;
-          }
+            :root {
+                --bg: #ffffff;
+                --fg: #1f1f1f;
+                --muted: #666;
+                --search-highlight: #ffff00;
+                --current-highlight: #ff5722;
+                --toolbar-bg: rgba(0,0,0,0.05);
+                --toolbar-border: rgba(0,0,0,0.1);
+                --button-bg: rgba(0, 0, 0, 0.03);
+            }
         }
-        html, body {
-          margin: 0;
-          padding: 0;
-          background: var(--bg);
-          color: var(--fg);
-          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-          line-height: 1.4;
-          -webkit-text-size-adjust: 100%;
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
+        
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+            line-height: 1.4;
+            -webkit-text-size-adjust: 100%;
+            overflow-x: hidden;
+        }
+        
+        /* 固定工具栏 */
         #toolbar {
-          position: sticky;
-          top: 0;
-          padding: 8px 12px;
-          background: rgba(0,0,0,0.08);
-          backdrop-filter: blur(4px);
-          border-bottom: 1px solid rgba(255,255,255,0.08);
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          z-index: 10;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 6px 12px;
+            background: var(--toolbar-bg);
+            backdrop-filter: blur(4px);
+            border-bottom: 1px solid var(--toolbar-border);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            z-index: 100;
+            height: var(--toolbar-height);
         }
+        
+        .left-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .right-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-left: auto;
+        }
+        
+        /* 固定搜索栏 */
+        #searchToolbar {
+            position: fixed;
+            top: var(--toolbar-height);
+            left: 0;
+            right: 0;
+            padding: 6px 12px;
+            background: var(--toolbar-bg);
+            backdrop-filter: blur(4px);
+            border-bottom: 1px solid var(--toolbar-border);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            z-index: 99;
+            height: var(--searchbar-height);
+        }
+        
+        #searchInput {
+            flex: 1;
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--muted);
+            background: transparent;
+            color: var(--fg);
+            font-family: inherit;
+        }
+        
+        .search-nav {
+            display: flex;
+            gap: 2px;
+        }
+        
+        /* 日志内容区域 */
         #log {
-          white-space: pre-wrap;      /* 自动换行，保留换行符 */
-          word-break: break-word;
-          padding: 5px 5px 5px 5px;
-          font-size: 10px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            padding: 8px;
+            font-size: 10px;
+            margin-top: calc(var(--toolbar-height) + var(--searchbar-height));
         }
-        button, label {
-          color: var(--fg);
-          background: transparent;
-          border: 1px solid rgba(255,255,255,0.15);
-          padding: 4px 10px;
-          border-radius: 6px;
-          font-size: 12px;
+        
+        /* 按钮样式 */
+        button, label.btn-like {
+            color: var(--fg);
+            background: var(--button-bg);
+            border: 1px solid var(--muted);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
-        button:hover { border-color: rgba(255,255,255,0.3); }
-        .muted { color: var(--muted); font-size: 12px; margin-left: auto; }
-        input[type="checkbox"] { vertical-align: middle; }
+        
+        button:hover, label.btn-like:hover { 
+            border-color: rgba(255,255,255,0.5); 
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .muted { 
+            color: var(--muted); 
+            font-size: 12px; 
+        }
+        
+        .file-info {
+            font-size: 12px;
+            color: var(--muted);
+            margin-right: 10px;
+        }
+        
+        /* 搜索高亮 */
+        .search-result {
+            background-color: var(--search-highlight);
+            color: #000;
+        }
+        
+        .current-result {
+            background-color: var(--current-highlight);
+            font-weight: bold;
+            color: #000;
+        }
+        
+        /* 自定义复选框 */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .custom-checkbox {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--muted);
+            border-radius: 3px;
+            margin-right: 6px;
+            position: relative;
+            background: var(--button-bg);
+        }
+        
+        input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        input[type="checkbox"]:checked + .custom-checkbox::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--fg);
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
-<div id="toolbar">
-    <label><input type="checkbox" id="autoScroll" checked /> 自动滚动到底部</label>
-    <button onclick="clearLog()">清空显示</button>
-    <span class="muted" id="status">就绪</span>
-</div>
+    <div id="toolbar">
+        <div class="left-section">
+            <label class="btn-like checkbox-container">
+                <input type="checkbox" id="autoScroll" checked />
+                <span class="custom-checkbox"></span>
+                自动滚动
+            </label>
+            <button onclick="clearLog()">清空显示</button>
+        </div>
+        <div class="right-section">
+            <span class="file-info" id="fileInfo"></span>
+            <span class="muted" id="status">就绪</span>
+        </div>
+    </div>
 
-<div id="log"></div>
+    <div id="searchToolbar">
+        <input type="text" id="searchInput" placeholder="搜索日志..." />
+        <div class="search-nav">
+            <button onclick="searchPrev()">↑</button>
+            <button onclick="searchNext()">↓</button>
+        </div>
+        <span class="muted" id="searchStatus">0/0</span>
+    </div>
 
-<script>
-    const logEl = document.getElementById('log');
-    const autoScrollEl = document.getElementById('autoScroll');
-    const statusEl = document.getElementById('status');
+    <div id="log"></div>
 
-    function _scrollToBottom() {
-      if (!autoScrollEl.checked) return;
-      window.scrollTo(0, document.body.scrollHeight);
-    }
+    <script>
+        const logEl = document.getElementById('log');
+        const autoScrollEl = document.getElementById('autoScroll');
+        const statusEl = document.getElementById('status');
+        const searchInput = document.getElementById('searchInput');
+        const searchStatus = document.getElementById('searchStatus');
+        const fileInfoEl = document.getElementById('fileInfo');
+        
+        let searchResults = [];
+        let currentSearchIndex = -1;
+        let userManuallyScrolled = false;
+        let scrollCheckTimeout = null;
+        
+        // 页面加载时直接显示空日志
+        window.addEventListener('load', function() {
+            // 初始为空，不添加任何示例内容
+            statusEl.textContent = '就绪';
+        });
+        
+        // 监听滚动事件，检测用户是否手动滚动
+        window.addEventListener('scroll', function() {
+            if (scrollCheckTimeout) clearTimeout(scrollCheckTimeout);
+            
+            scrollCheckTimeout = setTimeout(function() {
+                const currentPosition = window.scrollY;
+                const maxPosition = document.body.scrollHeight - window.innerHeight;
+                
+                // 如果用户滚动到了底部，重新启用自动滚动
+                if (maxPosition - currentPosition < 50) {
+                    autoScrollEl.checked = true;
+                    userManuallyScrolled = false;
+                } else if (!userManuallyScrolled && currentPosition < maxPosition - 100) {
+                    // 用户正在手动向上滚动，取消自动滚动
+                    userManuallyScrolled = true;
+                    autoScrollEl.checked = false;
+                }
+            }, 150);
+        });
 
-    // 供原生调用：全量替换
-    function setFullText(text) {
-      logEl.textContent = text || '';
-      statusEl.textContent = '已加载 ' + (text ? text.length : 0) + ' 字节';
-      _scrollToBottom();
-    }
+        function _scrollToBottom() {
+            if (!autoScrollEl.checked) return;
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'auto' // 直接跳转，不使用动画
+            });
+        }
 
-    // 供原生调用：增量追加
-    function appendLog(chunk) {
-      if (!chunk) return;
-      logEl.textContent += chunk;
-      statusEl.textContent = '追加 ' + chunk.length + ' 字节';
-      _scrollToBottom();
-    }
+        // 设置文件信息
+        function setFileInfo(filename, size) {
+            const sizeKB = (size / 1024).toFixed(1);
+            fileInfoEl.textContent = `${filename} (${sizeKB} KB)`;
+        }
 
-    // 清空显示（不影响原文件，仅清 UI）
-    function clearLog() {
-      logEl.textContent = '';
-      statusEl.textContent = '已清空显示';
-    }
+        // 供原生调用：全量替换
+        function setFullText(text) {
+            logEl.textContent = text || '';
+            statusEl.textContent = '已加载 ' + (text ? text.length : 0) + ' 字符';
+            _scrollToBottom();
+            // 如果有搜索词，重新执行搜索
+            if (searchInput.value) {
+                performSearch();
+            }
+        }
 
-    // 为防止一次性注入超大文本导致掉帧，可用以下节流版（可选）：
-    // window.appendLogBatched = (function() {
-    //   let buffer = '';
-    //   let scheduled = false;
-    //   return function(chunk) {
-    //     buffer += chunk || '';
-    //     if (!scheduled) {
-    //       scheduled = true;
-    //       requestAnimationFrame(() => {
-    //         logEl.textContent += buffer;
-    //         buffer = '';
-    //         scheduled = false;
-    //         _scrollToBottom();
-    //       });
-    //     }
-    //   }
-    // })();
-</script>
+        // 供原生调用：增量追加
+        function appendLog(chunk) {
+            if (!chunk) return;
+            const wasNearBottom = isNearBottom();
+            logEl.textContent += chunk;
+            statusEl.textContent = '追加 ' + chunk.length + ' 字符';
+            
+            // 只有在接近底部或自动滚动启用时才滚动
+            if (wasNearBottom || autoScrollEl.checked) {
+                _scrollToBottom(); // 不使用动画
+            }
+            
+            // 如果有搜索词，重新执行搜索
+            if (searchInput.value) {
+                performSearch();
+            }
+        }
+
+        // 检查是否接近底部
+        function isNearBottom() {
+            const currentPosition = window.scrollY;
+            const maxPosition = document.body.scrollHeight - window.innerHeight;
+            return (maxPosition - currentPosition) < 100;
+        }
+
+        // 清空显示（不影响原文件，仅清 UI）
+        function clearLog() {
+            logEl.textContent = '';
+            statusEl.textContent = '已清空显示';
+            searchResults = [];
+            currentSearchIndex = -1;
+            searchStatus.textContent = '0/0';
+            userManuallyScrolled = false;
+            autoScrollEl.checked = true;
+        }
+
+        // 执行搜索
+        function performSearch() {
+            const searchText = searchInput.value;
+            if (!searchText) {
+                removeHighlights();
+                searchResults = [];
+                currentSearchIndex = -1;
+                searchStatus.textContent = '0/0';
+                return;
+            }
+
+            // 搜索时取消自动滚动
+            autoScrollEl.checked = false;
+            userManuallyScrolled = true;
+
+            const logText = logEl.textContent;
+            // 转义正则特殊字符
+            const escapedText = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedText, 'gi');
+            
+            searchResults = [];
+            let match;
+            while ((match = regex.exec(logText)) !== null) {
+                searchResults.push(match.index);
+            }
+
+            currentSearchIndex = searchResults.length > 0 ? 0 : -1;
+            updateSearchStatus();
+            highlightSearchResults();
+        }
+
+        function updateSearchStatus() {
+            const total = searchResults.length;
+            const current = currentSearchIndex >= 0 ? currentSearchIndex + 1 : 0;
+            searchStatus.textContent = total > 0 ? `${current}/${total}` : '0/0';
+        }
+
+        function removeHighlights() {
+            const logText = logEl.textContent;
+            logEl.innerHTML = '';
+            logEl.appendChild(document.createTextNode(logText));
+        }
+
+        function highlightSearchResults() {
+            const searchText = searchInput.value;
+            if (!searchText || searchResults.length === 0) {
+                removeHighlights();
+                return;
+            }
+
+            const logText = logEl.textContent;
+            let html = '';
+            let lastIndex = 0;
+
+            // 构建高亮HTML
+            for (let i = 0; i < searchResults.length; i++) {
+                const start = searchResults[i];
+                const end = start + searchText.length;
+                
+                // 添加前面的文本
+                html += escapeHtml(logText.substring(lastIndex, start));
+                
+                // 添加高亮文本
+                if (i === currentSearchIndex) {
+                    html += `<span class="current-result">${escapeHtml(logText.substring(start, end))}</span>`;
+                } else {
+                    html += `<span class="search-result">${escapeHtml(logText.substring(start, end))}</span>`;
+                }
+                
+                lastIndex = end;
+            }
+            
+            // 添加剩余文本
+            html += escapeHtml(logText.substring(lastIndex));
+            
+            logEl.innerHTML = html;
+            
+            // 滚动到当前匹配项 - 使用平滑滚动
+            if (currentSearchIndex >= 0) {
+                const currentElement = logEl.querySelector('.current-result');
+                if (currentElement) {
+                    currentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function searchPrev() {
+            if (searchResults.length === 0) return;
+            currentSearchIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
+            updateSearchStatus();
+            highlightSearchResults();
+        }
+
+        function searchNext() {
+            if (searchResults.length === 0) return;
+            currentSearchIndex = (currentSearchIndex + 1) % searchResults.length;
+            updateSearchStatus();
+            highlightSearchResults();
+        }
+
+        // 监听搜索框输入事件
+        searchInput.addEventListener('input', performSearch);
+        
+        // 监听搜索框回车键
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                searchNext();
+            }
+        });
+
+        // 监听自动滚动复选框变化
+        autoScrollEl.addEventListener('change', function() {
+            if (this.checked) {
+                userManuallyScrolled = false;
+                _scrollToBottom();
+            } else {
+                userManuallyScrolled = true;
+            }
+        });
+    </script>
 </body>
 </html>
