@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.core.graphics.toColorInt
 import androidx.core.graphics.withRotation
 import fansirsqi.xposed.sesame.data.ViewAppInfo.verifyId
+import fansirsqi.xposed.sesame.BuildConfig
 
 class WatermarkView(context: android.content.Context) : android.view.View(context) {
 
@@ -22,7 +23,14 @@ class WatermarkView(context: android.content.Context) : android.view.View(contex
 
     var watermarkText: String? = null
         set(value) {
-            val prefixLines = listOf("免费模块仅供学习", "勿在国内平台传播,倒卖必死全家!", "UID: $verifyId")
+            // val prefixLines = listOf("免费模块仅供学习", "勿在国内平台传播,倒卖必死全家!", "UID: $verifyId")
+            val prefixLines = listOf(
+                "免费模块仅供学习 🤓",
+                "勿在国内平台传播,倒卖必死全家! 🤬",
+                "UID: $verifyId",
+                "版本号: ${BuildConfig.VERSION}.${BuildConfig.BUILD_TYPE} 📦",
+                "打包时间: ${BuildConfig.BUILD_DATE} ${BuildConfig.BUILD_TIME} ⏰",
+                "不是官版，是个人分支自用版 🌟")
             val combinedLines = if (value.isNullOrBlank()) {
                 prefixLines
             } else {
