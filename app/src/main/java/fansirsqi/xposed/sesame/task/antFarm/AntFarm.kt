@@ -449,10 +449,22 @@ class AntFarm : ModelTask() {
                 tc.countDebug("游戏改分(星星球、登山赛、飞行赛、揍小鸡)")
             }
 
+            /*
             if (getRunCents() >= kitchen!!.value) {
                 collectDailyFoodMaterial()
                 collectDailyLimitedFoodMaterial()
-                cook()
+                tc.countDebug("小鸡厨房")
+            }
+            */
+            if (getRunCents() >= kitchen!!.value) {
+                // 检查小鸡是否在睡觉，如果在睡觉则跳过厨房功能
+                if (AnimalFeedStatus.SLEEPY.name == ownerAnimal.animalFeedStatus) {
+                    Log.record(TAG, "小鸡厨房🐔[小鸡正在睡觉中，跳过厨房功能]")
+                } else {
+                    collectDailyFoodMaterial()
+                    collectDailyLimitedFoodMaterial()
+                    cook()
+                }
                 tc.countDebug("小鸡厨房")
             }
 
@@ -1680,6 +1692,20 @@ class AntFarm : ModelTask() {
      */
     private fun feedAnimal(farmId: String?): Boolean {
         try {
+            // 检查小鸡是否在睡觉，如果在睡觉则直接返回
+            val feedStatus = ownerAnimal.animalFeedStatus
+            if (feedStatus == AnimalFeedStatus.SLEEPY.name || feedStatus == "SLEEPY") {  // 根据实际数据格式调整
+                Log.runtime(TAG, "投喂小鸡🥣[小鸡正在睡觉中，跳过投喂]")
+                return false
+            }
+
+            // 检查小鸡是否正在吃饭，如果在吃饭则直接返回
+            // EATING: 小鸡正在进食状态，此时不能重复投喂，会返回"不要着急，还没吃完呢"错误
+            if (feedStatus == AnimalFeedStatus.EATING.name || feedStatus == "EATING") {  // 根据实际数据格式调整
+                Log.runtime(TAG, "投喂小鸡🥣[小鸡正在吃饭中，跳过投喂]")
+                return false
+            }
+
             if (foodStock < 180) {
                 Log.record(TAG, "喂鸡饲料不足")
                 return false
@@ -1690,7 +1716,15 @@ class AntFarm : ModelTask() {
                     Log.farm("投喂小鸡🥣[180g]#剩余${remainingFoodStock}g")
                     return true
                 } else {
-                    Log.record(TAG, "喂鸡失败: ${jo.optString("memo", "未知错误")}")
+                    // Log.record(TAG, "喂鸡失败: ${jo.optString("memo", "未知错误")}")
+                    // 检查特定的错误码
+                    val resultCode = jo.optString("resultCode", "")
+                    val memo = jo.optString("memo", "")
+                    if ("311" == resultCode) {
+                        Log.record(TAG, "投喂小鸡🥣[$memo]")
+                    } else {
+                        Log.runtime(TAG, "投喂小鸡失败: $jo")
+                    }
                     return false
                 }
             }
@@ -2846,16 +2880,24 @@ class AntFarm : ModelTask() {
 
     enum class AnimalFeedStatus {
         // HUNGRY, EATING, SLEEPY
-        HUNGRY, EATING, SLEEPY, NONE
+        HUNGRY, // 饥饿状态：小鸡需要投喂，可以正常喂食
+        EATING, // 进食状态：小鸡正在吃饭，此时不能重复投喂，会返回"不要着急，还没吃完呢"
+        SLEEPY, // 睡觉状态：小鸡正在睡觉，不能投喂，需要等待醒来
+        NONE // 无状态：未知或其他状态
     }
-
+ 
     enum class AnimalInteractStatus {
         //小鸡关互动状态
-        HOME, GOTOSTEAL, STEALING
+        HOME, // 在家：小鸡在自己的庄园里，正常状态
+        GOTOSTEAL, // 去偷吃：小鸡离开庄园，准备去别的庄园偷吃
+        STEALING // 偷吃中：小鸡正在别人的庄园里偷吃饲料
     }
 
     enum class SubAnimalType {
-        NORMAL, GUEST, PIRATE, WORK
+        NORMAL, // 普通：正常的小鸡状态
+        GUEST, // 客人：小鸡去好友家做客
+        PIRATE, // 海盗：小鸡外出探险
+        WORK // 工作：小鸡被雇佣去工作
     }
 
     enum class ToolType {
