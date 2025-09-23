@@ -205,6 +205,7 @@ public class AntForest extends ModelTask {
     private PriorityModelField collectProp;
     // private BooleanModelField collectProp;
     private IntegerModelField cycleinterval; // 循环间隔
+    private IntegerModelField extraenergy; // 额外能量
     
     /**
      * 异常返回检测开关
@@ -378,6 +379,7 @@ public class AntForest extends ModelTask {
         modelFields.addField(tryCount = new IntegerModelField("tryCount", "尝试收取(次数)", 1, 0, 5));
         modelFields.addField(retryInterval = new IntegerModelField("retryInterval", "重试间隔(毫秒)", 1200, 0, 10000));
         modelFields.addField(cycleinterval = new IntegerModelField("cycleinterval", "循环间隔(毫秒)", 10000, 0, 60000));
+        modelFields.addField(extraenergy = new IntegerModelField("extraenergy", "额外能量阈值(克)", 3000, 1, 100000));
         modelFields.addField(showBagList = new BooleanModelField("showBagList", "显示背包内容", false));
         return modelFields;
     }
@@ -2319,7 +2321,9 @@ public class AntForest extends ModelTask {
                         if (!extInfo.isEmpty()) {
                             JSONObject extInfoObj = new JSONObject(extInfo);
                             double leftEnergy = Double.parseDouble(extInfoObj.optString("leftEnergy", "0"));
-                            if (leftEnergy > 3000 || ("true".equals(extInfoObj.optString("overLimitToday", "false")) && leftEnergy >= 1)) {
+                            // 获取额外能量阈值
+                            int energyThreshold = extraenergy.getValue();
+                            if (leftEnergy > energyThreshold || ("true".equals(extInfoObj.optString("overLimitToday", "false")) && leftEnergy >= 1)) {
                                 String propId = userUsingProp.getString("propId");
                                 String propType = userUsingProp.getString("propType");
                                 JSONObject jo = new JSONObject(AntForestRpcCall.collectRobExpandEnergy(propId, propType));
