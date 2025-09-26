@@ -474,8 +474,13 @@ class AntFarm : ModelTask() {
             }
 
             if (useNewEggCard!!.value) {
-                useFarmTool(ownerFarmId, ToolType.NEWEGGTOOL)
-                syncAnimalStatus(ownerFarmId)
+                // 检查小鸡是否在睡觉，如果在睡觉则跳过使用新蛋卡
+                if (AnimalFeedStatus.SLEEPY.name == ownerAnimal.animalFeedStatus) {
+                    Log.record(TAG, "小鸡厨房🐔[小鸡正在睡觉中，跳过使用新蛋卡]")
+                } else {
+                    useFarmTool(ownerFarmId, ToolType.NEWEGGTOOL)
+                    syncAnimalStatus(ownerFarmId)
+                }
                 tc.countDebug("使用新蛋卡")
             }
             if (harvestProduce!!.value && benevolenceScore >= 1) {

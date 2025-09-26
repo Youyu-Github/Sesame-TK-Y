@@ -3318,6 +3318,7 @@ public class AntForest extends ModelTask {
      * 返回背包道具信息
      */
     // private JSONObject showBag() {
+    /*
     private void showBag() {
         JSONObject bagObject = queryPropList();
         if (Objects.isNull(bagObject)) {
@@ -3338,9 +3339,51 @@ public class AntForest extends ModelTask {
             Log.error(TAG, "查找背包道具出错:");
             Log.printStackTrace(TAG, e);
         }
-
         // return null; // 未找到或出错时返回 null
     }
+    */
+    private void showBag() {
+        JSONObject bagObject = queryPropList();
+        if (Objects.isNull(bagObject)) {
+            return;
+        }
+        try {
+            JSONArray forestPropVOList = bagObject.optJSONArray("forestPropVOList");
+            if (forestPropVOList == null) return;
+
+            StringBuilder logBuilder = new StringBuilder("\n======= 背包道具列表 =======\n");
+            for (int i = 0; i < forestPropVOList.length(); i++) {
+                JSONObject prop = forestPropVOList.optJSONObject(i);
+                if (prop == null) continue;
+
+                JSONObject propConfig = prop.optJSONObject("propConfigVO");
+                if (propConfig == null) continue;
+
+                String propName = propConfig.optString("propName");
+                String propType = prop.optString("propType");
+                int holdsNum = prop.optInt("holdsNum");
+                long expireTime = prop.optLong("recentExpireTime", 0);
+                
+                logBuilder.append("道具: ").append(propName)
+                        .append(" | 数量: ").append(holdsNum)
+                        .append(" | 类型: ").append(propType);
+                
+                if (expireTime > 0) {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                    String formattedDate = sdf.format(new Date(expireTime));
+                    logBuilder.append(" | 过期时间: ").append(formattedDate);
+                }
+                logBuilder.append("\n");
+            }
+            logBuilder.append("==========================");
+            Log.record(TAG, logBuilder.toString());
+        } catch (Exception e) {
+            Log.error(TAG, "解析背包道具出错:");
+            Log.printStackTrace(TAG, e);
+        }
+    }
+
+
 
     /**
      * 使用背包道具
