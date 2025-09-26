@@ -901,10 +901,22 @@ class AntFarm : ModelTask() {
         }
 
         // 3. 判断是否需要使用加速道具
+        /*
         if (useAccelerateTool!!.value && AnimalFeedStatus.HUNGRY.name != ownerAnimal.animalFeedStatus) {
             Log.record(TAG, "🐔 检查是否需要使用加速道具，当前状态: ${ownerAnimal.animalFeedStatus}")
             if (useAccelerateTool()) {
                 needReload = true
+            }
+        }
+        */
+        if (useAccelerateTool!!.value) {
+            if (AnimalFeedStatus.SLEEPY.name == ownerAnimal.animalFeedStatus) {
+                Log.record(TAG, "小鸡厨房🐔[小鸡正在睡觉中，跳过使用加速道具]")
+            } else if (AnimalFeedStatus.HUNGRY.name != ownerAnimal.animalFeedStatus) {
+                Log.record(TAG, "🐔 检查是否需要使用加速道具，当前状态: ${ownerAnimal.animalFeedStatus}")
+                if (useAccelerateTool()) {
+                    needReload = true
+                }
             }
         }
 
