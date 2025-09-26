@@ -18,9 +18,9 @@ jobs:
       - name: 将时区设为亚洲/上海
         run: |
           sudo timedatectl set-timezone Asia/Shanghai
-          echo "Current time: $(date)"
+          echo "当前时间: $(date)"
 
-      - name: Checkout
+      - name: 检出代码
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -58,7 +58,7 @@ jobs:
           cp "${{ steps.locate_apks.outputs.normal_apk }}" app/build/outputs/apk/all/
           cp "${{ steps.locate_apks.outputs.compatible_apk }}" app/build/outputs/apk/all/
 
-      - name: APK 签名
+      - name: 签名 APK 文件
         id: sign_apks
         uses: ilharp/sign-android-release@v2
         with:
@@ -69,7 +69,7 @@ jobs:
           keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
           buildToolsVersion: 36.0.0
 
-      - name: 提取签名 APK 路径
+      - name: 提取已签名 APK 路径
         id: extract_apks
         run: |
           IFS=':' read -r -a files <<< "${{ steps.sign_apks.outputs.signedFiles }}"
@@ -127,11 +127,12 @@ jobs:
           COMPATIBLE_FILE: ${{ steps.extract_apks.outputs.signed_compatible }}
           COMMIT_MESSAGE: |+
             🚀 *Github 新版本发布！*         
-            ```⚠️注意
+            ```TXT
+            ⚠️ 注意
             从官方或其他作者版本切换至此非官方版本时，请务必删除 `UID` 目录下的 `config_v2.json` 文件（无需删除整个 `TK` 文件夹），否则可能导致优先级设置不生效或运行错乱
             0点整到10分、7点整到35分，两个时间段只能运行循环收能量，不干其他事
 
-            📋更新日志：
+            📋 更新日志：
             提升模块稳定性
             优化模块流畅性
 
@@ -148,7 +149,7 @@ jobs:
             -F "compatible.apk=@${COMPATIBLE_FILE}"
       
 
-      - name: 将资源整合上传到你的仓库发布
+      - name: 将资源整合上传到仓库发布
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ github.event.release.tag_name || steps.extract_info.outputs.version }}-SNL # 发布的名称。默认为标签名称
