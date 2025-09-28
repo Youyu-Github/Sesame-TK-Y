@@ -119,7 +119,7 @@ class ChouChouLe {
             if (ResChecker.checkRes(TAG, jo)) {
                 Log.farm((if (drawType == "ipDraw") "IP抽抽乐" else "抽抽乐") + "🧾️[任务: " + task.title + "]")
                 if(task.title.equals("消耗饲料换机会")) {
-                    GlobalThreadPools.sleep(1 * 1000L);
+                    GlobalThreadPools.sleep(1000L);
                 } else {
                     GlobalThreadPools.sleep(5 * 1000L);
                 }

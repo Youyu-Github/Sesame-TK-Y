@@ -2634,6 +2634,11 @@ class AntFarm : ModelTask() {
                 while (i < len) {
                     val animal = animals.getJSONObject(i)
                     if (animal.getJSONObject("masterUserInfoVO").getString("userId") == userId) {
+                        val animalStatusVo = animal.getJSONObject("animalStatusVO")
+                        if (animalStatusVo.getString("animalInteractStatus") != AnimalInteractStatus.HOME.name) {
+                            Log.record("${UserMap.getMaskName(userId)}的小鸡不在家")
+                            return false
+                        }
                         val animalId = animal.getString("animalId")
                         jo = JSONObject(AntFarmRpcCall.hireAnimal(farmId, animalId))
                         if (ResChecker.checkRes(TAG + "雇佣小鸡失败:", jo)) {
