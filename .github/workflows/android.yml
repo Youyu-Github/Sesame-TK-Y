@@ -128,17 +128,17 @@ jobs:
           COMMIT_MESSAGE: |+
             🚀 *Github 新版本发布！*         
             ```TXT
-            ⚠️ 注意
+            ⚠️注意
             从官方或其他作者版本切换至此非官方版本时，请务必删除 `UID` 目录下的 `config_v2.json` 文件（无需删除整个 `TK` 文件夹），否则可能导致优先级设置不生效或运行错乱
             0点整到10分、7点整到35分，两个时间段只能运行循环收能量，不干其他事
 
-            📋 更新日志：
+            📋更新日志：
             提升模块稳定性
             优化模块流畅性
 
             ${{ github.event.head_commit.message }}
             ```Branch: `${{ github.ref_name }}`
-            *收能量版*
+            *蹲点收能量版*
             📥 *下载说明:*
               * \- Normal* 为正常版本，适用于 `Android 8.0` 及以上的系统  
               * \- Compatible* 为兼容版本，适用于 `Android 7.0` 及以下的系统，最低支持 `Android 5.1`

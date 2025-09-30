@@ -329,7 +329,7 @@ public class AntForest extends ModelTask {
         modelFields.addField(robExpandCard = new ChoiceModelField("robExpandCard", "能量翻倍卡开关 | 消耗类型", applyPropType.CLOSE, applyPropType.nickNames));
         modelFields.addField(robExpandCardTime = new ListModelField.ListJoinCommaToStringModelField("robExpandCardTime", "能量翻倍卡 | 使用时间/不能范围",
                 ListUtil.newArrayList("0700", "0730", "1200", "1230", "1700", "1730", "2000", "2030", "2359")));
-
+        modelFields.addField(extraenergy = new IntegerModelField("extraenergy", "额外能量阈值(克)", 3000, 1, 100000));
         modelFields.addField(stealthCard = new ChoiceModelField("stealthCard", "隐身卡开关 | 消耗类型", applyPropType.CLOSE, applyPropType.nickNames));
         modelFields.addField(stealthCardConstant = new BooleanModelField("stealthCardConstant", "限时隐身永动机 | 开关", false));
 
@@ -379,7 +379,6 @@ public class AntForest extends ModelTask {
         modelFields.addField(tryCount = new IntegerModelField("tryCount", "尝试收取(次数)", 1, 0, 5));
         modelFields.addField(retryInterval = new IntegerModelField("retryInterval", "重试间隔(毫秒)", 1200, 0, 10000));
         modelFields.addField(cycleinterval = new IntegerModelField("cycleinterval", "循环间隔(毫秒)", 10000, 0, 60000));
-        modelFields.addField(extraenergy = new IntegerModelField("extraenergy", "额外能量阈值(克)", 3000, 1, 100000));
         modelFields.addField(showBagList = new BooleanModelField("showBagList", "显示背包内容", false));
         return modelFields;
     }
@@ -1318,6 +1317,7 @@ public class AntForest extends ModelTask {
             scheduleWaitingBubbles(userId, waitingBubbles, userName);
             // 6. 检查是否有保护罩保护（影响当前收取，但不影响蹲点）
             boolean hasProtection = false;
+            /*
             if (!isSelf) {
                 if (hasShield(userHomeObj, serverTime)) {
                     Log.record(TAG, "[" + userName + "]被保护罩🛡保护着哟，跳过当前收取但已添加蹲点");
@@ -1328,6 +1328,17 @@ public class AntForest extends ModelTask {
                     Log.record(TAG, "[" + userName + "]开着炸弹卡💣哟，跳过当前收取但已添加蹲点");
                     hasProtection = true;
                     return userHomeObj;
+                }
+            }
+            */
+            if (!isSelf) {
+                boolean shielda = hasShield(userHomeObj, serverTime);
+                boolean bomba = hasBombCard(userHomeObj, serverTime);
+                
+                if (shielda || bomba) {
+                    hasProtection = true;
+                    String protectionType = shielda ? "保护罩🛡" : "炸弹卡💣";
+                    Log.record(TAG, "[" + userName + "]开着" + protectionType + "哟，跳过当前收取但已添加蹲点");
                 }
             }
             // 7. 只有没有保护时才收集当前可用能量
@@ -4138,6 +4149,12 @@ public class AntForest extends ModelTask {
     }
 
     /**
+     * 统一获取用户名的简化方法（无上下文）
+     */
+    private String cacheCollectedMap(String userId) {
+        return cacheCollectedMap(userId, null, null);
+    }
+    /**
      * 统一获取和缓存用户名的方法
      * @param userId 用户ID
      * @param userHomeObj 用户主页对象（可选）
@@ -4145,6 +4162,32 @@ public class AntForest extends ModelTask {
      * @return 用户名
      */
     private String cacheCollectedMap(String userId, JSONObject userHomeObj, String fromTag) {
+        // 1. 尝试从缓存获取
+        if (cacheCollectedMap.containsKey(userId)) {
+            return cacheCollectedMap.get(userId);
+        }
+        
+        // 2. 解析用户名
+        String userName = resolveUserNameFromContext(userId, userHomeObj, fromTag);
+        
+        // 3. Fallback处理
+        if (userName == null || userName.isEmpty()) {
+            userName = userId;
+        }
+        
+        // 4. 存入缓存并返回
+        cacheCollectedMap.put(userId, userName);
+        return userName;
+    }
+    /**
+     * 统一获取和缓存用户名的方法
+     * @param userId 用户ID
+     * @param userHomeObj 用户主页对象（可选）
+     * @param fromTag 来源标记（可选）
+     * @return 用户名
+     */
+    /*
+     private String cacheCollectedMap(String userId, JSONObject userHomeObj, String fromTag) {
         // 1. 尝试从缓存获取
         String userName = cacheCollectedMap.get(userId);
         if (userName != null && !userName.equals(userId)) { // 如果缓存的不是userId本身
@@ -4162,13 +4205,16 @@ public class AntForest extends ModelTask {
         cacheCollectedMap.put(userId, userName);
         return userName;
     }
+    */
 
     /**
      * 统一获取用户名的简化方法（无上下文）
      */
+    /*
     private String cacheCollectedMap(String userId) {
         return cacheCollectedMap(userId, null, null);
     }
+    */
 
     /**
      * 从上下文中解析用户名
