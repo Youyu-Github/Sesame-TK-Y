@@ -6,6 +6,7 @@ import org.json.JSONObject;
 import fansirsqi.xposed.sesame.util.Log;
 import fansirsqi.xposed.sesame.util.ResChecker;
 import fansirsqi.xposed.sesame.util.TimeUtil;
+import fansirsqi.xposed.sesame.data.Statistics;
 
 /**
  * @author Byseven
@@ -52,6 +53,7 @@ public class Healthcare {
                     String title = scene.equals("FEEDS") ? "绿色医疗" : "电子小票";
                     int cumulativeEnergy = jo.getInt("cumulativeEnergy");
                     Log.forest("医疗健康🚑完成[" + title + "]#产生[" + cumulativeEnergy + "g能量]");
+                    Statistics.addData(Statistics.DataType.COLLECTED, cumulativeEnergy);
                 }
             }
         } catch (Throwable th) {
