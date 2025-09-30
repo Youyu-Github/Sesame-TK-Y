@@ -34,6 +34,21 @@ public class ResChecker {
                 return true;
             }
 
+            // 特殊情况：如果是"人数过多"或"小鸡睡觉"等系统状态，我们认为这不是一个需要记录的"失败"
+            String resultDesc = jo.optString("resultDesc", "");
+            String memo = jo.optString("memo", "");
+            if (resultDesc.contains("当前参与人数过多") || resultDesc.contains("请稍后再试") ||
+                    resultDesc.contains("手速太快") || resultDesc.contains("频繁") ||
+                    resultDesc.contains("操作过于频繁") ||
+                    memo.contains("我的小鸡在睡觉中") ||
+                    memo.contains("小鸡在睡觉") ||
+                    memo.contains("无法操作") ||
+                    memo.contains("没有符合分享条件的好友") ||
+                    memo.contains("适可而止！今天已达加速上限了，我的减肥计划完蛋了~") ||
+                    memo.contains("手速太快")) {
+                return false; // 返回false，但不打印错误日志
+            }
+
             // 获取调用栈信息以确定错误来源
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             String callerInfo = "";
