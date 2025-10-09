@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Calendar;
 
 import fansirsqi.xposed.sesame.data.DataCache;
 
@@ -161,6 +162,13 @@ public class EcoLife {
      */
     public static void photoGuangPan(String dayPoint) {
         try {
+            // 添加时间检查：只有在早上6点后才执行
+            Calendar calendar = Calendar.getInstance();
+            int currentHour = calendar.get(Calendar.HOUR_OF_DAY);
+            if (currentHour < 6) {
+                return;
+            }
+            // 如果今天已经完成光盘任务，则不再执行
             if (Status.hasFlagToday("EcoLife::photoGuangPan")) return;
 
             String source = "renwuGD"; // 任务来源标识
