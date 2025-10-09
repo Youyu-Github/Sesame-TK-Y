@@ -424,13 +424,10 @@ public class AntForest extends ModelTask {
         int hour = now.get(Calendar.HOUR_OF_DAY);
         int minute = now.get(Calendar.MINUTE);
 
-        // boolean isEnergyTime = TaskCommon.IS_ENERGY_TIME || hour == 7 && minute < 30;
-        boolean isEnergyTime = TaskCommon.IS_ENERGY_TIME || 
-                      hour == 0 && minute < 10 || 
-                      hour == 7 && minute < 35;
+        boolean isEnergyTime = TaskCommon.IS_ENERGY_TIME || hour == 7 && minute < 40;
 
         if (isEnergyTime) {
-            Log.record(TAG, "⏸ 当前为只收能量时间【00:00-00:10、07:00-07:35】，开始循环收取自己、好友和PK森友的能量");
+            Log.record(TAG, "⏸ 当前为只收能量时间【07:00-07:40】，开始循环收取自己、好友和PK森友的能量");
 
             while (true) {
                 // 每次循环更新状态
@@ -440,20 +437,17 @@ public class AntForest extends ModelTask {
                 now = Calendar.getInstance();
                 hour = now.get(Calendar.HOUR_OF_DAY);
                 minute = now.get(Calendar.MINUTE);
-                if (!(TaskCommon.IS_ENERGY_TIME || 
-                      hour == 0 && minute < 10 || 
-                      hour == 7 && minute < 35)) {
+                if (!(TaskCommon.IS_ENERGY_TIME || hour == 7 && minute < 40)) {
                     Log.record(TAG, "当前不在只收能量时间段，退出循环");
                     break;
                 }
-
+                selfId = UserMap.getCurrentUid();
+                usePropBeforeCollectEnergy(selfId); // 使用道具卡
                 // 收取自己能量
                 JSONObject selfHomeObj = querySelfHome();
                 if (selfHomeObj != null) {
                     collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self");
                 }
-                selfId = UserMap.getCurrentUid();
-                usePropBeforeCollectEnergy(selfId); // 使用道具卡
                 collectFriendEnergy(); // 好友能量收取
                 collectPKEnergy(); // PK森友能量
                 // 循环间隔
@@ -543,12 +537,12 @@ public class AntForest extends ModelTask {
             checkAndUpdateCounters();
             // 午夜强制任务
             if (isMidnight()) {
+                selfId = UserMap.getCurrentUid();
+                usePropBeforeCollectEnergy(selfId); // 使用道具卡
                 JSONObject selfHomeObj = querySelfHome();
                 if (selfHomeObj != null) {
                     collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self");  // 收自己
                 }
-                selfId = UserMap.getCurrentUid();
-                usePropBeforeCollectEnergy(selfId); // 使用道具卡
                 collectFriendEnergy(); // 好友能量收取
                 collectPKEnergy(); // PK森友能量
                 Log.record(TAG, "午夜任务刷新，强制执行收取PK森友能量和好友能量");
@@ -1058,7 +1052,7 @@ public class AntForest extends ModelTask {
                         Log.record(TAG, "活力值兑换失败: " + VitalityStore.getNameById(skuId));
                         break;
                     }
-                    GlobalThreadPools.sleep(5000L);
+                    GlobalThreadPools.sleep(3000L);
                 }
             }
         } catch (Throwable t) {
@@ -1504,14 +1498,14 @@ public class AntForest extends ModelTask {
                 }
 
                 List<String> pkIdList = new ArrayList<>();
-                for (int pos = 20; pos < totalData.length(); pos++) {
+                for (int pos = 50; pos < totalData.length(); pos++) {
                     JSONObject pkFriend = totalData.getJSONObject(pos);
                     String userId = pkFriend.getString("userId");
                     if (Objects.equals(userId, selfId)) continue; //如果是自己则跳过
                     pkIdList.add(userId);
-                    if (pkIdList.size() == 20) {
-                        // processLastdEnergy(pkIdList, "pk");//20个id 一次处理
-                        processLastEnergy(pkIdList, "pk");//20个id 一次处理
+                    if (pkIdList.size() == 50) {
+                        // processLastdEnergy(pkIdList, "pk");//50个id 一次处理
+                        processLastEnergy(pkIdList, "pk");//50个id 一次处理
                         pkIdList.clear();
                     }
                 }
@@ -1533,8 +1527,8 @@ public class AntForest extends ModelTask {
      * 收集好友排行榜中的能量
      * <p>
      * 该方法首先获取好友排行榜，然后分批处理好友的能量：
-     * 1. 先处理排名前20的好友
-     * 2. 再分批处理剩余好友（每批20个）
+     * 1. 先处理排名前50的好友
+     * 2. 再分批处理剩余好友（每批50个）
      * 3. 包含重试机制，最多尝试3次，每次重试间隔3秒
      * </p>
      */
@@ -1555,7 +1549,7 @@ public class AntForest extends ModelTask {
                 if (retry > 0) {
                     Log.record(TAG, "获取好友排行榜第" + (retry + 1) + "次尝试");
                     // 重试前等待一段时间
-                    GlobalThreadPools.sleep(3000);
+                    GlobalThreadPools.sleep(1000);
                 }
                 
                 rankingResponse = AntForestRpcCall.queryFriendsEnergyRanking();
@@ -1583,11 +1577,11 @@ public class AntForest extends ModelTask {
                 return;
             }
             tc.countDebug("获取好友排行榜");
-            // 处理排名靠前的好友（通常自己也在其中） 20个
+            // 处理排名靠前的好友（通常自己也在其中） 50个
             Log.record(TAG, "开始处理排名靠前好友");
             collectUserEnergy(friendsObject, "");
             tc.countDebug("处理排名靠前的好友");
-            // 分批处理其他好友（从第20位开始）
+            // 分批处理其他好友（从第50位开始）
             /*
             JSONArray totalDatas = friendsObject.optJSONArray("totalDatas");
             if (totalDatas == null || totalDatas.length() == 0) {
@@ -1600,16 +1594,16 @@ public class AntForest extends ModelTask {
             }
             Log.record(TAG, "开始处理其他好友，共" + totalData.length() + "个");
             List<String> idList = new ArrayList<>();
-            // for (int pos = 20; pos < totalDatas.length(); pos++) {
+            // for (int pos = 50; pos < totalDatas.length(); pos++) {
             //     JSONObject friend = totalDatas.getJSONObject(pos);
-            for (int pos = 20; pos < totalData.length(); pos++) {
+            for (int pos = 50; pos < totalData.length(); pos++) {
                 JSONObject friend = totalData.getJSONObject(pos);
                 String userId = friend.getString("userId");
                 if (Objects.equals(userId, selfId)) continue; //如果是自己则跳过
                 idList.add(userId);
-                if (idList.size() == 20) {
-                    // processLastdEnergy(idList, "");//20个id 一次处理
-                    processLastEnergy(idList, "");//20个id 一次处理
+                if (idList.size() == 50) {
+                    // processLastdEnergy(idList, "");//50个id 一次处理
+                    processLastEnergy(idList, "");//50个id 一次处理
                     idList.clear();
                 }
             }
@@ -1639,7 +1633,7 @@ public class AntForest extends ModelTask {
      * 3. 包含重试机制，最多尝试3次，每次重试间隔2秒
      * </p>
      *
-     * @param userIds 用户id列表（最多20个）
+     * @param userIds 用户id列表（最多50个）
      * @param flag 标志，"pk"表示PK榜森友，""表示普通好友
      */
     // private void processLastdEnergy(List<String> userIds, String flag) {
@@ -1662,7 +1656,7 @@ public class AntForest extends ModelTask {
                 if (retry > 0) {
                     Log.record(TAG, "获取好友能量信息第" + (retry + 1) + "次尝试");
                     // 重试前等待一段时间
-                    GlobalThreadPools.sleep(2000);
+                    GlobalThreadPools.sleep(1000);
                 }
                 
                 try {

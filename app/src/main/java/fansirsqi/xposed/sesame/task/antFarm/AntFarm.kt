@@ -1534,6 +1534,7 @@ class AntFarm : ModelTask() {
                                     val contentId = videoUrl.substring(videoUrl.indexOf("&contentId=") + 11, videoUrl.indexOf("&refer"))
                                     val videoDetailjo = JSONObject(AntFarmRpcCall.videoDeliverModule(contentId))
                                     if (ResChecker.checkRes(TAG + "视频投递失败:", videoDetailjo)) {
+                                        //等待15s
                                         GlobalThreadPools.sleep(15 * 1000L)
                                         val resultVideojo = JSONObject(AntFarmRpcCall.videoTrigger(contentId))
                                         if (ResChecker.checkRes(TAG + "视频触发失败:", resultVideojo)) {
