@@ -45,6 +45,11 @@ public class ResChecker {
                     memo.contains("无法操作") ||
                     memo.contains("没有符合分享条件的好友") ||
                     memo.contains("适可而止！今天已达加速上限了，我的减肥计划完蛋了~") ||
+                    memo.contains("适可而止") ||
+                    memo.contains("今天已达加速上限了") ||
+                    memo.contains("我的减肥计划完蛋了") ||
+                    memo.contains("当日达到上限") ||
+                    memo.contains("有人抢在你前面") ||
                     memo.contains("手速太快")) {
                 return false; // 返回false，但不打印错误日志
             }

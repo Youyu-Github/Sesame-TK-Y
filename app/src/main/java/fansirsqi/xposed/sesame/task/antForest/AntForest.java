@@ -78,8 +78,6 @@ import java.util.*;
 /// lzw add end
 import fansirsqi.xposed.sesame.hook.rpc.intervallimit.IntervalLimit;
 
-import static fansirsqi.xposed.sesame.task.antForest.ForestUtil.hasBombCard;
-import static fansirsqi.xposed.sesame.task.antForest.ForestUtil.hasShield;
 import java.util.HashMap;
 
 /**
@@ -584,17 +582,17 @@ public class AntForest extends ModelTask {
             usePropBeforeCollectEnergy(selfId);
             tc.countDebug("使用道具卡");
 
-            collectPKEnergy();
-            tc.countDebug("收PK榜森友能量");
-
-            collectFriendEnergy();
-            tc.countDebug("收取好友能量");
-
             JSONObject selfHomeObj = querySelfHome();
             tc.countDebug("获取自己主页对象信息");
 
             selfHomeObj = collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self"); //收取自己的能量
             tc.countDebug("收取自己的能量");
+
+            collectFriendEnergy();
+            tc.countDebug("收取好友能量");
+
+            collectPKEnergy();
+            tc.countDebug("收PK榜森友能量");
 
             if (selfHomeObj != null) {
 
@@ -1339,6 +1337,7 @@ public class AntForest extends ModelTask {
                     hasProtection = true;
                     String protectionType = shielda ? "保护罩🛡" : "炸弹卡💣";
                     Log.record(TAG, "[" + userName + "]开着" + protectionType + "哟，跳过当前收取但已添加蹲点");
+                    return userHomeObj;
                 }
             }
             // 7. 只有没有保护时才收集当前可用能量
