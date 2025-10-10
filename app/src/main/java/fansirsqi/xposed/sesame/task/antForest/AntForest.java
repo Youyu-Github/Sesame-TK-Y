@@ -1498,14 +1498,14 @@ public class AntForest extends ModelTask {
                 }
 
                 List<String> pkIdList = new ArrayList<>();
-                for (int pos = 50; pos < totalData.length(); pos++) {
+                for (int pos = 20; pos < totalData.length(); pos++) {
                     JSONObject pkFriend = totalData.getJSONObject(pos);
                     String userId = pkFriend.getString("userId");
                     if (Objects.equals(userId, selfId)) continue; //如果是自己则跳过
                     pkIdList.add(userId);
-                    if (pkIdList.size() == 50) {
-                        // processLastdEnergy(pkIdList, "pk");//50个id 一次处理
-                        processLastEnergy(pkIdList, "pk");//50个id 一次处理
+                    if (pkIdList.size() == 20) {
+                        // processLastdEnergy(pkIdList, "pk");//20个id 一次处理
+                        processLastEnergy(pkIdList, "pk");//20个id 一次处理
                         pkIdList.clear();
                     }
                 }
@@ -1527,8 +1527,8 @@ public class AntForest extends ModelTask {
      * 收集好友排行榜中的能量
      * <p>
      * 该方法首先获取好友排行榜，然后分批处理好友的能量：
-     * 1. 先处理排名前50的好友
-     * 2. 再分批处理剩余好友（每批50个）
+     * 1. 先处理排名前20的好友
+     * 2. 再分批处理剩余好友（每批20个）
      * 3. 包含重试机制，最多尝试3次，每次重试间隔3秒
      * </p>
      */
@@ -1577,11 +1577,11 @@ public class AntForest extends ModelTask {
                 return;
             }
             tc.countDebug("获取好友排行榜");
-            // 处理排名靠前的好友（通常自己也在其中） 50个
+            // 处理排名靠前的好友（通常自己也在其中） 20个
             Log.record(TAG, "开始处理排名靠前好友");
             collectUserEnergy(friendsObject, "");
             tc.countDebug("处理排名靠前的好友");
-            // 分批处理其他好友（从第50位开始）
+            // 分批处理其他好友（从第20位开始）
             /*
             JSONArray totalDatas = friendsObject.optJSONArray("totalDatas");
             if (totalDatas == null || totalDatas.length() == 0) {
@@ -1594,16 +1594,16 @@ public class AntForest extends ModelTask {
             }
             Log.record(TAG, "开始处理其他好友，共" + totalData.length() + "个");
             List<String> idList = new ArrayList<>();
-            // for (int pos = 50; pos < totalDatas.length(); pos++) {
+            // for (int pos = 20; pos < totalDatas.length(); pos++) {
             //     JSONObject friend = totalDatas.getJSONObject(pos);
-            for (int pos = 50; pos < totalData.length(); pos++) {
+            for (int pos = 20; pos < totalData.length(); pos++) {
                 JSONObject friend = totalData.getJSONObject(pos);
                 String userId = friend.getString("userId");
                 if (Objects.equals(userId, selfId)) continue; //如果是自己则跳过
                 idList.add(userId);
-                if (idList.size() == 50) {
-                    // processLastdEnergy(idList, "");//50个id 一次处理
-                    processLastEnergy(idList, "");//50个id 一次处理
+                if (idList.size() == 20) {
+                    // processLastdEnergy(idList, "");//20个id 一次处理
+                    processLastEnergy(idList, "");//20个id 一次处理
                     idList.clear();
                 }
             }
@@ -1633,7 +1633,7 @@ public class AntForest extends ModelTask {
      * 3. 包含重试机制，最多尝试3次，每次重试间隔2秒
      * </p>
      *
-     * @param userIds 用户id列表（最多50个）
+     * @param userIds 用户id列表（最多20个）
      * @param flag 标志，"pk"表示PK榜森友，""表示普通好友
      */
     // private void processLastdEnergy(List<String> userIds, String flag) {
@@ -3682,7 +3682,13 @@ public class AntForest extends ModelTask {
                 jo = findPropBag(bagObject, "ENERGY_SHIELD");
             }
 
-            // 5. 最后尝试 MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE
+            // 5. 最后尝试 PK_SEASON1_ENERGY_SHIELD_TREE
+            if (jo == null) {
+                Log.record(TAG, "尝试PK赛限定保护罩(PK_SEASON1_ENERGY_SHIELD_TREE)...");
+                jo = findPropBag(bagObject, "PK_SEASON1_ENERGY_SHIELD_TREE");
+            }
+
+            // 6. 最后尝试 MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE
             if (jo == null) {
                 Log.record(TAG, "尝试敦煌飞天保护罩(MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE)...");
                 jo = findPropBag(bagObject, "MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE");
