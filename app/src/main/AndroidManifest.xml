@@ -26,10 +26,10 @@
             android:value="true" />
         <meta-data
             android:name="xposeddescription"
-            android:value="人面不知何处去，桃花依旧笑春风" />
+            android:value="草长莺飞二月天，拂堤杨柳醉春烟。" />
         <meta-data
             android:name="xposedminversion"
-            android:value="54" />
+            android:value="93" />
         <meta-data
             android:name="xposedscope"
             android:resource="@array/xposed_scopes" />

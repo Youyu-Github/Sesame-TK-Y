@@ -43,8 +43,8 @@ class WatermarkView(context: android.content.Context) : android.view.View(contex
         }
 
     /** 控制整体水印稀疏度（越大越密集，越小越稀疏） */
-    var horizontalSpacingScale: Float = 1.0f
-    var verticalSpacingScale: Float = 1.0f
+    var horizontalSpacingScale: Float = 1.2f
+    var verticalSpacingScale: Float = 1.2f
     /** 旋转角度 */
     var rotationAngle: Float = -30f
     var maxDrawCount = 400
@@ -68,7 +68,7 @@ class WatermarkView(context: android.content.Context) : android.view.View(contex
     }
 
     /** 调整整体密度，默认 1f = 正常，0.5f = 稀疏，2f = 更密 */
-    fun setSpacingScale(horizontal: Float = 1.0f, vertical: Float = 1.0f) {
+    fun setSpacingScale(horizontal: Float = 1.2f, vertical: Float = 1.2f) {
         horizontalSpacingScale = horizontal
         verticalSpacingScale = vertical
         invalidate()
