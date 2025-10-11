@@ -594,6 +594,7 @@ class AntFarm : ModelTask() {
                             SubAnimalType.NORMAL -> Log.record(TAG, "小鸡太饿，离家出走了")
                             SubAnimalType.PIRATE -> Log.record(TAG, "小鸡外出探险了")
                             SubAnimalType.WORK -> Log.record(TAG, "小鸡出去工作啦")
+                            else -> Log.record(TAG, "小鸡不在庄园" + " " + ownerAnimal.subAnimalType)
                         }
                     }
 

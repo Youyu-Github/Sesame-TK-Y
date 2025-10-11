@@ -25,12 +25,12 @@ class WatermarkView(context: android.content.Context) : android.view.View(contex
         set(value) {
             // val prefixLines = listOf("免费模块仅供学习", "勿在国内平台传播,倒卖必死全家!", "UID: $verifyId")
             val prefixLines = listOf(
-                "免费模块仅供学习 🤓",
-                "勿在国内平台传播,倒卖必死全家! 🤬",
+                "免费模块仅供学习",
+                "勿在国内平台传播,倒卖必死全家!",
                 "UID: $verifyId",
-                "版本号: ${BuildConfig.VERSION}.${BuildConfig.BUILD_TYPE} 📦",
-                "打包时间: ${BuildConfig.BUILD_DATE} ${BuildConfig.BUILD_TIME} ⏰",
-                "不是官版，是个人分支自用版 🌟")
+                "版本号: ${BuildConfig.VERSION}.${BuildConfig.BUILD_TYPE}",
+                "打包时间: ${BuildConfig.BUILD_DATE} ${BuildConfig.BUILD_TIME}",
+                "不是官版，是个人分支自用版")
             val combinedLines = if (value.isNullOrBlank()) {
                 prefixLines
             } else {
@@ -42,9 +42,10 @@ class WatermarkView(context: android.content.Context) : android.view.View(contex
             invalidate()
         }
 
-
-    var horizontalSpacingScale: Float = 1.2f
-    var verticalSpacingScale: Float = 1.2f
+    /** 控制整体水印稀疏度（越大越密集，越小越稀疏） */
+    var horizontalSpacingScale: Float = 1.0f
+    var verticalSpacingScale: Float = 1.0f
+    /** 旋转角度 */
     var rotationAngle: Float = -30f
     var maxDrawCount = 400
 
@@ -66,7 +67,8 @@ class WatermarkView(context: android.content.Context) : android.view.View(contex
         invalidate()
     }
 
-    fun setSpacingScale(horizontal: Float = 1.2f, vertical: Float = 1.2f) {
+    /** 调整整体密度，默认 1f = 正常，0.5f = 稀疏，2f = 更密 */
+    fun setSpacingScale(horizontal: Float = 1.0f, vertical: Float = 1.0f) {
         horizontalSpacingScale = horizontal
         verticalSpacingScale = vertical
         invalidate()
