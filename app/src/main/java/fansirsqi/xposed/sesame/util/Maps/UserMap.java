@@ -61,6 +61,7 @@ public class UserMap {
      *
      * @param currentUserId 当前用户ID
      */
+    /*
     public static synchronized void initUser(String currentUserId) {
         Log.runtime(TAG, "初始化用户数据: " + currentUserId);
         // 设置当前用户ID
@@ -125,6 +126,7 @@ public class UserMap {
             }
         });
     }
+    */
 
     /**
      * 设置当前用户ID
