@@ -10,6 +10,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.google.android.material.appbar.MaterialToolbar
 import fansirsqi.xposed.sesame.R
+import fansirsqi.xposed.sesame.data.ServiceManager
 import fansirsqi.xposed.sesame.data.ViewAppInfo
 import fansirsqi.xposed.sesame.util.PermissionUtil
 
@@ -41,11 +42,13 @@ open class BaseActivity : AppCompatActivity() {
         } else {
             PermissionUtil.checkOrRequestFilePermissions(this)
             ViewAppInfo.init(applicationContext)
+            ServiceManager.init()
         }
     }
 
     private fun initialize() {
         ViewAppInfo.init(applicationContext)
+        ServiceManager.init()
         // Edge-to-Edge 支持
         WindowCompat.setDecorFitsSystemWindows(window, false)
         // 控制状态栏文字颜色
