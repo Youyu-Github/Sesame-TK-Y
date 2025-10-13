@@ -226,12 +226,13 @@ dependencies {
     implementation(libs.material)
     implementation(libs.webkit)
 
-    compileOnly(files("libs/api-82.jar"))
-
-    compileOnly(files("libs/api-100.aar"))
-    implementation(files("libs/service-100-1.0.0.aar"))
-//    implementation(libs.libxposed.service)
-//    implementation(files("libs/framework.jar"))
+    // 仅编译时依赖 - Xposed 相关
+    compileOnly(files("libs/api-82.jar"))    // Xposed API 82
+    compileOnly(files("libs/api-100.aar"))   // Xposed API 100
+    implementation(files("libs/interface-100.aar"))
+    implementation(files("libs/service-100-1.0.0.aar"))   // Xposed 服务库
+//    implementation(libs.libxposed.service)     // LSPosed 服务库（已注释）
+//    implementation(files("libs/framework.jar"))  // Android Framework（已注释）
 
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
