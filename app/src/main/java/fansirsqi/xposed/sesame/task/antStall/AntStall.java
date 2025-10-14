@@ -903,7 +903,16 @@ public class AntStall extends ModelTask {
                 }
                 hasNewVillage = true;
                 String villageName = road.getString("villageName");
+                // 检查今日是否已进入过这个村庄
+                String flagKey = "stall::roadmap::" + villageName;
+                if (Status.hasFlagToday(flagKey)) {
+                    Log.record(TAG, "今日已进入[" + villageName + "]，跳过重复打印。");
+                    continue;
+                }
                 Log.farm("蚂蚁新村⛪[进入:" + villageName + "]成功");
+                // 标记今日已进入该村庄，避免重复打印
+                Status.setFlagToday(flagKey);
+                break; // 进入一个新村后退出循环
             }
             if (!hasNewVillage) {
                 Log.record(TAG, "所有村庄都已解锁，无需进入下一村。");
