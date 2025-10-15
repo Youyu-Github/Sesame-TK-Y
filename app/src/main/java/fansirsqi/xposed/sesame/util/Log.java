@@ -53,7 +53,8 @@ public class Log {
 
     public static void runtime(String msg) {
         system(msg);
-        if (BaseModel.getRuntimeLog().getValue()) {
+        // if (BaseModel.getRuntimeLog().getValue()) {
+        if (BaseModel.getRuntimeLog().getValue() || BuildConfig.DEBUG) {
             RUNTIME_LOGGER.info(TAG + "{}", msg);
         }
     }
@@ -166,8 +167,7 @@ public class Log {
     }
 
     public static void printStack(String TAG) {
-        String stackTrace = "stack: " + android.util.Log.getStackTraceString(new Exception("获取当前堆栈" + TAG+ ":"));
+        String stackTrace = "stack: " + android.util.Log.getStackTraceString(new Exception("获取当前堆栈" + TAG + ":"));
         system(stackTrace);
     }
-
 }
