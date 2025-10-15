@@ -20,9 +20,9 @@ public class AlipayVersion implements Comparable<AlipayVersion> {
         versionArray = new Integer[length];
         for (int i = 0; i < length; i++) {
             try {
-                versionArray[i] = Integer.parseInt(split[i]);
+                getVersionArray()[i] = Integer.parseInt(split[i]);
             } catch (NumberFormatException e) {
-                versionArray[i] = Integer.MAX_VALUE; // 如果解析失败，使用 Integer.MAX_VALUE 表示
+                getVersionArray()[i] = Integer.MAX_VALUE; // 如果解析失败，使用 Integer.MAX_VALUE 表示
             }
         }
     }
@@ -33,14 +33,14 @@ public class AlipayVersion implements Comparable<AlipayVersion> {
      */
     @Override
     public int compareTo(AlipayVersion alipayVersion) {
-        int thisLength = versionArray.length;
-        int thatLength = alipayVersion.versionArray.length;
+        int thisLength = getVersionArray().length;
+        int thatLength = alipayVersion.getVersionArray().length;
         int compareResult = Integer.compare(thisLength, thatLength); // 比较长度
         int minLength = Math.min(thisLength, thatLength); // 取最小长度
         // 按版本号逐段比较
         for (int i = 0; i < minLength; i++) {
-            int thisVer = versionArray[i];
-            int thatVer = alipayVersion.versionArray[i];
+            int thisVer = getVersionArray()[i];
+            int thatVer = alipayVersion.getVersionArray()[i];
             if (thisVer != thatVer) {
                 return Integer.compare(thisVer, thatVer);
             }
@@ -51,6 +51,6 @@ public class AlipayVersion implements Comparable<AlipayVersion> {
     
     @Override
     public String toString() {
-        return versionString;
+        return getVersionString();
     }
 }
