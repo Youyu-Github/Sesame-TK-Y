@@ -7,6 +7,8 @@ import fansirsqi.xposed.sesame.util.maps.UserMap
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.max
+import java.util.Calendar
+// import java.time.LocalTime
 
 class ChouChouLe {
     enum class TaskStatus {
@@ -28,6 +30,21 @@ class ChouChouLe {
 
     fun chouchoule() {
         try {
+            // 添加时间检查：只有在早上8点后才执行
+            val calendar = Calendar.getInstance()
+            val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+            if (currentHour < 8) {
+                return
+            }
+            /*
+            val calendar = Calendar.getInstance().apply {
+                timeInMillis = System.currentTimeMillis()
+            }
+            val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+            if (currentHour < 8) {
+                return
+            }
+            */
             val response = AntFarmRpcCall.queryLoveCabin(UserMap.currentUid)
             val jo = JSONObject(response)
             if (!ResChecker.checkRes(TAG, jo)) {
