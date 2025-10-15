@@ -8,6 +8,7 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedHashSet;
+import java.util.Calendar;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -54,7 +55,7 @@ public class AntSports extends ModelTask {
     private SelectModelField originBossIdList;
     private BooleanModelField sportsTasks;
     private BooleanModelField coinExchangeDoubleCard;
-    
+    private StringModelField sportSyncTime;  // 自定义同步时间
 
     /**
      * 获取任务名称
@@ -110,6 +111,7 @@ public class AntSports extends ModelTask {
         modelFields.addField(tiyubiz = new BooleanModelField("tiyubiz", "文体中心", false));
         modelFields.addField(minExchangeCount = new IntegerModelField("minExchangeCount", "最小捐步步数", 0));
         modelFields.addField(latestExchangeTime = new IntegerModelField("latestExchangeTime", "最晚捐步时间(24小时制)", 22));
+        modelFields.addField(sportSyncTime = new StringModelField("sportSyncTime", "自定义同步时间(关闭:-1)", "0800"));
         modelFields.addField(syncStepCount = new IntegerModelField("syncStepCount", "自定义同步步数", 22000));
         BooleanModelField coinExchangeDoubleCard;
         modelFields.addField(coinExchangeDoubleCard = new BooleanModelField("coinExchangeDoubleCard", "运动币兑换限时能量双击卡", false));
@@ -168,6 +170,7 @@ public class AntSports extends ModelTask {
         TimeCounter tc = new TimeCounter(TAG);
         Log.record(TAG, "执行开始-" + getName());
         try {
+            /*
             if (!Status.hasFlagToday("sport::syncStep") && TimeUtil.isNowAfterOrCompareTimeStr("0600")) {
                 addChildTask(new ChildModelTask("syncStep", () -> {
                     int step = tmpStepCount();
@@ -185,6 +188,10 @@ public class AntSports extends ModelTask {
                 }));
                 tc.countDebug("同步步数");
             }
+            */
+            sportSyncStepSchedule();
+            tc.countDebug("同步步数");
+
             if (sportsTasks.getValue()) {
                 sportsTasks();                
                 tc.countDebug("运动任务");
@@ -264,6 +271,65 @@ public class AntSports extends ModelTask {
             }
         } catch (Throwable t) {
             Log.error(TAG, "trainMember err:");
+            Log.printStackTrace(TAG, t);
+        }
+    }
+
+
+    /**
+     * 定时同步步数
+     */
+    private void sportSyncStepSchedule() {
+        try {
+            String syncTimeStr = sportSyncTime.getValue();
+            if ("-1".equals(syncTimeStr)) {
+                Log.runtime(TAG, "当前已关闭定时同步步数");
+                return;
+            }
+            
+            Calendar now = TimeUtil.getNow();
+            Calendar syncTimeCalendar = TimeUtil.getTodayCalendarByTimeStr(syncTimeStr);
+            if (syncTimeCalendar == null) {
+                Log.record(TAG, "同步步数时间格式错误，请重新设置");
+                return;
+            }
+            
+            long syncTime = syncTimeCalendar.getTimeInMillis();
+            String syncTaskId = "SYNC_STEP|" + syncTime;
+            
+            boolean afterSyncTime = now.compareTo(syncTimeCalendar) > 0;
+            
+            if (!hasChildTask(syncTaskId) && !afterSyncTime) {
+                addChildTask(new ChildModelTask(syncTaskId, "SYNC_STEP", this::syncStepNow, syncTime));
+                Log.record(TAG, "添加定时同步步数🏃🏻‍♂️[" + UserMap.getCurrentMaskName() + "]在[" + TimeUtil.getCommonDate(syncTime) + "]执行");
+            }
+            
+            if (afterSyncTime) {
+                if (!Status.hasFlagToday("sport::syncStep")) {
+                    syncStepNow();
+                }
+            }
+        } catch (Exception e) {
+            Log.runtime(TAG, "sportSyncStepSchedule err:");
+            Log.printStackTrace(e);
+        }
+    }
+
+    private void syncStepNow() {
+        if (Status.hasFlagToday("sport::syncStep")) {
+            return;
+        }
+        
+        int step = tmpStepCount();
+        try {
+            ClassLoader classLoader = ApplicationHook.getClassLoader();
+            if ((Boolean) XposedHelpers.callMethod(XposedHelpers.callStaticMethod(classLoader.loadClass("com.alibaba.health.pedometer.intergation.rpc.RpcManager"), "a"), "a", new Object[]{step, Boolean.FALSE, "system"})) {
+                Log.other(TAG, "同步步数🏃🏻‍♂️[" + step + "步]");
+            } else {
+                Log.error(TAG, "同步运动步数失败:" + step);
+            }
+            Status.setFlagToday("sport::syncStep");
+        } catch (Throwable t) {
             Log.printStackTrace(TAG, t);
         }
     }
