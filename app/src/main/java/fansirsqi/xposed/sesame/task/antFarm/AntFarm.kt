@@ -1509,7 +1509,8 @@ class AntFarm : ModelTask() {
                 "SHANGOU_xiadan",  //去买秋天第一杯奶茶
                 "HUABEI_MAP_180", //用花呗完成一笔支付
                 "OFFLINE_PAY",  //到店付款,线下支付
-                "ONLINE_PAY"  //在线支付
+                "ONLINE_PAY",  //在线支付
+                "xincun2023"
             )
 
             val badTaskSet = DataStore.getOrCreate<MutableSet<String>>("badFarmTaskSet")
@@ -1525,7 +1526,16 @@ class AntFarm : ModelTask() {
                     val bizKey = task.getString("bizKey")
                     val taskMode = task.optString("taskMode")
                     // 跳过已被屏蔽的任务
-                    if (badTaskSet.contains(bizKey)) continue
+                    // if (badTaskSet.contains(bizKey)) continue
+                    if (badTaskSet.contains(bizKey)) {
+                        Log.runtime(TAG, "跳过屏蔽的任务：$title")
+                        continue
+                    }
+                    // 跳过今日已达上限的任务
+                    if (Status.hasFlagToday("farm::task::limit::$bizKey")) {
+                        Log.runtime(TAG, "达上限的任务：$title")
+                        continue
+                    }
                     if (TaskStatus.TODO.name == taskStatus) {
                         if (!badTaskSet.contains(bizKey)) {
                             if ("VIDEO_TASK" == bizKey) {
