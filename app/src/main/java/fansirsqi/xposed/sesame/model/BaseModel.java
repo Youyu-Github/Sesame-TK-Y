@@ -109,6 +109,16 @@ public class BaseModel extends Model {
     @Getter
     public static final BooleanModelField runtimeLog = new BooleanModelField("runtimeLog", "全部 | 记录runtime日志", false);
     /**
+     * 验证码拦截开关
+     */
+    @Getter
+    public static final BooleanModelField enableCaptchaHook = new BooleanModelField("enableCaptchaHook", "启用验证码拦截", false);
+    /**
+     * 验证码拦截级别
+     */
+    @Getter
+    public static final ChoiceModelField captchaHookLevel = new ChoiceModelField("captchaHookLevel", "验证码拦截级别", CaptchaHookLevel.NORMAL_CAPTCHA, CaptchaHookLevel.nickNames);
+    /**
      * 是否显示气泡提示
      */
     @Getter
@@ -178,6 +188,8 @@ public class BaseModel extends Model {
         modelFields.addField(showToast);//是否显示气泡提示
         modelFields.addField(enableOnGoing);//是否开启状态栏禁删
         modelFields.addField(languageSimplifiedChinese);//是否只显示中文并设置时区
+        modelFields.addField(enableCaptchaHook);//验证码拦截开关
+        modelFields.addField(captchaHookLevel);//验证码拦截级别
         modelFields.addField(toastOffsetY);//气泡提示的纵向偏移量
         return modelFields;
     }
@@ -206,5 +218,14 @@ public class BaseModel extends Model {
         int SYSTEM = 0;
         int PROGRAM = 1;
         String[] nickNames = {"🤖系统计时", "📦程序计时"};
+    }
+
+    /**
+     * 验证码拦截级别选项
+     */
+    public interface CaptchaHookLevel {
+        int NORMAL_CAPTCHA = 0;
+        int SLIDE_CAPTCHA = 1;
+        String[] nickNames = {"🔓普通验证(放行滑块)", "🛡️滑块验证(屏蔽所有)"};
     }
 }

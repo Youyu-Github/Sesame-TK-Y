@@ -255,6 +255,14 @@ public class ApplicationHook {
                 if (hooked) return;
                 appLloadPackageParam = loadPackageParam;
                 classLoader = appLloadPackageParam.getClassLoader();
+                // Hook验证码关闭功能（需要在应用初始化之前就Hook配置写入）
+                try {
+                    CaptchaHook.INSTANCE.hookCaptcha(classLoader);
+                    Log.runtime(TAG, "验证码Hook已启用");
+                } catch (Throwable t) {
+                    Log.runtime(TAG, "验证码Hook启用失败");
+                    Log.printStackTrace(TAG, t);
+                }
                 // 在Hook Application.attach 之前，先 deoptimize LoadedApk.makeApplicationInner
                 try {
                     @SuppressLint("PrivateApi") Class<?> loadedApkClass = classLoader.loadClass("android.app.LoadedApk");
