@@ -3669,26 +3669,32 @@ public class AntForest extends ModelTask {
                     }
                 }
             }
+
+            // 3. 尝试 RUIHE_ENERGY_SHIELD
+            if (jo == null) {
+                Log.record(TAG, "尝试瑞鹤保护罩(RUIHE_ENERGY_SHIELD)...");
+                jo = findPropBag(bagObject, "RUIHE_ENERGY_SHIELD");
+            }
             
-            // 3. 尝试 shubao3rd_ENERGY_SHIELD
+            // 4. 尝试 shubao3rd_ENERGY_SHIELD
             if (jo == null) {
                 Log.record(TAG, "尝试树宝保护罩(shubao3rd_ENERGY_SHIELD)...");
                 jo = findPropBag(bagObject, "shubao3rd_ENERGY_SHIELD");
             }
             
-            // 4. 尝试 ENERGY_SHIELD
+            // 5. 尝试 ENERGY_SHIELD
             if (jo == null) {
                 Log.record(TAG, "尝试普通能量保护罩(ENERGY_SHIELD)...");
                 jo = findPropBag(bagObject, "ENERGY_SHIELD");
             }
 
-            // 5. 最后尝试 PK_SEASON1_ENERGY_SHIELD_TREE
+            // 6. 最后尝试 PK_SEASON1_ENERGY_SHIELD_TREE
             if (jo == null) {
                 Log.record(TAG, "尝试PK赛限定保护罩(PK_SEASON1_ENERGY_SHIELD_TREE)...");
                 jo = findPropBag(bagObject, "PK_SEASON1_ENERGY_SHIELD_TREE");
             }
 
-            // 6. 最后尝试 MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE
+            // 7. 最后尝试 MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE
             if (jo == null) {
                 Log.record(TAG, "尝试敦煌飞天保护罩(MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE)...");
                 jo = findPropBag(bagObject, "MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE");
