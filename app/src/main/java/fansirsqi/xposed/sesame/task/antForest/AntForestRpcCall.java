@@ -921,6 +921,89 @@ public class AntForestRpcCall {
     }
 
     /**
+     * 千里江山图-进入活动
+     */
+    public static String enterDrawActivityQianli(String source) throws JSONException {
+        JSONObject params = new JSONObject();
+        params.put("activityId", "20251024");
+        params.put("requestType", "RPC");
+        params.put("sceneCode", "ANTFOREST_ACTIVITY_DRAW");
+        params.put("source", source);
+        String args = "[" + params + "]";
+        return RequestManager.requestString("com.alipay.antiepdrawprod.enterDrawActivityopengreen", args);
+    }
+
+    /**
+     * 千里江山图-任务列表
+     */
+    public static String listTaskQianli(String sceneCode, String source) throws JSONException {
+        JSONObject params = new JSONObject();
+        params.put("requestType", "RPC");
+        params.put("sceneCode", sceneCode);
+        params.put("source", source);
+        String args = "[" + params + "]";
+        return RequestManager.requestString("com.alipay.antieptask.listTaskopengreen", args);
+    }
+
+    /**
+     * 千里江山图-活力值兑换
+     */
+    public static String exchangeTimesFromTaskQianli(String activityId, String sceneCode, String source, String taskSceneCode, String taskType) throws JSONException {
+        JSONObject params = new JSONObject();
+        params.put("activityId", activityId);
+        params.put("requestType", "RPC");
+        params.put("sceneCode", sceneCode);
+        params.put("source", source);
+        params.put("taskSceneCode", taskSceneCode);
+        params.put("taskType", taskType);
+        String args = "[" + params + "]";
+        return RequestManager.requestString("com.alipay.antiepdrawprod.exchangeTimesFromTaskopengreen", args);
+    }
+
+    /**
+     * 千里江山图-广告任务
+     */
+    public static String finishTask4Qianli(String taskType, String sceneCode) throws JSONException {
+        JSONObject params = new JSONObject();
+        params.put("outBizNo", taskType + RandomUtil.getRandomTag());
+        params.put("requestType", "RPC");
+        params.put("sceneCode", sceneCode);
+        params.put("source", "ADBASICLIB");
+        params.put("taskType", taskType);
+        String args = "[" + params + "]";
+        return RequestManager.requestString("com.alipay.antiep.finishTask", args);
+    }
+
+    /**
+     * 千里江山图-完成任务
+     */
+    public static String finishTaskQianli(String taskType, String sceneCode) throws JSONException {
+        JSONObject params = new JSONObject();
+        params.put("outBizNo", taskType + RandomUtil.getRandomTag());
+        params.put("requestType", "RPC");
+        params.put("sceneCode", sceneCode);
+        params.put("source", "task_entry");
+        params.put("taskType", taskType);
+        String args = "[" + params + "]";
+        return RequestManager.requestString("com.alipay.antieptask.finishTaskopengreen", args);
+    }
+
+    /**
+     * 千里江山图-抽奖
+     */
+    public static String drawQianli(String activityId, String sceneCode, String source, String userId) throws JSONException {
+        JSONObject params = new JSONObject();
+        params.put("activityId", activityId);
+        params.put("requestType", "RPC");
+        params.put("sceneCode", sceneCode);
+        params.put("source", source);
+        params.put("userId", userId);
+        String args = "[" + params + "]";
+        return RequestManager.requestString("com.alipay.antiepdrawprod.drawopengreen", args,
+                "antiepdrawprod", "draw", "DrawRpc");
+    }
+
+    /**
     * 根据道具类型获取道具组
     * @param propType 道具类型
     * @return 道具组
