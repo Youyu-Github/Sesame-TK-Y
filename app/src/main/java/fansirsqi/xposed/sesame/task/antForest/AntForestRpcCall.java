@@ -621,12 +621,22 @@ public class AntForestRpcCall {
         return RequestManager.requestString("alipay.antforest.forest.h5.startWhackMole", "[{\"source\":\"" + source + "\"}]");
     }
 
+    /**
+     * 打单个地鼠
+     */
+    public static String whackMole(long moleId, String token, String source) {
+        return RequestManager.requestString(
+                "alipay.antforest.forest.h5.whackMole",
+                "[{\"moleId\":" + moleId + ",\"source\":\"" + source + "\",\"token\":\"" + token + "\",\"version\":\"" + VERSION + "\"}]");
+    }
+
     public static String settlementWhackMole(String token, List<String> moleIdList, String source) {
         return RequestManager.requestString(
                 "alipay.antforest.forest.h5.settlementWhackMole",
                 "[{\"moleIdList\":["
                         + String.join(",", moleIdList)
-                        + "],\"settlementScene\":\"NORMAL\",\"source\":" + source + ",\"token\":\""
+                        // + "],\"settlementScene\":\"NORMAL\",\"source\":" + source + ",\"token\":\""
+                        + "],\"settlementScene\":\"NORMAL\",\"source\":\"" + source + "\",\"token\":\""
                         + token
                         + "\",\"version\":\""
                         + VERSION

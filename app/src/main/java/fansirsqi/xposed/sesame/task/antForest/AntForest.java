@@ -588,6 +588,10 @@ public class AntForest extends ModelTask {
             collectPKEnergy();
             tc.countDebug("收PK榜森友能量");
 
+            // 检查并处理打地鼠
+            checkAndHandleWhackMole(selfHomeObj);
+            tc.countDebug("开始拼手速");
+
             if (selfHomeObj != null) {
 
                 if (collectWateringBubble.getValue()) {
@@ -1137,6 +1141,7 @@ public class AntForest extends ModelTask {
      *
      * @return 首次收取后用户的能量信息，如果发生错误则返回null。
      */
+    /*
     private JSONObject collectSelfEnergy() {
         try {
 
@@ -1164,6 +1169,33 @@ public class AntForest extends ModelTask {
             Log.printStackTrace(t);
         }
         return null;
+    }
+    */
+    /**
+     * 检查并处理打地鼠逻辑
+     * 
+     * @param selfHomeObj 自己的主页信息
+     */
+    private void checkAndHandleWhackMole(JSONObject selfHomeObj) {
+        try {
+            // 1. 如果开启了自动关闭开关，检查是否需要关闭打地鼠入口
+            if (closeWhackMole != null && closeWhackMole.getValue()) {
+                JSONObject propertiesObject = selfHomeObj.optJSONObject("properties");
+                if (propertiesObject != null && "Y".equals(propertiesObject.optString("whackMoleEntry"))) {
+                    boolean success = WhackMole.closeWhackMole();
+                    Log.record(success ? "✅ 6秒拼手速关闭成功" : "❌ 6秒拼手速关闭失败");
+                }
+            }
+
+            // 2. 如果支付宝强制要求打地鼠（弹窗），则必须执行
+            String nextAction = selfHomeObj.optString("nextAction");
+            if ("WhackMole".equalsIgnoreCase(nextAction)) {
+                Log.record(TAG, "🎮 检测到6秒拼手速强制弹窗，先执行拼手速");
+                WhackMole.startWhackMole();
+            }
+        } catch (Throwable t) {
+            Log.printStackTrace(TAG, t);
+        }
     }
 
 
