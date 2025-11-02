@@ -314,7 +314,9 @@ public class ForestChouChouLe {
             if ("普通森林抽抽乐".equals(activityName)) {
                 presetBad.add("FOREST_NORMAL_DRAW_SHARE");  // 邀请好友任务（屏蔽）
             } else if ("千里江山图".equals(activityName)) {
-                presetBad.add("FOREST_ACTIVITY_DRAW_SHARE");  // 千里江山图邀请好友任务（屏蔽）
+                presetBad.add("FOREST_ACTIVITY_DRAW_SHARE"); // 邀请好友任务（屏蔽）
+                presetBad.add("FOREST_ACTIVITY_DRAW_XSSLXCC");  // 千里江山图邀请好友任务，【限时】玩游戏得新机会（屏蔽）
+                presetBad.add("FOREST_ACTIVITY_DRAW_XSSLLXX");  // 千里江山图邀请好友任务，【限时】玩游戏得新机会（屏蔽）
             }
             // =====================================================
 
