@@ -111,7 +111,7 @@ public class WhackMole {
                         Log.forest("森林能量⚡️[打地鼠:" + moleId + " 能量+" + energy + "g]");
                         // 间隔一小段时间再打下一个
                         if (hitCount < bubbleMoleIds.size()) {
-                            GlobalThreadPools.sleep(200 + (long)(Math.random() * 300));
+                            GlobalThreadPools.sleep(100 + (long)(Math.random() * 201));
                         }
                     }
                 } catch (Throwable t) {
@@ -151,6 +151,7 @@ public class WhackMole {
     /**
      * 关闭6秒拼手速
      */
+    /*
     public static Boolean closeWhackMole() {
         try {
             JSONObject jo = new JSONObject(AntForestRpcCall.closeWhackMole("senlinguangchangdadishu"));
@@ -164,4 +165,5 @@ public class WhackMole {
         }
         return false;
     }
+    */
 }

@@ -301,7 +301,7 @@ public class AntForest extends ModelTask {
         modelFields.addField(collectEnergy = new PriorityModelField("collectEnergy", "收集能量 | 开关", priorityType.CLOSE, priorityType.nickNames));
         modelFields.addField(batchRobEnergy = new BooleanModelField("batchRobEnergy", "一键收取 | 开关", false));
         modelFields.addField(pkEnergy = new BooleanModelField("pkEnergy", "收集PK榜森友能量 | 开关", false));
-        modelFields.addField(closeWhackMole = new BooleanModelField("closeWhackMole", "自动关闭6秒拼手速 | 开关", false));
+        modelFields.addField(closeWhackMole = new BooleanModelField("closeWhackMole", "6秒拼手速 | 开关", false));
         modelFields.addField(energyRain = new BooleanModelField("energyRain", "能量雨 | 开关", false));
         modelFields.addField(dontCollectList = new SelectModelField("dontCollectList", "不收能量 | 配置列表", new LinkedHashSet<>(), AlipayUser::getList));
         modelFields.addField(giveEnergyRainList = new SelectModelField("giveEnergyRainList", "赠送能量雨 | 配置列表", new LinkedHashSet<>(), AlipayUser::getList));
@@ -589,8 +589,8 @@ public class AntForest extends ModelTask {
             tc.countDebug("收PK榜森友能量");
 
             // 检查并处理打地鼠
-            checkAndHandleWhackMole(selfHomeObj);
-            tc.countDebug("开始拼手速");
+            checkAndHandleWhackMole();
+            tc.countDebug("拼手速");
 
             if (selfHomeObj != null) {
 
@@ -1172,26 +1172,23 @@ public class AntForest extends ModelTask {
     }
     */
     /**
-     * 检查并处理打地鼠逻辑
-     * 
-     * @param selfHomeObj 自己的主页信息
+     * 检查并处理6秒拼手速逻辑（每天主动执行一次）
      */
-    private void checkAndHandleWhackMole(JSONObject selfHomeObj) {
+    private void checkAndHandleWhackMole() {
         try {
-            // 1. 如果开启了自动关闭开关，检查是否需要关闭打地鼠入口
-            if (closeWhackMole != null && closeWhackMole.getValue()) {
-                JSONObject propertiesObject = selfHomeObj.optJSONObject("properties");
-                if (propertiesObject != null && "Y".equals(propertiesObject.optString("whackMoleEntry"))) {
-                    boolean success = WhackMole.closeWhackMole();
-                    Log.record(success ? "✅ 6秒拼手速关闭成功" : "❌ 6秒拼手速关闭失败");
+            // 只有开启开关时才执行
+            if (closeWhackMole.getValue()) {
+                String whackMoleFlag = "forest::whackMole::executed";
+                // 检查今天是否已执行过打地鼠
+                if (Status.hasFlagToday(whackMoleFlag)) {
+                    Log.record(TAG, "⏭️ 今天已完成过6秒拼手速，跳过执行");
+                } else {
+                    // 主动执行打地鼠（今日首次）
+                    Log.record(TAG, "🎮 开始执行6秒拼手速（今日首次）");
+                    WhackMole.startWhackMole();
+                    Status.setFlagToday(whackMoleFlag);
+                    Log.record(TAG, "✅ 6秒拼手速已完成，今天不再执行");
                 }
-            }
-
-            // 2. 如果支付宝强制要求打地鼠（弹窗），则必须执行
-            String nextAction = selfHomeObj.optString("nextAction");
-            if ("WhackMole".equalsIgnoreCase(nextAction)) {
-                Log.record(TAG, "🎮 检测到6秒拼手速强制弹窗，先执行拼手速");
-                WhackMole.startWhackMole();
             }
         } catch (Throwable t) {
             Log.printStackTrace(TAG, t);
