@@ -109,6 +109,11 @@ public class BaseModel extends Model {
     @Getter
     public static final BooleanModelField runtimeLog = new BooleanModelField("runtimeLog", "全部 | 记录runtime日志", false);
     /**
+     * 验证码UI层拦截（阻止对话框显示）
+     */
+    @Getter
+    public static final BooleanModelField enableCaptchaUIHook = new BooleanModelField("enableCaptchaUIHook", "拦截VPN弹窗", false);
+    /**
      * 是否显示气泡提示
      */
     @Getter
@@ -155,6 +160,20 @@ public class BaseModel extends Model {
     }
 
     @Override
+    public void boot(ClassLoader classLoader) {
+        // 配置已加载，更新验证码Hook状态
+        try {
+            fansirsqi.xposed.sesame.hook.CaptchaHook.INSTANCE.updateHooks(
+                enableCaptchaUIHook.getValue()
+            );
+            Log.runtime(TAG, "✅ 验证码Hook配置已同步");
+        } catch (Throwable t) {
+            Log.error(TAG, "❌ 验证码Hook配置同步失败");
+            Log.printStackTrace(TAG, t);
+        }
+    }
+
+    @Override
     public ModelFields getFields() {
         ModelFields modelFields = new ModelFields();
         modelFields.addField(stayAwake);//是否保持唤醒状态
@@ -175,6 +194,7 @@ public class BaseModel extends Model {
         modelFields.addField(batteryPerm);//是否申请支付宝的后台运行权限
         modelFields.addField(recordLog);//是否记录record日志
         modelFields.addField(runtimeLog);//是否记录runtime日志
+        modelFields.addField(enableCaptchaUIHook);//验证码UI层拦截
         modelFields.addField(showToast);//是否显示气泡提示
         modelFields.addField(enableOnGoing);//是否开启状态栏禁删
         modelFields.addField(languageSimplifiedChinese);//是否只显示中文并设置时区
