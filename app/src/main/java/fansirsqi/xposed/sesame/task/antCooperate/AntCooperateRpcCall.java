@@ -19,9 +19,34 @@ public class AntCooperateRpcCall {
                         + coopId + "\",\"energyCount\":" + count + ",\"source\":\"\",\"version\":\"" + VERSION
                         + "\"}]");
     }
+
+    /**
+     * 获取真爱合种首页信息
+     */
+    public static String loveHome() {
+        return RequestManager.requestString("alipay.greenmatrix.rpc.h5.love.loveHome", "[{\"source\":\"chInfo_ch_appcenter__chsub_9patch\"}]");
+    }
+
+    /**
+     * 真爱合种浇水
+     * @param teamId 队伍ID
+     * @param count 浇水能量
+     */
+    public static String loveTeamWater(String teamId, int count) {
+        return RequestManager.requestString("alipay.greenmatrix.rpc.h5.love.teamWater",
+                "[{\"donateNum\":" + count + ",\"source\":\"chInfo_ch_appcenter__chsub_9patch\",\"teamId\":\"" + teamId + "\"}]");
+    }
+
+    /**
+     * 获取真爱合种森林首页信息（备用方法）
+     */
+    public static String loveForestHome() {
+        return RequestManager.requestString("alipay.greenmatrix.rpc.h5.love.loveForestHome", "[{\"source\":\"chInfo_ch_appcenter__chsub_9patch\"}]");
+    }
+
     /**
      * 获取合种浇水量排行
-     * @param bizType 参数：D/A,“D”为查询当天，“A”为查询所有
+     * @param bizType 参数：D/A,"D"为查询当天，"A"为查询所有
      * @param coopId 合种ID
      * @return
      */
@@ -49,5 +74,4 @@ public class AntCooperateRpcCall {
         return  RequestManager.requestString("alipay.antmember.forest.h5.sendCooperateBeckon",
                 new JSONArray().put(jo).toString());
     }
-
 }

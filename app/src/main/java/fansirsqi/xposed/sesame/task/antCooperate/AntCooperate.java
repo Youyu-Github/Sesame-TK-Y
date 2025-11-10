@@ -12,6 +12,7 @@ import fansirsqi.xposed.sesame.model.ModelFields;
 import fansirsqi.xposed.sesame.model.ModelGroup;
 import fansirsqi.xposed.sesame.model.modelFieldExt.BooleanModelField;
 import fansirsqi.xposed.sesame.model.modelFieldExt.SelectAndCountModelField;
+import fansirsqi.xposed.sesame.model.modelFieldExt.IntegerModelField;
 import fansirsqi.xposed.sesame.task.ModelTask;
 import fansirsqi.xposed.sesame.task.TaskCommon;
 import fansirsqi.xposed.sesame.util.GlobalThreadPools;
@@ -57,14 +58,22 @@ public class AntCooperate extends ModelTask {
         return "AntCooperate.png";
     }
 
+    // 新增真爱合种字段
+    private final BooleanModelField loveCooperateWater = new BooleanModelField("loveCooperateWater", "真爱合种浇水|开启", false);
+    private final IntegerModelField loveCooperateWaterCount = new IntegerModelField("loveCooperateWaterCount", "真爱合种浇水能量(g)", 20, 20, 100000);
     private final BooleanModelField cooperateWater = new BooleanModelField("cooperateWater", "合种浇水|开启", false);
     private final SelectAndCountModelField cooperateWaterList = new SelectAndCountModelField("cooperateWaterList", "合种浇水列表", new LinkedHashMap<>(), CooperateEntity.Companion.getList(), "开启合种浇水后执行一次重载");
     private final SelectAndCountModelField cooperateWaterTotalLimitList = new SelectAndCountModelField("cooperateWaterTotalLimitList", "浇水总量限制列表", new LinkedHashMap<>(), CooperateEntity.Companion.getList());
     private final BooleanModelField cooperateSendCooperateBeckon = new BooleanModelField("cooperateSendCooperateBeckon", "合种 | 召唤队友浇水| 仅队长 ", false);
-
+    
+    
     @Override
     public ModelFields getFields() {
         ModelFields modelFields = new ModelFields();
+        // 新增真爱合种字段
+        modelFields.addField(loveCooperateWater);
+        modelFields.addField(loveCooperateWaterCount);
+        
         modelFields.addField(cooperateWater);
         modelFields.addField(cooperateWaterList);
         modelFields.addField(cooperateWaterTotalLimitList);
@@ -97,6 +106,13 @@ public class AntCooperate extends ModelTask {
     public void run() {
         try {
             Log.record(TAG, "执行开始-" + getName());
+
+            // 真爱合种浇水逻辑（优先执行）
+            if (loveCooperateWater.getValue()) {
+                runLoveCooperateWater();
+            }
+
+            // 普通合种浇水逻辑
             if (cooperateWater.getValue()) {
                 String s = AntCooperateRpcCall.queryUserCooperatePlantList();
                 JSONObject jo = new JSONObject(s);
@@ -166,6 +182,106 @@ public class AntCooperate extends ModelTask {
         }
     }
 
+    /**
+     * 执行真爱合种浇水
+     */
+    private void runLoveCooperateWater() {
+        try {
+            Log.runtime(TAG, "开始执行真爱合种浇水");
+
+            // 获取真爱合种首页信息
+            String loveHomeResponse = AntCooperateRpcCall.loveHome();
+            JSONObject loveHomeJo = new JSONObject(loveHomeResponse);
+
+            if (ResChecker.checkRes(TAG, loveHomeJo)) {
+                JSONObject teamInfo = loveHomeJo.getJSONObject("teamInfo");
+                String teamId = teamInfo.getString("teamId");
+                String teamStatus = teamInfo.getString("teamStatus");
+
+                if (!"ACTIVATED".equals(teamStatus)) {
+                    Log.runtime(TAG, "真爱合种队伍状态异常: " + teamStatus);
+                    return;
+                }
+
+                // 检查今日是否已浇水
+                JSONObject waterInfo = teamInfo.getJSONObject("waterInfo");
+                JSONObject todayWaterMap = waterInfo.getJSONObject("todayWaterMap");
+                String currentUserId = UserMap.getCurrentUid();
+
+                if (todayWaterMap.has(currentUserId) && todayWaterMap.getInt(currentUserId) > 0) {
+                    Log.runtime(TAG, "真爱合种今日已浇水💦");
+                    return;
+                }
+
+                // 获取用户设置的能量值（直接获取数字）
+                int waterCount = loveCooperateWaterCount.getValue();
+
+                // IntegerModelField 已经保证了最小值20，这里不需要再检查
+                // 但为了保险，还是加一个日志
+                Log.runtime(TAG, "真爱合种浇水能量: " + waterCount + "g");
+
+                // 检查用户当前能量是否足够
+                int userCurrentEnergy = getCurrentEnergy();
+                if (userCurrentEnergy < waterCount) {
+                    Log.runtime(TAG, "当前能量不足，无法进行真爱合种浇水。当前能量: " + userCurrentEnergy + "g，需要: " + waterCount + "g");
+                    return;
+                }
+
+                // 执行真爱合种浇水
+                loveCooperateWater(teamId, waterCount);
+
+            } else {
+                Log.error(TAG, "获取真爱合种信息失败: " + loveHomeJo.getString("resultDesc"));
+            }
+
+        } catch (Throwable t) {
+            Log.runtime(TAG, "runLoveCooperateWater err:");
+            Log.printStackTrace(TAG, t);
+        }
+    }
+
+    /**
+     * 获取用户当前能量
+     */
+    private int getCurrentEnergy() {
+        try {
+            String indexResponse = AntCooperateRpcCall.queryUserCooperatePlantList();
+            JSONObject jo = new JSONObject(indexResponse);
+            if (ResChecker.checkRes(TAG, jo)) {
+                return jo.getInt("userCurrentEnergy");
+            }
+        } catch (Throwable t) {
+            Log.runtime(TAG, "getCurrentEnergy err:");
+            Log.printStackTrace(TAG, t);
+        }
+        return 0;
+    }
+
+    /**
+     * 真爱合种浇水
+     */
+    private static void loveCooperateWater(String teamId, int count) {
+        try {
+            String s = AntCooperateRpcCall.loveTeamWater(teamId, count);
+            JSONObject jo = new JSONObject(s);
+            if (ResChecker.checkRes(TAG, jo)) {
+                Log.forest("真爱合种浇水💖[" + count + "g]成功");
+                // 记录浇水状态，避免重复浇水
+                Status.cooperateWaterToday(UserMap.getCurrentUid(), "love_" + teamId);
+            } else {
+                Log.runtime(TAG, "真爱合种浇水失败: " + jo.getString("resultDesc"));
+            }
+        } catch (Throwable t) {
+            Log.runtime(TAG, "loveCooperateWater err:");
+            Log.printStackTrace(TAG, t);
+        } finally {
+            GlobalThreadPools.sleep(1500);
+        }
+    }
+
+    /**
+     * 普通合种浇水
+     */
     private static void cooperateWater(String coopId, int count, String name) {
         try {
             String s = AntCooperateRpcCall.cooperateWater(UserMap.getCurrentUid(), coopId, count);
