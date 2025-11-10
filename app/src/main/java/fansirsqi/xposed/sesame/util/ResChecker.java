@@ -54,6 +54,8 @@ public class ResChecker {
                     memo.contains("今日助力次数已用完") ||
                     memo.contains("TA的小摊已被请走") ||
                     memo.contains("收摊成功，快回我的新村看看吧") ||
+                    memo.contains("快回我的新村看看吧") ||
+                    memo.contains("蚂蚁新村收摊失败") ||
                     memo.contains("不支持rpc完成的任务") ||
                     memo.contains("饲料槽已满") ||
                     memo.contains("手速太快")) {
