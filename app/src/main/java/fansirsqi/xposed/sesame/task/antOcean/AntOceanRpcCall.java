@@ -233,4 +233,79 @@ public class AntOceanRpcCall {
         }
         return null;
     }
+
+    /**
+     * 创建海洋收集挑战（限时挑战）
+     */
+    /*public static String createSeaAreaExtraCollect() {
+        return RequestManager.requestString("alipay.antocean.ocean.h5.createSeaAreaExtraCollect",
+           "[{\"source\":\"chInfo_ch_appcenter__chsub_9patch\",\"uniqueId\":\"" + getUniqueId() + "\"}]");
+    }*/
+    /**
+     * 创建或获取海洋收集挑战（限时挑战）
+     */
+    public static String createSeaAreaExtraCollect() {
+        try {
+            JSONObject param = new JSONObject();
+            param.put("source", "chInfo_ch_appcenter__chsub_9patch");
+            param.put("uniqueId", getUniqueId());
+            
+            JSONArray params = new JSONArray();
+            params.put(param);
+            
+            return RequestManager.requestString(
+                "alipay.antocean.ocean.h5.createSeaAreaExtraCollect",
+                params.toString()
+            );
+        } catch (Exception e) {
+            Log.printStackTrace("AntOceanRpcCall", e);
+            return "{}";
+        }
+    }
+
+    /**
+     * 查询鱼类详情
+     */
+    public static String queryFishDetail(String fishId) {
+        try {
+            JSONObject param = new JSONObject();
+            param.put("fishId", fishId);
+            param.put("source", "chInfo_ch_appcenter__chsub_9patch");
+            param.put("uniqueId", getUniqueId());
+            
+            JSONArray params = new JSONArray();
+            params.put(param);
+            
+            return RequestManager.requestString(
+                "alipay.antocean.ocean.h5.queryFishDetail", 
+                params.toString()
+            );
+        } catch (Exception e) {
+            Log.printStackTrace("AntOceanRpcCall", e);
+            return "{}";
+        }
+    }
+
+    /**
+     * 合成鱼类（限时挑战专用）
+     */
+    public static String newcombineFish(String fishId) {
+        try {
+            JSONObject param = new JSONObject();
+            param.put("fishId", fishId);
+            param.put("source", "chInfo_ch_appcenter__chsub_9patch");
+            param.put("uniqueId", getUniqueId());
+            
+            JSONArray params = new JSONArray();
+            params.put(param);
+            
+            return RequestManager.requestString(
+                "alipay.antocean.ocean.h5.combineFish", 
+                params.toString()
+            );
+        } catch (Exception e) {
+            Log.printStackTrace("AntOceanRpcCall", e);
+            return "{}";
+        }
+    }
 }

@@ -58,6 +58,7 @@ public class ResChecker {
                     memo.contains("蚂蚁新村收摊失败") ||
                     memo.contains("不支持rpc完成的任务") ||
                     memo.contains("饲料槽已满") ||
+                    memo.contains("已经在限时挑战玩法里啦") ||
                     memo.contains("手速太快")) {
                 return false; // 返回false，但不打印错误日志
             }

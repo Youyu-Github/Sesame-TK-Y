@@ -145,6 +145,11 @@ public class AntOcean extends ModelTask {
     private BooleanModelField PDL_task;
 
     /**
+     * 神奇海洋 | 限时挑战
+     */
+    private BooleanModelField extraCollectChallenge;
+
+    /**
      * 保护类型
      */
     private static ChoiceModelField userprotectType;
@@ -170,6 +175,7 @@ public class AntOcean extends ModelTask {
         modelFields.addField(cleanOceanList = new SelectModelField("cleanOceanList", "清理 | 好友列表", new LinkedHashSet<>(), AlipayUser::getList));
         modelFields.addField(exchangeProp = new BooleanModelField("exchangeProp", "神奇海洋 | 制作万能拼图", false));
         modelFields.addField(usePropByType = new BooleanModelField("usePropByType", "神奇海洋 | 使用万能拼图", false));
+        modelFields.addField(extraCollectChallenge = new BooleanModelField("extraCollectChallenge", "神奇海洋 | 限时挑战", false));
         modelFields.addField(userprotectType = new ChoiceModelField("userprotectType", "保护 | 类型", protectType.DONT_PROTECT, protectType.nickNames));
         modelFields.addField(protectOceanList = new SelectAndCountModelField("protectOceanList", "保护 | 海洋列表", new LinkedHashMap<>(), AlipayBeach::getList));
         modelFields.addField(PDL_task = new BooleanModelField("PDL_task", "潘多拉任务", false));
@@ -206,6 +212,11 @@ public class AntOcean extends ModelTask {
                 return;
             }
             queryHomePage();
+            // 限时挑战
+            if (extraCollectChallenge.getValue()) {
+                doExtraCollectChallenge();
+            }
+            
             if (dailyOceanTask.getValue()) {
                 receiveTaskAward();//日常任务
             }
@@ -328,12 +339,26 @@ public class AntOcean extends ModelTask {
                         ipOpenSurprise();
                     }
                 }
+                
+                // 修复：检查是否有额外的收集挑战 - 从 displaySeaAreaVO 中获取
+                if (joHomePage.has("displaySeaAreaVO")) {
+                    JSONObject displaySeaAreaVO = joHomePage.getJSONObject("displaySeaAreaVO");
+                    if (displaySeaAreaVO.has("seaAreaExtraCollectVO")) {
+                        JSONObject extraCollectVO = displaySeaAreaVO.getJSONObject("seaAreaExtraCollectVO");
+                        String status = extraCollectVO.optString("status", "");
+                        if ("COLLECTING".equals(status) && extraCollectChallenge.getValue()) {
+                            Log.record(TAG, "检测到进行中的限时挑战");
+                            // 使用现有的 DataCache 保存限时挑战数据
+                            DataCache.INSTANCE.saveData("currentExtraCollectVO", extraCollectVO.toString());
+                            doExtraCollectChallenge();
+                        }
+                    }
+                }
+                
                 queryMiscInfo();
-
                 queryReplicaHome();
                 queryUserRanking(); //清理
                 querySeaAreaDetailList();
-
 
             } else {
                 Log.runtime(TAG, joHomePage.getString("resultDesc"));
@@ -399,6 +424,215 @@ public class AntOcean extends ModelTask {
             Log.printStackTrace(TAG, t);
         }
     }
+
+    /**
+     * 执行限时挑战
+     */
+    private void doExtraCollectChallenge() {
+        try {
+            Log.record(TAG, "开始执行限时挑战");
+
+            JSONObject seaAreaExtraCollectVO = null;
+            
+            // 首先尝试从 DataCache 中获取限时挑战数据
+            String cachedExtraCollect = DataCache.INSTANCE.getData("currentExtraCollectVO", (String) null);
+            if (cachedExtraCollect != null) {
+                try {
+                    seaAreaExtraCollectVO = new JSONObject(cachedExtraCollect);
+                    Log.record(TAG, "从 DataCache 中获取限时挑战数据");
+                } catch (JSONException e) {
+                    Log.record(TAG, "DataCache 中的限时挑战数据格式错误");
+                }
+            }
+            
+            // 如果 DataCache 中没有，尝试创建或获取限时挑战
+            if (seaAreaExtraCollectVO == null) {
+                String createResponse = AntOceanRpcCall.createSeaAreaExtraCollect();
+                JSONObject createJson = new JSONObject(createResponse);
+
+                if (!ResChecker.checkRes(TAG + "创建限时挑战失败:", createJson)) {
+                    String resultCode = createJson.optString("resultCode", "");
+                    String resultDesc = createJson.optString("resultDesc", "");
+
+                    // 检查是否是"已经存在挑战"的错误
+                    if ("SEA_AREA_EXTRA_COLLECT_EXISTED".equals(resultCode) || 
+                        resultDesc.contains("已经存在") || 
+                        resultDesc.contains("已存在")) {
+                        Log.record(TAG, "限时挑战已存在，继续执行: " + resultDesc);
+                        // 尝试从响应中获取挑战数据
+                        seaAreaExtraCollectVO = createJson.optJSONObject("seaAreaExtraCollectVO");
+                    } else {
+                        Log.record(TAG, "创建限时挑战失败: " + resultDesc);
+                        return;
+                    }
+                } else {
+                    // 创建成功，获取挑战数据
+                    seaAreaExtraCollectVO = createJson.optJSONObject("seaAreaExtraCollectVO");
+                }
+            }
+
+            if (seaAreaExtraCollectVO == null) {
+                Log.record(TAG, "未找到限时挑战数据");
+                return;
+            }
+
+            String status = seaAreaExtraCollectVO.optString("status", "");
+            if (!"COLLECTING".equals(status)) {
+                Log.record(TAG, "当前没有进行中的限时挑战，状态: " + status);
+                return;
+            }
+
+            // 获取挑战信息
+            int fishCount = seaAreaExtraCollectVO.optInt("fishCount", 0);
+            JSONArray fishVOs = seaAreaExtraCollectVO.optJSONArray("fishVO");
+
+            Log.record("神奇海洋🌊[限时挑战]开始，共有" + fishCount + "种海洋生物需要收集");
+
+            if (fishVOs == null || fishVOs.length() == 0) {
+                Log.record(TAG, "限时挑战中没有找到海洋生物数据");
+                return;
+            }
+
+            // 处理限时挑战中的鱼类合成
+            boolean allCompleted = processExtraCollectFish(fishVOs);
+
+            if (allCompleted) {
+                Log.record("神奇海洋🌊[限时挑战]所有海洋生物收集完成！");
+                // 挑战完成后清理缓存
+                DataCache.INSTANCE.removeData("currentExtraCollectVO");
+            } else {
+                Log.record(TAG, "神奇海洋🌊[限时挑战]部分海洋生物尚未完成，请通过日常任务获取拼图");
+            }
+        } catch (Throwable t) {
+            Log.runtime(TAG, "doExtraCollectChallenge err:");
+            Log.printStackTrace(TAG, t);
+        }
+    }
+
+
+    /**
+     * 查询鱼类详情来判断拼图是否集齐
+     */
+    private boolean isFishPuzzleComplete(String fishId) {
+        try {
+            String fishDetailResponse = AntOceanRpcCall.queryFishDetail(fishId);
+            JSONObject fishDetailJson = new JSONObject(fishDetailResponse);
+            
+            if (ResChecker.checkRes(TAG + "查询鱼类详情失败:", fishDetailJson)) {
+                JSONObject fishDetailVO = fishDetailJson.optJSONObject("fishDetailVO");
+                if (fishDetailVO != null) {
+                    String status = fishDetailVO.optString("status", "");
+                    return "COMPLETED".equals(status);
+                }
+            }
+        } catch (Throwable t) {
+            Log.runtime(TAG, "isFishPuzzleComplete err:");
+            Log.printStackTrace(TAG, t);
+        }
+        return false;
+    }
+
+    /**
+     * 处理限时挑战中的海洋生物收集和合成
+     */
+    private boolean processExtraCollectFish(JSONArray fishVOs) {
+        return processExtraCollectFish(fishVOs, new HashSet<>());
+    }
+
+    private boolean processExtraCollectFish(JSONArray fishVOs, Set<String> processedFish) {
+        try {
+            boolean allCompleted = true;
+            boolean hasCombined = false;
+
+            for (int i = 0; i < fishVOs.length(); i++) {
+                JSONObject fish = fishVOs.getJSONObject(i);
+                String fishId = fish.getString("id");
+                String fishName = fish.getString("name");
+                boolean isUnlocked = fish.getBoolean("unlock");
+
+                // 避免重复处理同一条鱼
+                if (processedFish.contains(fishId)) {
+                    continue;
+                }
+                processedFish.add(fishId);
+
+                if (isUnlocked) {
+                    Log.record(TAG, "海洋生物[" + fishName + "]已合成完成");
+                    continue;
+                }
+
+                allCompleted = false;
+
+                // 获取鱼类状态
+                String fishStatus = getFishStatus(fishId);
+                
+                if ("COMPLETED".equals(fishStatus)) {
+                    Log.record(TAG, "海洋生物[" + fishName + "]拼图已集齐，开始合成");
+
+                    String combineResponse = AntOceanRpcCall.newcombineFish(fishId);
+                    JSONObject combineJson = new JSONObject(combineResponse);
+
+                    if (ResChecker.checkRes(TAG + "合成海洋生物失败:", combineJson)) {
+                        // 从响应中获取详细的鱼类信息
+                        JSONObject fishDetailVO = combineJson.optJSONObject("fishDetailVO");
+                        String actualFishName = fishName;
+                        if (fishDetailVO != null) {
+                            actualFishName = fishDetailVO.optString("name", fishName);
+                        }
+
+                        Log.forest("神奇海洋🌊[限时挑战]合成[" + actualFishName + "]成功");
+                        hasCombined = true;
+                        
+                        // 合成成功后，标记为已完成
+                        fish.put("unlock", true);
+
+                    } else {
+                        // 详细记录合成失败信息
+                        String resultDesc = combineJson.optString("resultDesc", "未知错误");
+                        Log.record(TAG, "合成海洋生物[" + fishName + "]失败: " + resultDesc);
+                    }
+                } else if ("UNCOMPLETED".equals(fishStatus)) {
+                    Log.record(TAG, "海洋生物[" + fishName + "]拼图尚未集齐，状态: " + fishStatus);
+                } else if ("OBTAINED".equals(fishStatus)) {
+                    Log.record(TAG, "海洋生物[" + fishName + "]已合成但状态未更新，更新状态");
+                    fish.put("unlock", true);
+                } else {
+                    Log.record(TAG, "海洋生物[" + fishName + "]未知状态: " + fishStatus);
+                }
+
+                GlobalThreadPools.sleep(1000);
+            }
+
+            return allCompleted;
+
+        } catch (Throwable t) {
+            Log.runtime(TAG, "processExtraCollectFish err:");
+            Log.printStackTrace(TAG, t);
+            return false;
+        }
+    }
+
+    /**
+     * 获取鱼类状态
+     */
+    private String getFishStatus(String fishId) {
+        try {
+            String fishDetailResponse = AntOceanRpcCall.queryFishDetail(fishId);
+            JSONObject fishDetailJson = new JSONObject(fishDetailResponse);
+            
+            if (ResChecker.checkRes(TAG + "查询鱼类详情失败:", fishDetailJson)) {
+                JSONObject fishDetailVO = fishDetailJson.optJSONObject("fishDetailVO");
+                if (fishDetailVO != null) {
+                    return fishDetailVO.optString("status", "UNCOMPLETED");
+                }
+            }
+        } catch (Throwable t) {
+            Log.runtime(TAG, "getFishStatus err:");
+            Log.printStackTrace(TAG, t);
+        }
+        return "UNCOMPLETED";
+    }
+
 
     private static void cleanOcean(String userId, int rubbishNumber) {
         try {
