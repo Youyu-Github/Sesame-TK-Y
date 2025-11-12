@@ -68,7 +68,7 @@ public class AnswerAI extends Model {
     private final TextModelField.UrlTextModelField getTongyiAIToken = new TextModelField.UrlTextModelField("getTongyiAIToken", "通义千问 | 获取令牌", "https://help.aliyun.com/zh/dashscope/developer-reference/acquisition-and-configuration-of-api-key");
     private final StringModelField tongYiToken = new StringModelField("tongYiToken", "qwen-turbo | 设置令牌", "");
     private final TextModelField.UrlTextModelField getGeminiAIToken = new TextModelField.UrlTextModelField("getGeminiAIToken", "Gemini | 获取令牌", "https://aistudio.google.com/app/apikey");
-    private final StringModelField GeminiToken = new StringModelField("GeminiAIToken", "gemini-1.5-flash | 设置令牌", "");
+    private final StringModelField GeminiToken = new StringModelField("GeminiAIToken", "gemini-2.5-flash | 设置令牌", "");
     private final TextModelField.UrlTextModelField getDeepSeekToken = new TextModelField.UrlTextModelField("getDeepSeekToken", "DeepSeek | 获取令牌", "https://platform.deepseek.com/usage");
     private final StringModelField DeepSeekToken = new StringModelField("DeepSeekToken", "DeepSeek-R1 | 设置令牌", "");
     private final TextModelField.ReadOnlyTextModelField getCustomServiceToken = new TextModelField.ReadOnlyTextModelField("getCustomServiceToken", "粉丝福利😍", "下面这个不用动可以白嫖到3月10号让我们感谢讯飞大善人🙏");
