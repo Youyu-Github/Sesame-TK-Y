@@ -65,9 +65,9 @@ jobs:
       - name: 将 APK 复制到暂存阶段以便签名
         run: |
           mkdir -p app/build/outputs/apk/all
-          cp "${{ steps.locate_apks.outputs.arm64_apk }}" app/build/outputs/apk/all/
-          cp "${{ steps.locate_apks.outputs.armv7_apk }}" app/build/outputs/apk/all/
-          cp "${{ steps.locate_apks.outputs.universal_apk }}" app/build/outputs/apk/all/
+          [ -n "${{ steps.locate_apks.outputs.arm64_apk }}" ] && cp "${{ steps.locate_apks.outputs.arm64_apk }}" app/build/outputs/apk/all/ || echo "arm64 APK 未找到"
+          [ -n "${{ steps.locate_apks.outputs.armv7_apk }}" ] && cp "${{ steps.locate_apks.outputs.armv7_apk }}" app/build/outputs/apk/all/ || echo "armv7 APK 未找到"
+          [ -n "${{ steps.locate_apks.outputs.universal_apk }}" ] && cp "${{ steps.locate_apks.outputs.universal_apk }}" app/build/outputs/apk/all/ || echo "universal APK 未找到"
 
       - name: 签名 APK 文件
         id: sign_apks
@@ -96,53 +96,92 @@ jobs:
           done
 
       - name: 更新安装包 - arm64-v8a
+        if: steps.extract_apks.outputs.signed_arm64 != ''
         uses: actions/upload-artifact@v4
         with:
           name: apk-arm64-v8a
           path: ${{ steps.extract_apks.outputs.signed_arm64 }}
 
       - name: 更新安装包 - armeabi-v7a
+        if: steps.extract_apks.outputs.signed_armv7 != ''
         uses: actions/upload-artifact@v4
         with:
           name: apk-armeabi-v7a
           path: ${{ steps.extract_apks.outputs.signed_armv7 }}
 
       - name: 更新安装包 - universal
+        if: steps.extract_apks.outputs.signed_universal != ''
         uses: actions/upload-artifact@v4
         with:
           name: apk-universal
           path: ${{ steps.extract_apks.outputs.signed_universal }}
 
-      - name: 提取文件名
+      - name: 提取版本信息
         id: extract_info
         run: |
-          arm64_file=$(basename "${{ steps.extract_apks.outputs.signed_arm64 }}")
-          armv7_file=$(basename "${{ steps.extract_apks.outputs.signed_armv7 }}")
-          universal_file=$(basename "${{ steps.extract_apks.outputs.signed_universal }}")
-          # 更新版本号提取逻辑
-          version=$(echo "$arm64_file" | sed -E 's/.*-(arm64-v8a)-(v[^-]+).*-signed\.apk/\2/')
-          echo "arm64_file=$arm64_file" >> $GITHUB_OUTPUT
-          echo "armv7_file=$armv7_file" >> $GITHUB_OUTPUT
-          echo "universal_file=$universal_file" >> $GITHUB_OUTPUT
+          # 从任意一个APK文件名中提取版本号
+          if [ -n "${{ steps.extract_apks.outputs.signed_arm64 }}" ]; then
+            file="${{ steps.extract_apks.outputs.signed_arm64 }}"
+          elif [ -n "${{ steps.extract_apks.outputs.signed_armv7 }}" ]; then
+            file="${{ steps.extract_apks.outputs.signed_armv7 }}"
+          elif [ -n "${{ steps.extract_apks.outputs.signed_universal }}" ]; then
+            file="${{ steps.extract_apks.outputs.signed_universal }}"
+          else
+            echo "未找到任何APK文件"
+            exit 1
+          fi
+          
+          filename=$(basename "$file")
+          echo "filename=$filename" >> $GITHUB_OUTPUT
+          
+          # 改进版本号提取 - 支持包含预发布标识符的版本号
+          # 匹配类似 v0.2.8.rc9999 或 v0.2.8 的格式
+          if [[ "$filename" =~ (v[0-9]+\.[0-9]+\.[0-9]+(\.[a-zA-Z0-9]+)?) ]]; then
+            version="${BASH_REMATCH[1]}"
+          else
+            # 如果正则匹配失败，尝试基于文件名结构提取
+            # 移除架构部分和-signed.apk后缀，提取中间部分作为版本号
+            temp_version=$(echo "$filename" | sed -E 's/.*-(arm64-v8a|armeabi-v7a|universal)-(.*)-signed\.apk/\2/')
+            if [ "$temp_version" != "$filename" ]; then
+              version="$temp_version"
+            else
+              # 最终回退方案
+              version="v0.2.8"
+              echo "警告：无法从文件名提取版本号，使用默认值: $version"
+            fi
+          fi
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "提取的版本号: $version"
+          
+          # 同时提取基础版本号（不含预发布标识符）
+          if [[ "$version" =~ (v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            base_version="${BASH_REMATCH[1]}"
+          else
+            base_version="$version"
+          fi
+          echo "base_version=$base_version" >> $GITHUB_OUTPUT
+          echo "基础版本号: $base_version"
 
       - name: 生成sha256校验值
         run: |
-          # 更新Checksum文件名
-          sha256sum ${{ steps.extract_apks.outputs.signed_arm64 }} > CHECKSUMS-Sesame-Y-arm64-v8a-${{ steps.extract_info.outputs.version }}.apk.sha256
-          sha256sum ${{ steps.extract_apks.outputs.signed_armv7 }} > CHECKSUMS-Sesame-Y-armeabi-v7a-${{ steps.extract_info.outputs.version }}.apk.sha256
-          sha256sum ${{ steps.extract_apks.outputs.signed_universal }} > CHECKSUMS-Sesame-Y-universal-${{ steps.extract_info.outputs.version }}.apk.sha256
+          # 更新Checksum文件名，使用提取的版本号
+          [ -n "${{ steps.extract_apks.outputs.signed_arm64 }}" ] && sha256sum "${{ steps.extract_apks.outputs.signed_arm64 }}" > "CHECKSUMS-Sesame-TK-Y-arm64-v8a-${{ steps.extract_info.outputs.version }}-signed.apk.sha256"
+          [ -n "${{ steps.extract_apks.outputs.signed_armv7 }}" ] && sha256sum "${{ steps.extract_apks.outputs.signed_armv7 }}" > "CHECKSUMS-Sesame-TK-Y-armeabi-v7a-${{ steps.extract_info.outputs.version }}-signed.apk.sha256"
+          [ -n "${{ steps.extract_apks.outputs.signed_universal }}" ] && sha256sum "${{ steps.extract_apks.outputs.signed_universal }}" > "CHECKSUMS-Sesame-TK-Y-universal-${{ steps.extract_info.outputs.version }}-signed.apk.sha256"
 
-      - name: 获取提交详细信息
-        # if: startsWith(github.ref, 'refs/heads/main') && github.event_name == 'push'
-        if: github.event_name == 'push'
+      - name: 创建并推送 Git 标签
+        # if: github.ref == 'refs/heads/main'
         run: |
-          VERSION_TAG="v${{ steps.extract_info.outputs.version }}"
-          echo "Creating tag: $VERSION_TAG"
-          git tag "$VERSION_TAG"
-          git push origin "$VERSION_TAG"
+          VERSION_TAG="${{ steps.extract_info.outputs.version }}"  # 使用完整版本号
+          echo "创建/更新标签: $VERSION_TAG"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          # 使用 PAT 后，可以直接推送标签
+          git tag -f "$VERSION_TAG"
+          git push origin -f "$VERSION_TAG"
 
       - name: 向TG发送组合消息（APK 和 说明）
-        # if: github.ref == 'refs/heads/main'
+        # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           CHANNEL_ID: ${{ secrets.TG_CHAT_ID }}
           BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
@@ -150,10 +189,11 @@ jobs:
           ARMV7_FILE: ${{ steps.extract_apks.outputs.signed_armv7 }}
           UNIVERSAL_FILE: ${{ steps.extract_apks.outputs.signed_universal }}
           COMMIT_MESSAGE: |+
-            🚀 *Github 新版本发布！*         
+            🚀 *Github 新版本发布！*
+            📦 *版本号：${{ steps.extract_info.outputs.version }}*
             ```TXT
             ⚠️注意
-            从官方或其他作者版本切换至此非官方版本时，请务必删除 `UID` 目录下的 `config_v2.json` 文件（无需删除整个 `TK` 文件夹），否则可能导致优先级设置不生效或运行错乱
+            从官方或其他作者版本切换至此非官方版本时，请务必先备份 Sesame-TK 再删除 Sesame-TK 文件夹，否则可能导致优先级设置不生效或运行错乱
             7点整到40分，这个时间段只能运行循环收能量，不干其他事
 
             📋更新日志：
@@ -164,45 +204,94 @@ jobs:
             ```Branch: `${{ github.ref_name }}`
             *蹲点收能量版*
             📥 *下载说明:*
-              <b>- arm64-v8a:</b> 适用于64位设备 (主流新设备)
-              <b>- armeabi-v7a:</b> 适用于32位设备 (旧设备)
-              <b>- universal:</b> 通用版，包含所有架构 (体积较大)
+              *- arm64-v8a:* 适用于64位设备 (主流新设备)
+              *- armeabi-v7a:* 适用于32位设备 (旧设备)
+              *- universal:* 通用版，包含所有架构 (体积较大)
         run: |
-          ESCAPED=$(python3 -c 'import json, os, urllib.parse; print(urllib.parse.quote(json.dumps(os.environ["COMMIT_MESSAGE"])))')
-
-          # 【已修正】确保 media JSON 数组包含所有三个文件
-          curl -v "https://api.telegram.org/bot${BOT_TOKEN}/sendMediaGroup" \
-          -F "chat_id=${CHANNEL_ID}" \
-          -F "media=[{\"type\":\"document\",\"media\":\"attach://arm64.apk\",\"parse_mode\":\"HTML\",\"caption\":${ESCAPED}},{\"type\":\"document\",\"media\":\"attach://armv7.apk\"},{\"type\":\"document\",\"media\":\"attach://universal.apk\"}]" \
-          -F "arm64.apk=@${ARM64_FILE}" \
-          -F "armv7.apk=@${ARMV7_FILE}" \
-          -F "universal.apk=@${UNIVERSAL_FILE}"
-      
+          # 构建媒体文件数组
+          media_parts=()
+          files=()
+          
+          if [ -n "$ARM64_FILE" ] && [ -f "$ARM64_FILE" ]; then
+            # 使用 Markdown 而不是 MarkdownV2，避免复杂的转义问题
+            ESCAPED_MESSAGE=$(python3 -c 'import json, os; print(json.dumps(os.environ["COMMIT_MESSAGE"]))')
+            media_parts+=("{\"type\":\"document\",\"media\":\"attach://arm64.apk\",\"caption\":$ESCAPED_MESSAGE,\"parse_mode\":\"Markdown\"}")
+            files+=("-F" "arm64.apk=@$ARM64_FILE")
+          fi
+          
+          if [ -n "$ARMV7_FILE" ] && [ -f "$ARMV7_FILE" ]; then
+            media_parts+=('{"type":"document","media":"attach://armv7.apk"}')
+            files+=("-F" "armv7.apk=@$ARMV7_FILE")
+          fi
+          
+          if [ -n "$UNIVERSAL_FILE" ] && [ -f "$UNIVERSAL_FILE" ]; then
+            media_parts+=('{"type":"document","media":"attach://universal.apk"}')
+            files+=("-F" "universal.apk=@$UNIVERSAL_FILE")
+          fi
+          
+          # 如果没有找到任何文件，退出
+          if [ ${#media_parts[@]} -eq 0 ]; then
+            echo "没有找到可发送的APK文件"
+            exit 1
+          fi
+          
+          # 构建media JSON数组
+          media_json="["
+          for i in "${!media_parts[@]}"; do
+            if [ $i -gt 0 ]; then
+              media_json+=","
+            fi
+            media_json+="${media_parts[$i]}"
+          done
+          media_json+="]"
+          
+          echo "发送消息到Telegram..."
+          # 发送到Telegram
+          curl -v -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMediaGroup" \
+            -H "Content-Type: multipart/form-data" \
+            -F "chat_id=${CHANNEL_ID}" \
+            -F "media=$media_json" \
+            "${files[@]}"
+          
+          # 检查是否发送成功
+          if [ $? -eq 0 ]; then
+            echo "消息发送成功"
+          else
+            echo "消息发送失败"
+          fi
 
       - name: 将资源整合上传到仓库发布
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.extract_info.outputs.version }}
+          tag_name: ${{ steps.extract_info.outputs.version }}  # 使用完整版本号
           # name: Sesame-TK-Y-${{ steps.extract_info.outputs.version }}-SNL # 发布的名称。默认为标签名称
           name: ${{ github.event.release.tag_name || steps.extract_info.outputs.version }}   # 发布的名称。默认为标签名称
-          # 更新上传的文件列表和发布说明
+          # name: Sesame-TK-Y-${{ steps.extract_info.outputs.version }}
           files: |
             ${{ steps.extract_apks.outputs.signed_arm64 }}
             ${{ steps.extract_apks.outputs.signed_armv7 }}
             ${{ steps.extract_apks.outputs.signed_universal }}
-            CHECKSUMS-Sesame-TK-Y-arm64-v8a-${{ steps.extract_info.outputs.version }}.apk.sha256
-            CHECKSUMS-Sesame-TK-Y-armeabi-v7a-${{ steps.extract_info.outputs.version }}.apk.sha256
-            CHECKSUMS-Sesame-TK-Y-universal-${{ steps.extract_info.outputs.version }}.apk.sha256
+            CHECKSUMS-Sesame-TK-Y-arm64-v8a-${{ steps.extract_info.outputs.version }}-signed.apk.sha256
+            CHECKSUMS-Sesame-TK-Y-armeabi-v7a-${{ steps.extract_info.outputs.version }}-signed.apk.sha256
+            CHECKSUMS-Sesame-TK-Y-universal-${{ steps.extract_info.outputs.version }}-signed.apk.sha256
           draft: false
-          append_body: true
+          prerelease: false
           generate_release_notes: true
           body: |
             ## ✨What's Changed
+            ## 📦 Sesame-TK-Y-${{ github.event.release.tag_name || steps.extract_info.outputs.version }}
 
             ${{ steps.commit_details.outputs.COMMIT_MESSAGE_BODY }}
             > ## 下载说明
-            > - **Sesame-TK-Y-arm64-v8a-...apk**: 适用于64位ARM设备 (主流新设备)。
-            > - **Sesame-TK-Y-armeabi-v7a-...apk**: 适用于32位ARM设备 (旧设备)。
-            > - **Sesame-TK-Y-universal-...apk**: 通用版，包含所有架构 (体积较大)。
+            > - **Sesame-TK-Y-arm64-v8a-${{ steps.extract_info.outputs.version }}-signed.apk**: 适用于64位ARM设备 (主流新设备)。
+            > - **Sesame-TK-Y-armeabi-v7a-${{ steps.extract_info.outputs.version }}-signed.apk**: 适用于32位ARM设备 (旧设备)。
+            > - **Sesame-TK-Y-universal-${{ steps.extract_info.outputs.version }}-signed.apk**: 通用版，包含所有架构 (体积较大)。
             >
             > **如果不确定，请下载 `universal` 版本。**
+
+            ### 使用说明
+            - 从官方或其他作者版本切换至此非官方版本时，请务必删除 `UID` 目录下的 `config_v2.json` 文件
+            - 7点整到40分，这个时间段只能运行循环收能量，不干其他事
+
+            ### 更新内容
+            ${{ github.event.head_commit.message }}
