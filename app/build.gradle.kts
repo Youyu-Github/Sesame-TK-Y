@@ -14,6 +14,8 @@ var isCIBuild: Boolean = System.getenv("CI").toBoolean()
 
 //isCIBuild = true // 没有c++源码时开启CI构建, push前关闭
 
+var abilities = listOf("armeabi-v7a", "arm64-v8a","x86","x86_64")
+
 android {
     namespace = "fansirsqi.xposed.sesame"
     compileSdk = 36
