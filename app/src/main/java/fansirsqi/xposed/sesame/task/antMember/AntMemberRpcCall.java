@@ -408,4 +408,74 @@ public class AntMemberRpcCall {
         String data = "[{\"benefitId\":\"" + benefitId + "\",\"cityCode\":\"\",\"exchangeType\":\"POINT_PAY\",\"itemId\":\"" + itemId + "\",\"miniAppId\":\"\",\"orderSource\":\"\",\"requestId\":\"" + requestId + "\",\"requestSourceInfo\":\"\",\"sourcePassMap\":{\"alipayClientVersion\":\"" + alipayClientVersion + "\",\"innerSource\":\"\",\"mobileOsType\":\"Android\",\"source\":\"\",\"unid\":\"\"},\"userOutAccount\":\"\"}]";
         return RequestManager.requestString("com.alipay.alipaymember.biz.rpc.exchange.h5.exchangeBenefit", data);
     }
+
+    /**
+     * 芝麻树通用触发器
+     * @param operation 操作类型
+     * @param extInfoJson 额外信息JSON字符串
+     * @return RPC响应
+     */
+    private static String sesameTreeTrigger(String operation, String extInfoJson) {
+        String playInfo = "SwbtxJSo8OOUrymAU%2FHnY2jyFRc%2BkCJ3";
+        String refer = "https://render.alipay.com/p/yuyan/180020010001269849/zmTree.html?caprMode=sync&chInfo=chInfo=ch_zmzltf__chsub_xinyongsyyingxiaowei";
+        String requestData = String.format("[{\"operation\":\"%s\",\"playInfo\":\"%s\",\"refer\":\"%s\",\"extInfo\":%s}]",
+                operation, playInfo, refer, extInfoJson);
+        return RequestManager.requestString("alipay.promoprod.play.trigger", requestData);
+    }
+
+    /**
+     * 获取芝麻树主页信息
+     * @return RPC响应
+     */
+    public static String getSesameTreeHomePage() {
+        return sesameTreeTrigger("ZHIMA_TREE_HOME_PAGE", "{}");
+    }
+
+    /**
+     * 获取芝麻树任务列表
+     * @return RPC响应
+     */
+    public static String getSesameTreeTaskList() {
+        String extInfo = "{\"batchId\":\"\",\"chInfo\":\"ch_zmzltf__chsub_xinyongsyyingxiaowei\"}";
+        return sesameTreeTrigger("RENT_GREEN_TASK_LIST_QUERY", extInfo);
+    }
+
+    /**
+     * 净化芝麻树（清理电子垃圾）
+     * @param trashCode 垃圾代码
+     * @param trashCampId 垃圾活动ID
+     * @return RPC响应
+     */
+    public static String cleanSesameTreeTrash(String trashCode, String trashCampId) {
+        String extInfo = String.format(
+            "{\"clickNum\":\"1\",\"trashCampId\":\"%s\",\"trashCode\":\"%s\",\"treeCode\":\"ZHIMA_TREE\"}",
+            trashCampId, trashCode);
+        return sesameTreeTrigger("ZHIMA_TREE_CLEAN_AND_PUSH", extInfo);
+    }
+
+    /**
+     * 新增：完成芝麻树任务
+     * @param taskId 任务ID
+     * @return RPC响应
+     */
+    public static String finishSesameTreeTask(String taskId) {
+        String chInfo = "ch_zmzltf__chsub_xinyongsyyingxiaowei";
+        String extInfo = String.format(
+            "{\"chInfo\":\"%s\",\"stageCode\":\"send\",\"taskId\":\"%s\"}",
+            chInfo, taskId);
+        return sesameTreeTrigger("RENT_GREEN_TASK_FINISH", extInfo);
+    }
+
+    /**
+     * 新增：领取芝麻树任务奖励
+     * @param taskId 任务ID
+     * @return RPC响应
+     */
+    public static String receiveSesameTreeTaskReward(String taskId) {
+        String chInfo = "ch_zmzltf__chsub_xinyongsyyingxiaowei";
+        String extInfo = String.format(
+            "{\"chInfo\":\"%s\",\"stageCode\":\"receive\",\"taskId\":\"%s\"}",
+            chInfo, taskId);
+        return sesameTreeTrigger("RENT_GREEN_TASK_FINISH", extInfo);
+    }
 }
