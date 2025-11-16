@@ -198,6 +198,26 @@ public class AntMemberRpcCall {
     }
 
     /**
+     * 芝麻信用-查询签到领粒任务列表
+     * @return RPC调用结果字符串
+     */
+    public static String checkInQueryTaskLists() {
+        // "version"参数来源于抓包数据，如果后续失效，可能需要更新
+        String requestData = "[{\"version\":\"2025-10-22\"}]";
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.pointtask.CheckInTaskRpcManager.queryTaskLists", requestData);
+    }
+
+    /**
+     * 芝麻信用-完成签到领粒任务
+     * @param checkInDate 签到日期，格式为 "yyyyMMdd"
+     * @return RPC调用结果字符串
+     */
+    public static String checkInCompleteTask(String checkInDate) {
+        String requestData = "[{\"checkInDate\":\"" + checkInDate + "\",\"sceneCode\":\"zml\"}]";
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.pointtask.CheckInTaskRpcManager.completeTask", requestData);
+    }
+
+    /**
      * 获取芝麻信用任务列表
      */
     public static String queryAvailableSesameTask() {

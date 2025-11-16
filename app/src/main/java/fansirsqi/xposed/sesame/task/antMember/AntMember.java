@@ -607,12 +607,76 @@ public class AntMember extends ModelTask {
   }
 
   /**
+   * 芝麻信用-每日签到任务
+   * @throws JSONException JSON解析异常
+   */
+  private static void sesameCheckIn() throws JSONException {
+    try {
+      Log.record(TAG, "芝麻信用💳[开始检查签到领粒]");
+      String queryResult = AntMemberRpcCall.checkInQueryTaskLists();
+      JSONObject queryObj = new JSONObject(queryResult);
+      
+      if (!queryObj.optBoolean("success", false)) {
+        Log.record(TAG, "芝麻信用💳[查询签到领粒状态失败]#" + queryResult);
+        return;
+      }
+      
+      JSONObject data = queryObj.optJSONObject("data");
+      if (data == null || !data.has("currentDateCheckInTaskVO")) {
+        Log.record(TAG, "芝麻信用💳[查询签到领粒状态响应格式错误]#" + queryResult);
+        return;
+      }
+      
+      JSONObject checkInTask = data.getJSONObject("currentDateCheckInTaskVO");
+      String status = checkInTask.optString("status");
+      
+      if ("COMPLETED".equals(status)) {
+        Log.record(TAG, "芝麻信用💳[今日签到领粒已签到]");
+      } else {
+        Log.record(TAG, "芝麻信用💳[开始执签到领粒到操作]");
+        // 从查询结果中获取签到日期，确保日期准确性
+        String checkInDate = checkInTask.optString("checkInDate");
+        if (checkInDate == null || checkInDate.isEmpty()) {
+            // 如果接口没返回日期，则使用当前系统日期作为备用
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyyMMdd");
+            checkInDate = sdf.format(new java.util.Date());
+        }
+
+        String completeResult = AntMemberRpcCall.checkInCompleteTask(checkInDate);
+        JSONObject completeObj = new JSONObject(completeResult);
+        
+        if (completeObj.optBoolean("success", false)) {
+          JSONObject prizeData = completeObj.optJSONObject("data");
+          if (prizeData != null && prizeData.has("prize")) {
+            String num = prizeData.getJSONObject("prize").optString("num", "未知");
+            Log.other(TAG, "芝麻信用💳[签到领粒成功]#获得" + num + "粒");
+          } else {
+            Log.record(TAG, "芝麻信用💳[签到领粒成功]#" + completeObj.optString("resultView", "成功"));
+          }
+        } else {
+          Log.record(TAG, "芝麻信用💳[签到领粒失败]#" + completeResult);
+        }
+      }
+    } catch (Exception e) {
+      // 捕获所有异常，防止签到失败影响到后续任务
+      Log.record(TAG, "芝麻信用💳[签到领粒任务出现异常]");
+      Log.printStackTrace(TAG, e);
+    }
+  }
+
+  /**
    * 芝麻信用-领取并完成任务（带结果统计）
    * @param taskList 任务列表
    * @return int数组 [完成数量, 跳过数量]
    * @throws JSONException JSON解析异常，上抛处理
    */
   private static int[] joinAndFinishSesameTaskWithResult(JSONArray taskList) throws JSONException {
+    // ==================== 新增代码开始 ====================
+    // 在处理其他任务前，先执行签到领粒任务
+    sesameCheckIn(); 
+    GlobalThreadPools.sleep(500); // 签到后建议小等一下，避免请求过于频繁
+    // ==================== 新增代码结束 ====================
+
     int completedCount = 0;
     int skippedCount = 0;
     
@@ -652,7 +716,6 @@ public class AntMember extends ModelTask {
       String s;
       String recordId;
       JSONObject responseObj;
-
 
       if (task.has("actionUrl") && task.getString("actionUrl").contains("jumpAction")) {
         // 跳转APP任务 依赖跳转的APP发送请求鉴别任务完成 仅靠hook支付宝无法完成
