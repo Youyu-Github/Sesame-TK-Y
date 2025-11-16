@@ -107,7 +107,8 @@ public class AntOrchard extends ModelTask {
           JSONObject taobaoData = new JSONObject(jo.getString("taobaoData"));
           treeLevel = Integer.toString(taobaoData.getJSONObject("gameInfo").getJSONObject("plantInfo").getJSONObject("seedStage").getInt("stageLevel"));
           JSONObject joo = new JSONObject(AntOrchardRpcCall.mowGrassInfo());
-          if ("100".equals(jo.getString("resultCode"))) {
+          // [修复] 将 jo.getString("resultCode") 修改为 joo.getString("resultCode")
+          if ("100".equals(joo.getString("resultCode"))) {
             userId = joo.getString("userId");
             if (jo.has("lotteryPlusInfo")) drawLotteryPlus(jo.getJSONObject("lotteryPlusInfo"));
             extraInfoGet();
@@ -128,8 +129,9 @@ public class AntOrchard extends ModelTask {
             // 助力
             orchardassistFriend();
           } else {
-            Log.record(jo.getString("resultDesc"));
-            Log.runtime(jo.toString());
+            // [修复] 将日志记录的对象从 jo 修改为 joo
+            Log.record(joo.getString("resultDesc"));
+            Log.runtime(joo.toString());
           }
         } else {
           getEnableField().setValue(0);
