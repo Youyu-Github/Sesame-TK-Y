@@ -1577,37 +1577,64 @@ public class AntMember extends ModelTask {
       Log.printStackTrace(TAG, t);
     }
   }
+
   private void beanSignIn() {
     try {
-      try {
+        // 1. 查询签到流程状态
         String signInProcessStr = AntMemberRpcCall.querySignInProcess("AP16242232", "INS_BLUE_BEAN_SIGN");
+        JSONObject jo = new JSONObject(signInProcessStr);
 
-          JSONObject jo = new JSONObject(signInProcessStr);
-        if (!jo.optBoolean("success")) {
-        } else {
-          Log.runtime(jo.toString());
-          return;
+        if (!jo.optBoolean("success", false)) {
+            Log.runtime(TAG, "查询签到状态失败: " + signInProcessStr);
+            return;
         }
-        
-        if (jo.getJSONObject("result").getBoolean("canPush")) {
-          String signInTriggerStr = AntMemberRpcCall.signInTrigger("AP16242232", "INS_BLUE_BEAN_SIGN");
 
-            jo = new JSONObject(signInTriggerStr);
-          if (jo.optBoolean("success")) {
-            String prizeName = jo.getJSONObject("result").getJSONArray("prizeSendOrderDTOList").getJSONObject(0).getString("prizeName");
-            Log.record(TAG,"安心豆🫘[" + prizeName + "]");
-          } else {
-            Log.runtime(jo.toString());
-          }
+        JSONObject result = jo.getJSONObject("result");
+
+        // 2. 检查是否已经签到完成
+        // 根据签到后的数据，"progress" 会变为 "FULLY_DONE"
+        if ("FULLY_DONE".equals(result.optString("progress"))) {
+            // 如果已经签到，尝试从taskDetailList中获取当天的奖励信息并记录
+            try {
+                JSONObject taskDetail = result.getJSONArray("taskDetailList").getJSONObject(0);
+                if (taskDetail.optBoolean("hasSend", false)) {
+                    JSONObject sendOrder = taskDetail.getJSONObject("sendOrder");
+                    String prizeName = sendOrder.getString("prizeName");
+                    Log.record(TAG, "安心豆🫘[今日已签到:" + prizeName + "]");
+                    return; // 结束方法
+                }
+            } catch (JSONException e) {
+                // 如果解析失败，也记录一个通用日志
+                Log.record(TAG, "安心豆🫘[本月已签到够数]");
+                Log.printStackTrace(TAG, e);
+                return;
+            }
         }
+
+        // 3. 如果未签到，并且接口允许签到 ("canPush" is true)
+        if (result.optBoolean("canPush", false)) {
+            String signInTriggerStr = AntMemberRpcCall.signInTrigger("AP16242232", "INS_BLUE_BEAN_SIGN");
+            JSONObject triggerJo = new JSONObject(signInTriggerStr);
+
+            if (triggerJo.optBoolean("success", false)) {
+                // 假设 signInTrigger 成功后返回的结构与原代码预期一致
+                // 注意：根据您提供的数据，奖励名称也可以在操作成功后再次调用 querySignInProcess 获得
+                String prizeName = triggerJo.getJSONObject("result").getJSONArray("prizeSendOrderDTOList").getJSONObject(0).getString("prizeName");
+                Log.other(TAG, "安心豆🫘[签到成功:" + prizeName + "]");
+            } else {
+                Log.runtime(TAG, "执行签到失败: " + signInTriggerStr);
+            }
+        }
+      } catch (JSONException e) {
+          Log.error(TAG, "安心豆🫘[JSON解析异常]");
+          Log.printStackTrace(TAG, e);
       } catch (NullPointerException e) {
-        Log.error(TAG, "安心豆🫘[RPC桥接失败]#可能是RpcBridge未初始化");
-        Log.printStackTrace(TAG, e);
+          Log.error(TAG, "安心豆🫘[RPC桥接失败]#可能是RpcBridge未初始化");
+          Log.printStackTrace(TAG, e);
+      } catch (Throwable t) {
+          Log.runtime(TAG, "beanSignIn err:");
+          Log.printStackTrace(TAG, t);
       }
-    } catch (Throwable t) {
-      Log.runtime(TAG, "beanSignIn err:");
-      Log.printStackTrace(TAG, t);
-    }
   }
 
   private void beanExchangeBubbleBoost() {
