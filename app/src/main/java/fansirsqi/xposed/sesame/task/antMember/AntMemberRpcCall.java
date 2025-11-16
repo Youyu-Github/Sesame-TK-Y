@@ -410,6 +410,67 @@ public class AntMemberRpcCall {
     }
 
     /**
+     * 芝麻炼金 - 查询主页信息
+     * (这个方法在上次是正确的，保持不变)
+     */
+    public static String alchemyQueryHome() {
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.AlchemyRpcManager.queryHome", "[{}]");
+    }
+
+    /**
+     * 芝麻炼金 - 查询攒粒日常任务列表
+     * (这个方法在上次是正确的，保持不变)
+     */
+    public static String alchemyQueryTasks() {
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.creditaccumulate.CreditAccumulateStrategyRpcManager.queryListV3",
+                "[{\"chInfo\":\"\",\"deliverStatus\":\"\",\"deliveryTemplateId\":\"\",\"searchSubscribeTask\":true,\"version\":\"alchemy\"}]");
+    }
+
+    /**
+     * 芝麻炼金 - 查询签到任务状态
+     * (这个方法在上次是正确的，保持不变)
+     */
+    public static String alchemyQueryCheckInTasks() {
+        // 版本日期可能需要动态更新，但暂时使用抓包中的静态值
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.pointtask.CheckInTaskRpcManager.queryTaskLists",
+                "[{\"sceneCode\":\"alchemy\",\"version\":\"2025-10-22\"}]");
+    }
+
+    /**
+     * [修正] 芝麻炼金 - 完成签到任务
+     * @param checkInDate YYYYMMDD格式的日期字符串
+     */
+    public static String completeAlchemyCheckIn(String checkInDate) {
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.pointtask.CheckInTaskRpcManager.completeTask",
+                "[{\"checkInDate\":\"" + checkInDate + "\",\"sceneCode\":\"alchemy\"}]");
+    }
+
+    /**
+     * [新增] 芝麻炼金 - 查询限时任务(早/中/晚饭)
+     */
+    public static String alchemyQueryTimeLimitedTask() {
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.pointtask.TimeLimitedTaskRpcManager.queryTask", "[{}]");
+    }
+
+    /**
+     * [新增] 芝麻炼金 - 完成限时任务(早/中/晚饭)
+     * @param templateId 任务模板ID, 例如 "wujianli" (午饭)
+     */
+    public static String alchemyCompleteTimeLimitedTask(String templateId) {
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.pointtask.TimeLimitedTaskRpcManager.completeTask",
+                "[{\"templateId\":\"" + templateId + "\"}]");
+    }
+    
+    /**
+     * [修正] 芝麻炼金 - 执行炼金动作
+     * 此版本根据您提供的最新日志精确实现。
+     */
+    public static String doAlchemy() {
+        // 根据抓包日志，requestData 是 [null]
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.AlchemyRpcManager.alchemy", "[null]");
+    }
+
+    /**
      * 芝麻树通用触发器
      * @param operation 操作类型
      * @param extInfoJson 额外信息JSON字符串
