@@ -190,6 +190,67 @@ public class AntMemberRpcCall {
     }
 
     /**
+     * 查询芝麻分进度任务列表
+     * @return RPC响应
+     */
+    public static String queryGrowthBehaviorToDoList() {
+        String requestData = "[{\"guideBehaviorId\":\"\",\"invokeVersion\":\"1.0.2025.10.27\",\"switchNewPage\":true}]";
+        return RequestManager.requestString("com.antgroup.zmxy.zmcustprod.biz.rpc.growthbehavior.apiGrowthBehaviorRpcManager.queryToDoList", requestData);
+    }
+    
+    /**
+     * 接受/开启一个行为任务（例如：公益任务）
+     * @param behaviorId 任务ID
+     * @return RPC响应
+     */
+    public static String openBehaviorCollect(String behaviorId) {
+        String requestData = "[{\"behaviorId\":\"" + behaviorId + "\"}]";
+        return RequestManager.requestString("com.antgroup.zmxy.zmcustprod.biz.rpc.growthbehavior.apiGrowthBehaviorRpcManager.openBehaviorCollect", requestData);
+    }
+
+    /**
+     * 查询每日答题的题目信息
+     * @return RPC响应
+     */
+    public static String queryDailyQuiz() {
+        String requestData = "[{\"behaviorId\":\"meiriwenda\"}]";
+        return RequestManager.requestString("com.antgroup.zmxy.zmcustprod.biz.rpc.growthtask.api.GrowthTaskRpcManager.queryDailyQuiz", requestData);
+    }
+
+    /**
+     * 提交每日答题的答案
+     * @param bizDate 从queryDailyQuiz获取的bizDate
+     * @param questionId 问题ID
+     * @param answerId 选择的答案ID
+     * @return RPC响应
+     */
+    public static String pushDailyQuizAnswer(long bizDate, String questionId, String answerId) {
+        // answerStatus直接硬编码为RIGHT，因为我们总是提交正确答案
+        String extInfo = "{\"answerId\":\"" + answerId + "\",\"answerStatus\":\"RIGHT\",\"questionId\":\"" + questionId + "\"}";
+        String requestData = "[{\"behaviorId\":\"meiriwenda\",\"bizDate\":" + bizDate + ",\"extInfo\":" + extInfo + "}]";
+        return RequestManager.requestString("com.antgroup.zmxy.zmcustprod.biz.rpc.growthtask.api.GrowthTaskRpcManager.pushDailyTask", requestData);
+    }
+
+    /**
+     * 查询当前可领取的进度球
+     * @return RPC响应
+     */
+    public static String queryScoreProgress() {
+        String requestData = "[{\"needTotalProcess\":\"TRUE\",\"queryGuideInfo\":true,\"switchNewPage\":true}]";
+        return RequestManager.requestString("com.antgroup.zmxy.zmcustprod.biz.rpc.home.api.HomeV8RpcManager.queryScoreProgress", requestData);
+    }
+
+    /**
+     * 一键收取所有进度球
+     * @param ballIdList 进度球ID列表
+     * @return RPC响应
+     */
+    public static String collectProgressBall(org.json.JSONArray ballIdList) {
+        String requestData = "[{\"ballIdList\":" + ballIdList.toString() + "}]";
+        return RequestManager.requestString("com.antgroup.zmxy.zmcustprod.biz.rpc.growthbehavior.apiGrowthBehaviorRpcManager.collectProgressBall", requestData);
+    }
+
+    /**
      * 芝麻信用首页
      */
     public static String queryHome() {
