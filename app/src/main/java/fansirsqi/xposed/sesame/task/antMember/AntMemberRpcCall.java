@@ -543,6 +543,15 @@ public class AntMemberRpcCall {
     }
 
     /**
+     * 新增：净化芝麻树（通过点击按钮，消耗净化次数）
+     * @return RPC响应
+     */
+    public static String cleanSesameTreeByClick() {
+        String extInfo = "{\"clickNum\":\"1\",\"treeCode\":\"ZHIMA_TREE\"}";
+        return sesameTreeTrigger("ZHIMA_TREE_CLEAN_AND_PUSH", extInfo);
+    }
+
+    /**
      * 新增：完成芝麻树任务
      * @param taskId 任务ID
      * @return RPC响应

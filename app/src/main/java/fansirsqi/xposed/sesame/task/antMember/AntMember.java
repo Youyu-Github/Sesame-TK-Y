@@ -972,78 +972,6 @@ public class AntMember extends ModelTask {
   }
 
   /**
-   * 修正：净化芝麻树（清理电子垃圾）
-   */
-  private void purifySesameTree() {
-    try {
-      Log.record(TAG, "芝麻树-开始净化电子垃圾");
-      String s = AntMemberRpcCall.getSesameTreeHomePage();
-      JSONObject jo = new JSONObject(s);
-
-      if (!jo.optBoolean("success") || !jo.has("extInfo")) {
-        Log.record(TAG, "获取芝麻树主页信息失败或结构不符：" + jo.toString());
-        return;
-      }
-      
-      JSONObject result = jo.getJSONObject("extInfo").getJSONObject("zhimaTreeHomePageQueryResult");
-      JSONArray trees = result.optJSONArray("trees"); // 使用optJSONArray
-      if (trees != null && trees.length() > 0) {
-        JSONObject tree = trees.getJSONObject(0);
-        int remainClick = tree.optInt("remainPurificationClickNum", 0); // 使用optInt
-        
-        // [修正] 使用optJSONArray安全获取trashList，并在不存在或为空时直接返回
-        JSONArray trashList = tree.optJSONArray("trashList");
-        if (trashList == null || trashList.length() == 0) {
-          Log.record(TAG, "芝麻树🌳[没有发现电子垃圾]");
-          // 如果没有垃圾，同时检查一下净化次数，如果次数也用完，则关闭开关
-          if (remainClick <= 0) {
-            purifySesameTree.setValue(false);
-            Log.record(TAG, "芝麻树🌳[净化次数已用完且无垃圾，开关临时关闭]");
-          }
-          return;
-        }
-        
-        if (remainClick <= 0) {
-          Log.record(TAG, "芝麻树🌳[今日净化次数已用完]");
-          return;
-        }
-
-        Log.record(TAG, "发现 " + trashList.length() + " 个电子垃圾，剩余净化次数 " + remainClick + "，开始净化...");
-
-        for (int i = 0; i < trashList.length() && remainClick > 0; i++) {
-          JSONObject trash = trashList.getJSONObject(i);
-          String trashCode = trash.getString("trashCode");
-          String trashCampId = trash.getString("relateCampId");
-
-          String cleanResultStr = AntMemberRpcCall.cleanSesameTreeTrash(trashCode, trashCampId);
-          GlobalThreadPools.sleep(2000);
-          JSONObject cleanResultJo = new JSONObject(cleanResultStr);
-
-          if (cleanResultJo.optBoolean("success") && cleanResultJo.has("extInfo")) {
-            JSONObject cleanResult = cleanResultJo.getJSONObject("extInfo")
-                  .getJSONObject("zhimaTreeCleanAndPushResult");
-            int newScore = cleanResult.getJSONObject("currentTreeInfo").getInt("scoreSummary");
-            int purificationScore = cleanResult.getInt("purificationScore");
-            Log.other("净化芝麻树🗑️[成功净化1个垃圾]#获得净化值" + purificationScore + ", 当前成长值:" + newScore);
-            remainClick--;
-          } else {
-            Log.record(TAG, "净化失败: " + cleanResultJo.toString());
-            break; // 一旦失败就停止尝试
-          }
-        }
-        
-        // 循环结束后，如果剩余点击次数为0，也关闭开关
-        if(remainClick <= 0) {
-          purifySesameTree.setValue(false);
-          Log.record(TAG, "芝麻树🌳[净化次数已用完，开关临时关闭]");
-        }
-      }
-    } catch (Throwable t) {
-      Log.printStackTrace(TAG, t);
-    }
-  }
-
-  /**
    * 修正：执行芝麻树任务以获取净化值（包含完成和领取两个步骤）
    */
   private void doSesameTreeTasks() {
@@ -1143,6 +1071,137 @@ public class AntMember extends ModelTask {
         sesameTreeTask.setValue(false);
         Log.record(TAG, "芝麻树🌳[已全部完成且无待领取奖励，临时关闭]");
       }
+
+    } catch (Throwable t) {
+      Log.printStackTrace(TAG, t);
+    }
+  }
+
+  /**
+   * 修正：净化芝麻树（清理电子垃圾）
+   */
+  /*private void purifySesameTree() {
+    try {
+      Log.record(TAG, "芝麻树-开始净化电子垃圾");
+      String s = AntMemberRpcCall.getSesameTreeHomePage();
+      JSONObject jo = new JSONObject(s);
+
+      if (!jo.optBoolean("success") || !jo.has("extInfo")) {
+        Log.record(TAG, "获取芝麻树主页信息失败或结构不符：" + jo.toString());
+        return;
+      }
+      
+      JSONObject result = jo.getJSONObject("extInfo").getJSONObject("zhimaTreeHomePageQueryResult");
+      JSONArray trees = result.optJSONArray("trees"); // 使用optJSONArray
+      if (trees != null && trees.length() > 0) {
+        JSONObject tree = trees.getJSONObject(0);
+        int remainClick = tree.optInt("remainPurificationClickNum", 0); // 使用optInt
+        
+        // [修正] 使用optJSONArray安全获取trashList，并在不存在或为空时直接返回
+        JSONArray trashList = tree.optJSONArray("trashList");
+        if (trashList == null || trashList.length() == 0) {
+          Log.record(TAG, "芝麻树🌳[没有发现电子垃圾]");
+          // 如果没有垃圾，同时检查一下净化次数，如果次数也用完，则关闭开关
+          if (remainClick <= 0) {
+            purifySesameTree.setValue(false);
+            Log.record(TAG, "芝麻树🌳[净化次数已用完且无垃圾，开关临时关闭]");
+          }
+          return;
+        }
+        
+        if (remainClick <= 0) {
+          Log.record(TAG, "芝麻树🌳[今日净化次数已用完]");
+          return;
+        }
+
+        Log.record(TAG, "发现 " + trashList.length() + " 个电子垃圾，剩余净化次数 " + remainClick + "，开始净化...");
+
+        for (int i = 0; i < trashList.length() && remainClick > 0; i++) {
+          JSONObject trash = trashList.getJSONObject(i);
+          String trashCode = trash.getString("trashCode");
+          String trashCampId = trash.getString("relateCampId");
+
+          String cleanResultStr = AntMemberRpcCall.cleanSesameTreeTrash(trashCode, trashCampId);
+          GlobalThreadPools.sleep(2000);
+          JSONObject cleanResultJo = new JSONObject(cleanResultStr);
+
+          if (cleanResultJo.optBoolean("success") && cleanResultJo.has("extInfo")) {
+            JSONObject cleanResult = cleanResultJo.getJSONObject("extInfo")
+                  .getJSONObject("zhimaTreeCleanAndPushResult");
+            int newScore = cleanResult.getJSONObject("currentTreeInfo").getInt("scoreSummary");
+            int purificationScore = cleanResult.getInt("purificationScore");
+            Log.other("净化芝麻树🗑️[成功净化1个垃圾]#剩余净化值" + purificationScore + ", 当前成长值:" + newScore);
+            remainClick--;
+          } else {
+            Log.record(TAG, "净化失败: " + cleanResultJo.toString());
+            break; // 一旦失败就停止尝试
+          }
+        }
+        
+        // 循环结束后，如果剩余点击次数为0，也关闭开关
+        if(remainClick <= 0) {
+          purifySesameTree.setValue(false);
+          Log.record(TAG, "芝麻树🌳[净化次数已用完，开关临时关闭]");
+        }
+      }
+    } catch (Throwable t) {
+      Log.printStackTrace(TAG, t);
+    }
+  }*/
+  /**
+   * 修正：净化芝麻树 (根据剩余净化次数)
+   */
+  private void purifySesameTree() {
+    try {
+      Log.record(TAG, "芝麻树-开始净化");
+      String s = AntMemberRpcCall.getSesameTreeHomePage();
+      JSONObject jo = new JSONObject(s);
+
+      if (!jo.optBoolean("success") || !jo.has("extInfo")) {
+        Log.record(TAG, "获取芝麻树主页信息失败或结构不符：" + jo.toString());
+        return;
+      }
+      
+      JSONObject result = jo.getJSONObject("extInfo").getJSONObject("zhimaTreeHomePageQueryResult");
+      JSONArray trees = result.optJSONArray("trees");
+      if (trees == null || trees.length() == 0) {
+        Log.record(TAG, "芝麻树-未找到tree信息");
+        return;
+      }
+      
+      JSONObject tree = trees.getJSONObject(0);
+      int remainClick = tree.optInt("remainPurificationClickNum", 0);
+      
+      if (remainClick <= 0) {
+        Log.record(TAG, "芝麻树🌳[今日净化次数已用完，开关临时关闭]");
+        purifySesameTree.setValue(false); // 次数用完，关闭开关
+        return;
+      }
+
+      Log.record(TAG, "剩余净化次数 " + remainClick + "，开始净化...");
+
+      // 根据剩余次数循环净化
+      for (int i = 0; i < remainClick; i++) {
+        // 调用新增的、不依赖电子垃圾的净化方法
+        String cleanResultStr = AntMemberRpcCall.cleanSesameTreeByClick();
+        GlobalThreadPools.sleep(2000); // 每次净化后等待2秒
+        JSONObject cleanResultJo = new JSONObject(cleanResultStr);
+
+        if (cleanResultJo.optBoolean("success") && cleanResultJo.has("extInfo")) {
+          JSONObject cleanResult = cleanResultJo.getJSONObject("extInfo")
+                .getJSONObject("zhimaTreeCleanAndPushResult");
+          int newScore = cleanResult.getJSONObject("currentTreeInfo").getInt("scoreSummary");
+          int purificationScore = cleanResult.getInt("purificationScore");
+          Log.other("净化芝麻树🗑️[成功净化1次]#剩余净化值" + purificationScore + ", 当前成长值:" + newScore);
+        } else {
+          Log.record(TAG, "净化失败: " + cleanResultJo.toString());
+          break; // 如果某次净化失败，则停止循环
+        }
+      }
+      
+      // 所有次数执行完毕后，关闭开关
+      purifySesameTree.setValue(false);
+      Log.record(TAG, "芝麻树🌳[净化次数已全部用完，开关临时关闭]");
 
     } catch (Throwable t) {
       Log.printStackTrace(TAG, t);
