@@ -223,8 +223,8 @@ public class AntMemberRpcCall {
      * 获取芝麻信用任务列表
      */
     public static String queryAvailableSesameTask() {
-        // 使用更通用的参数，chInfo等参数可能具有时效性
-        String requestData = "[{\"sceneCode\":\"DAILY_MUST_DO_CARD\",\"searchGuidePopFlag\":true,\"searchSubscribeTask\":true,\"version\":\"new\"}]";
+        // [重要] 恢复chInfo参数，确保服务器返回带有recordId的完整任务信息
+        String requestData = "[{\"chInfo\":\"ch_zmxy_zmlsy__chsub_zmsy_jingangwei_lianjin\",\"deliverStatus\":\"\",\"deliveryTemplateId\":\"\",\"sceneCode\":\"DAILY_MUST_DO_CARD\",\"searchGuidePopFlag\":true,\"searchSubscribeTask\":true,\"version\":\"new\"}]";
         return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.creditaccumulate.CreditAccumulateStrategyRpcManager.queryListV3", requestData);
     }
 

@@ -510,52 +510,62 @@ public class AntMember extends ModelTask {
 
       // 查询任务列表
       String s = AntMemberRpcCall.queryAvailableSesameTask();
-      GlobalThreadPools.sleep(500);
       JSONObject jo = new JSONObject(s);
 
       if (!jo.optBoolean("success")) {
-          Log.other(TAG, "芝麻信用💳[查询任务响应失败]#" + jo.optString("resultView"));
-          Log.error(TAG + ".doAllAvailableSesameTask", "芝麻信用💳[查询任务响应失败]#" + s);
-          return;
+        Log.record(TAG, "芝麻信用💳[查询任务响应失败]#" + jo.optString("resultView"));
+        Log.error(TAG + ".doAllAvailableSesameTask", "芝麻信用💳[查询任务响应失败]#" + s);
+        return;
       }
 
       JSONObject taskObj = jo.getJSONObject("data");
-      int totalTasks = 0;
-      int completedTasks = 0;
-      int skippedTasks = 0;
-      int remainingTasks = 0;
+      JSONArray allTasks = new JSONArray();
+      int availableTaskCount = 0;
 
-      // 处理待加入任务
-      if (taskObj.has("waitJoinTaskVOS")) {
-        JSONArray tasks = taskObj.getJSONArray("waitJoinTaskVOS");
-        if (tasks.length() > 0) {
-            totalTasks += tasks.length();
-            Log.record(TAG, "芝麻信用💳[待加入任务]#开始处理(" + tasks.length() + "个)");
-            int[] results = joinAndFinishSesameTaskWithResult(tasks, true); // true表示需要join
-            completedTasks += results[0];
-            skippedTasks += results[1];
+      // 合并所有可能的任务列表到一个统一的列表中
+      if (taskObj.has("toCompleteVOS")) {
+        JSONArray tasks = taskObj.getJSONArray("toCompleteVOS");
+        for(int i = 0; i < tasks.length(); i++) allTasks.put(tasks.getJSONObject(i));
+      }
+      if (taskObj.has("dailyTaskListVO")) {
+        JSONObject dailyTaskListVO = taskObj.getJSONObject("dailyTaskListVO");
+        if (dailyTaskListVO.has("waitJoinTaskVOS")) {
+          JSONArray tasks = dailyTaskListVO.getJSONArray("waitJoinTaskVOS");
+          for(int i = 0; i < tasks.length(); i++) allTasks.put(tasks.getJSONObject(i));
+        }
+        // waitCompleteTaskVOS 理论上和 toCompleteVOS 类似，为保险起见也加入
+        if (dailyTaskListVO.has("waitCompleteTaskVOS")) {
+          JSONArray tasks = dailyTaskListVO.getJSONArray("waitCompleteTaskVOS");
+          for(int i = 0; i < tasks.length(); i++) allTasks.put(tasks.getJSONObject(i));
         }
       }
 
-      // 处理待完成任务
-      if (taskObj.has("toCompleteVOS")) {
-        JSONArray tasks = taskObj.getJSONArray("toCompleteVOS");
-        if (tasks.length() > 0) {
-            totalTasks += tasks.length();
-            Log.record(TAG, "芝麻信用💳[待完成任务]#开始处理(" + tasks.length() + "个)");
-            int[] results = joinAndFinishSesameTaskWithResult(tasks, false); // false表示无需join
-            completedTasks += results[0];
-            skippedTasks += results[1];
+      // 统计所有可完成的任务数量
+      for (int i = 0; i < allTasks.length(); i++) {
+        JSONObject task = allTasks.getJSONObject(i);
+        String taskTitle = task.optString("title", "未知任务");
+        if (!task.optBoolean("finishFlag", false) 
+          && !"已完成".equals(task.optString("actionText")) 
+          && !isTaskInBlacklist(taskTitle)) {
+          availableTaskCount++;
         }
       }
       
-      remainingTasks = totalTasks - completedTasks - skippedTasks;
+      Log.record(TAG, "芝麻信用💳[发现 " + allTasks.length() + " 个总任务，其中 " + availableTaskCount + " 个可完成]");
 
-      // 统计结果并决定是否关闭开关
-      Log.record(TAG, "芝麻信用💳[任务处理统计]#总任务:" + totalTasks + "个, 完成:" + completedTasks + "个, 跳过:" + skippedTasks + "个, 剩余:" + remainingTasks + "个");
+      if (availableTaskCount > 0) {
+        int[] results = joinAndFinishSesameTaskWithResult(allTasks);
+        Log.record(TAG, "芝麻信用💳[任务处理统计]#总尝试:" + allTasks.length() + "个, 成功:" + results[0] + "个, 跳过:" + results[1] + "个");
+        // 如果还有未完成的任务，但本次没有成功完成任何一个，可能意味着逻辑卡住，也关闭开关避免死循环
+        if(results[0] == 0 && (allTasks.length() - results[1] > 0)) {
+          sesameTask.setValue(false);
+          Log.record(TAG, "芝麻信用💳[未成功完成任何新任务，为避免卡死，开关临时关闭]");
+          return;
+        }
+      }
 
       // 如果没有可做的任务了，临时关闭开关
-      if (remainingTasks <= 0) {
+      if (availableTaskCount == 0) {
         sesameTask.setValue(false);
         Log.record(TAG, "芝麻信用💳[已无更多可做任务，开关临时关闭]");
       }
@@ -659,13 +669,12 @@ public class AntMember extends ModelTask {
   }
 
   /**
-   * 芝麻信用-领取并完成任务（带结果统计）
+   * 芝麻信用-领取并完成任务（重构版，智能判断是否需要Join）
    * @param taskList 任务列表
-   * @param needJoin 是否需要先加入任务
    * @return int数组 [完成数量, 跳过数量]
    * @throws JSONException JSON解析异常
    */
-  private static int[] joinAndFinishSesameTaskWithResult(JSONArray taskList, boolean needJoin) throws JSONException {
+  private static int[] joinAndFinishSesameTaskWithResult(JSONArray taskList) throws JSONException {
     int completedCount = 0;
     int skippedCount = 0;
 
@@ -673,7 +682,11 @@ public class AntMember extends ModelTask {
       JSONObject task = taskList.getJSONObject(i);
       String title = task.optString("title", "未知任务");
 
-      // 检查黑名单
+      // 1. 基本检查：是否已完成或在黑名单中
+      if (task.optBoolean("finishFlag", false) || "已完成".equals(task.optString("actionText"))) {
+        skippedCount++;
+        continue;
+      }
       if (isTaskInBlacklist(title)) {
         Log.record(TAG, "芝麻信用💳[跳过黑名单任务]#" + title);
         skippedCount++;
@@ -687,66 +700,51 @@ public class AntMember extends ModelTask {
         continue;
       }
 
+      // 2. 获取recordId，如果不存在则尝试加入任务获取
       String recordId = task.optString("recordId");
-      JSONObject responseObj;
-
-      // 1. 加入任务 (如果需要)
-      if (needJoin) {
+      if (recordId.isEmpty()) {
+        Log.record(TAG, "芝麻信用💳[任务 '" + title + "' 缺少recordId，尝试加入...]");
         String joinResult = AntMemberRpcCall.joinSesameTask(templateId);
         GlobalThreadPools.sleep(500);
-        responseObj = new JSONObject(joinResult);
-        if (responseObj.optBoolean("success")) {
-          recordId = responseObj.getJSONObject("data").getString("recordId");
-          Log.record(TAG, "芝麻信用💳[加入任务 '" + title + "' 成功]");
+        JSONObject joinResponse = new JSONObject(joinResult);
+        if (joinResponse.optBoolean("success")) {
+          recordId = joinResponse.getJSONObject("data").getString("recordId");
+          Log.record(TAG, "芝麻信用💳[加入成功，获得recordId]");
         } else {
-          Log.other(TAG, "芝麻信用💳[加入任务 '" + title + "' 失败]#" + joinResult);
+          Log.record(TAG, "芝麻信用💳[加入任务 '" + title + "' 失败]#" + joinResult);
           skippedCount++;
           continue;
         }
       }
-
-      if (recordId == null || recordId.isEmpty()) {
-        Log.record(TAG, "芝麻信用💳[任务 '" + title + "' 缺少recordId，无法完成]");
-        skippedCount++;
-        continue;
-      }
-
-      // 2. 任务反馈 (taskFeedback)
-      String feedbackResult = AntMemberRpcCall.feedBackSesameTask(templateId);
+      
+      // 3. 任务反馈 (taskFeedback)
+      AntMemberRpcCall.feedBackSesameTask(templateId);
       GlobalThreadPools.sleep(500);
-      responseObj = new JSONObject(feedbackResult);
-      if (!responseObj.optBoolean("success")) {
-        Log.other(TAG, "芝麻信用💳[任务 '" + title + "' 回调失败]#" + feedbackResult);
-        skippedCount++;
-        continue;
-      }
 
-      // 3. 等待 (如果需要)
+      // 4. 模拟等待 (如果需要)
       int visitTime = task.optInt("vstTime", 0);
       if (visitTime > 0) {
         Log.record("芝麻信用💳[任务 '" + title + "']#模拟浏览" + (visitTime / 1000) + "秒...");
         GlobalThreadPools.sleep(visitTime);
       } else {
-        GlobalThreadPools.sleep(2000); // 默认等待2秒
+        GlobalThreadPools.sleep(2000); // 默认等待
       }
 
-      // 4. 完成任务 (pushActivity)
+      // 5. 完成任务 (pushActivity)
       String finishResult = AntMemberRpcCall.finishSesameTask(recordId);
-      responseObj = new JSONObject(finishResult);
-      if (responseObj.optBoolean("success")) {
+      JSONObject finishResponse = new JSONObject(finishResult);
+      if (finishResponse.optBoolean("success")) {
         int reward = task.optInt("rewardAmount", 0);
         Log.other("芝麻信用💳[完成任务 '" + title + "']#获得 " + reward + " 芝麻粒");
         completedCount++;
       } else {
-        Log.other(TAG, "芝麻信用💳[完成任务 '" + title + "' 失败]#" + finishResult);
+        Log.record(TAG, "芝麻信用💳[完成任务 '" + title + "' 失败]#" + finishResult);
         skippedCount++;
       }
       GlobalThreadPools.sleep(3000); // 任务间等待
     }
     return new int[]{completedCount, skippedCount};
   }
-
-  // ==================== 修改/新增部分结束 ====================
 
   /**
    * 芝麻粒收取
@@ -757,7 +755,7 @@ public class AntMember extends ModelTask {
       JSONObject jo = new JSONObject(AntMemberRpcCall.queryCreditFeedback());
       // GlobalThreadPools.sleep(500);
       if (!jo.optBoolean("success")) {
-        Log.other(TAG, "芝麻信用💳[查询未领取芝麻粒响应失败]#" + jo.getString("resultView"));
+        Log.record(TAG, "芝麻信用💳[查询未领取芝麻粒响应失败]#" + jo.getString("resultView"));
         Log.error(TAG + ".collectSesame.queryCreditFeedback", "芝麻信用💳[查询未领取芝麻粒响应失败]#" + jo);
         return;
       }
@@ -769,7 +767,7 @@ public class AntMember extends ModelTask {
         // Log.record("延时2S 1");
         // GlobalThreadPools.sleep(2000);
         if (!jo.optBoolean("success")) {
-          Log.other(TAG, "芝麻信用💳[一键收取芝麻粒响应失败]#" + jo);
+          Log.record(TAG, "芝麻信用💳[一键收取芝麻粒响应失败]#" + jo);
           Log.error(TAG + ".collectSesame.collectAllCreditFeedback", "芝麻信用💳[一键收取芝麻粒响应失败]#" + jo);
           return;
         }
@@ -787,7 +785,7 @@ public class AntMember extends ModelTask {
           Log.record("延时2S 3");
           GlobalThreadPools.sleep(2000);
           if (!jo.optBoolean("success")) {
-            Log.other(TAG, "芝麻信用💳[查询未领取芝麻粒响应失败]#" + jo.getString("resultView"));
+            Log.record(TAG, "芝麻信用💳[查询未领取芝麻粒响应失败]#" + jo.getString("resultView"));
             Log.error(TAG + ".collectSesame.collectCreditFeedback", "芝麻信用💳[收取芝麻粒响应失败]#" + jo);
             continue;
           }
@@ -873,9 +871,9 @@ public class AntMember extends ModelTask {
       Log.record(TAG, "芝麻炼金-攒粒✨[发现 " + toCompleteTasks.length() + " 个日常任务]");
 
       // 复用现有的芝麻信用任务逻辑来完成
-      // int[] results = joinAndFinishSesameTaskWithResult(toCompleteTasks);
+      int[] results = joinAndFinishSesameTaskWithResult(toCompleteTasks);
       // 为joinAndFinishSesameTaskWithResult方法添加第二个参数 'false'
-      int[] results = joinAndFinishSesameTaskWithResult(toCompleteTasks, false);
+      // int[] results = joinAndFinishSesameTaskWithResult(toCompleteTasks, false);
 
       // 如果完成过任务，再次检查是否还有剩余任务，如果没有则关闭开关
       if (results[0] > 0) { 
