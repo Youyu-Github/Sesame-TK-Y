@@ -197,12 +197,14 @@ public class AntMemberRpcCall {
                 "[{\"invokeSource\":\"zmHome\",\"miniZmGrayInside\":\"\",\"version\":\"week\"}]");
     }
 
+    // ==================== 修改/新增部分开始 ====================
+
     /**
      * 芝麻信用-查询签到领粒任务列表
      * @return RPC调用结果字符串
      */
     public static String checkInQueryTaskLists() {
-        // "version"参数来源于抓包数据，如果后续失效，可能需要更新
+        // "version"参数来源于抓包数据
         String requestData = "[{\"version\":\"2025-10-22\"}]";
         return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.pointtask.CheckInTaskRpcManager.queryTaskLists", requestData);
     }
@@ -221,25 +223,31 @@ public class AntMemberRpcCall {
      * 获取芝麻信用任务列表
      */
     public static String queryAvailableSesameTask() {
-        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.creditaccumulate.CreditAccumulateStrategyRpcManager.queryListV3", "[{}]");
+        // 使用更通用的参数，chInfo等参数可能具有时效性
+        String requestData = "[{\"sceneCode\":\"DAILY_MUST_DO_CARD\",\"searchGuidePopFlag\":true,\"searchSubscribeTask\":true,\"version\":\"new\"}]";
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.creditaccumulate.CreditAccumulateStrategyRpcManager.queryListV3", requestData);
     }
 
     /**
      * 芝麻信用领取任务
      */
     public static String joinSesameTask(String taskTemplateId) {
-        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.promise.PromiseRpcManager.joinActivity",
-                "[{\"chInfo\":\"seasameList\",\"joinFromOuter\":false,\"templateId\":\"" + taskTemplateId + "\"}]");
+        // 根据抓包日志，增加了sceneCode
+        String requestData = "[{\"chInfo\":\"seasameList\",\"joinFromOuter\":false,\"sceneCode\":\"zml\",\"templateId\":\"" + taskTemplateId + "\"}]";
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.promise.PromiseRpcManager.joinActivity", requestData);
     }
 
     /**
      * 芝麻信用获取任务回调
      */
     public static String feedBackSesameTask(String taskTemplateId) {
+        // 根据抓包日志，补全了bizType, sceneCode, version等参数
+        String requestData = "[{\"actionType\":\"TO_COMPLETE\",\"bizType\":\"LIFE_RECORD\",\"sceneCode\":\"zml\",\"templateId\":\"" + taskTemplateId + "\",\"version\":\"new\"}]";
         return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.creditaccumulate.CreditAccumulateStrategyRpcManager.taskFeedback",
-                "[{\"actionType\":\"TO_COMPLETE\",\"templateId\":\"" + taskTemplateId + "\"}]",
-                "zmmemberop", "taskFeedback", "CreditAccumulateStrategyRpcManager");
+                requestData, "zmmemberop", "taskFeedback", "CreditAccumulateStrategyRpcManager");
     }
+    
+    // ==================== 修改/新增部分结束 ====================
 
     /**
      * 芝麻信用完成任务
