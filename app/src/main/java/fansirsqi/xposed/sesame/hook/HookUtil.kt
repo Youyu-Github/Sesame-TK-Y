@@ -8,7 +8,7 @@ import fansirsqi.xposed.sesame.data.General
 import fansirsqi.xposed.sesame.entity.UserEntity
 import fansirsqi.xposed.sesame.util.Log
 import fansirsqi.xposed.sesame.util.maps.UserMap
-import io.github.libxposed.api.XposedModuleInterface
+// import io.github.libxposed.api.XposedModuleInterface
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
 
@@ -25,20 +25,20 @@ object HookUtil {
     /**
      * Hook RpcBridgeExtension.rpc 方法，记录请求信息
      */
-    fun hookRpcBridgeExtension(lpparam: XposedModuleInterface.PackageLoadedParam, isdebug: Boolean, debugUrl: String) {
+    fun hookRpcBridgeExtension(classLoader: ClassLoader, isdebug: Boolean, debugUrl: String) {
         try {
             val className = "com.alibaba.ariver.commonability.network.rpc.RpcBridgeExtension"
             val jsonClassName = General.JSON_OBJECT_NAME // 替换为你项目中的实际 JSON 类名
 
-            val jsonClass = Class.forName(jsonClassName, false, lpparam.classLoader)
-            val appClass = XposedHelpers.findClass("com.alibaba.ariver.app.api.App", lpparam.classLoader)
-            val pageClass = XposedHelpers.findClass("com.alibaba.ariver.app.api.Page", lpparam.classLoader)
-            val apiContextClass = XposedHelpers.findClass("com.alibaba.ariver.engine.api.bridge.model.ApiContext", lpparam.classLoader)
-            val bridgeCallbackClass = XposedHelpers.findClass("com.alibaba.ariver.engine.api.bridge.extension.BridgeCallback", lpparam.classLoader)
+            val jsonClass = Class.forName(jsonClassName, false, classLoader)
+            val appClass = XposedHelpers.findClass("com.alibaba.ariver.app.api.App", classLoader)
+            val pageClass = XposedHelpers.findClass("com.alibaba.ariver.app.api.Page", classLoader)
+            val apiContextClass = XposedHelpers.findClass("com.alibaba.ariver.engine.api.bridge.model.ApiContext", classLoader)
+            val bridgeCallbackClass = XposedHelpers.findClass("com.alibaba.ariver.engine.api.bridge.extension.BridgeCallback", classLoader)
 
             XposedHelpers.findAndHookMethod(
                 className,
-                lpparam.classLoader,
+                classLoader,
                 "rpc",
                 String::class.java,
                 Boolean::class.javaPrimitiveType,
@@ -120,14 +120,14 @@ object HookUtil {
     }
     
     /*
-    fun hookOtherService(lpparam: XC_LoadPackage.LoadPackageParam) {
+    fun hookOtherService(classLoader: ClassLoader) {
         try {
             //hook 服务不在后台
-            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.fgbg.FgBgMonitorImpl", lpparam.classLoader, "isInBackground", XC_MethodReplacement.returnConstant(false))
-            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.fgbg.FgBgMonitorImpl", lpparam.classLoader, "isInBackground", Boolean::class.javaPrimitiveType, XC_MethodReplacement.returnConstant(false))
-            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.fgbg.FgBgMonitorImpl", lpparam.classLoader, "isInBackgroundV2", XC_MethodReplacement.returnConstant(false))
+            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.fgbg.FgBgMonitorImpl", classLoader, "isInBackground", XC_MethodReplacement.returnConstant(false))
+            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.fgbg.FgBgMonitorImpl", classLoader, "isInBackground", Boolean::class.javaPrimitiveType, XC_MethodReplacement.returnConstant(false))
+            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.fgbg.FgBgMonitorImpl", classLoader, "isInBackgroundV2", XC_MethodReplacement.returnConstant(false))
             //hook 服务在前台
-            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.transport.utils.MiscUtils", lpparam.classLoader, "isAtFrontDesk", lpparam.classLoader.loadClass("android.content.Context"), XC_MethodReplacement.returnConstant(true))
+            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.transport.utils.MiscUtils", classLoader, "isAtFrontDesk", classLoader.loadClass("android.content.Context"), XC_MethodReplacement.returnConstant(true))
         } catch (e: Exception) {
             Log.printStackTrace(TAG, "hookOtherService 失败", e)
         }
@@ -136,24 +136,24 @@ object HookUtil {
 
 //上面是旧的，容易返回桌面；下面是新的
 
-    fun hookOtherService(lpparam: XposedModuleInterface.PackageLoadedParam) {
+    fun hookOtherService(classLoader: ClassLoader) {
         try {
             //hook 服务不在后台
-            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.fgbg.FgBgMonitorImpl", lpparam.classLoader, "isInBackground", XC_MethodReplacement.returnConstant(false))
+            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.fgbg.FgBgMonitorImpl", classLoader, "isInBackground", XC_MethodReplacement.returnConstant(false))
             XposedHelpers.findAndHookMethod(
                 "com.alipay.mobile.common.fgbg.FgBgMonitorImpl",
-                lpparam.classLoader,
+                classLoader,
                 "isInBackground",
                 Boolean::class.javaPrimitiveType,
                 XC_MethodReplacement.returnConstant(false)
             )
-            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.fgbg.FgBgMonitorImpl", lpparam.classLoader, "isInBackgroundV2", XC_MethodReplacement.returnConstant(false))
+            XposedHelpers.findAndHookMethod("com.alipay.mobile.common.fgbg.FgBgMonitorImpl", classLoader, "isInBackgroundV2", XC_MethodReplacement.returnConstant(false))
             //hook 服务在前台
             XposedHelpers.findAndHookMethod(
                 "com.alipay.mobile.common.transport.utils.MiscUtils",
-                lpparam.classLoader,
+                classLoader,
                 "isAtFrontDesk",
-                lpparam.classLoader.loadClass("android.content.Context"),
+                classLoader.loadClass("android.content.Context"),
                 XC_MethodReplacement.returnConstant(true)
             )
         } catch (e: Exception) {
@@ -164,14 +164,14 @@ object HookUtil {
     /**
      * Hook DefaultBridgeCallback.sendJSONResponse 方法，记录响应内容
      */
-    fun hookDefaultBridgeCallback(lpparam: XposedModuleInterface.PackageLoadedParam) {
+    fun hookDefaultBridgeCallback(classLoader: ClassLoader) {
         try {
             val className = "com.alibaba.ariver.engine.common.bridge.internal.DefaultBridgeCallback"
             val jsonClassName = General.JSON_OBJECT_NAME
 
-            val jsonClass = Class.forName(jsonClassName, false, lpparam.classLoader)
+            val jsonClass = Class.forName(jsonClassName, false, classLoader)
 
-            XposedHelpers.findAndHookMethod(className, lpparam.classLoader, "sendJSONResponse", jsonClass, object : XC_MethodHook() {
+            XposedHelpers.findAndHookMethod(className, classLoader, "sendJSONResponse", jsonClass, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
                     val callback = param.thisObject
                     val recordArray = rpcHookMap[callback]
@@ -192,11 +192,11 @@ object HookUtil {
      * 突破支付宝最大可登录账号数量限制
      * @param lpparam 加载包参数
      */
-    fun fuckAccounLimit(lpparam: XposedModuleInterface.PackageLoadedParam) {
+    fun fuckAccounLimit(classLoader: ClassLoader) {
         Log.runtime(TAG, "Hook AccountManagerListAdapter#getCount")
         XposedHelpers.findAndHookMethod(
             "com.alipay.mobile.security.accountmanager.data.AccountManagerListAdapter",  // target class
-            lpparam.classLoader, "getCount",  // method name
+            classLoader, "getCount",  // method name
             object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
                     // 获取真实账号列表大小
@@ -222,13 +222,13 @@ object HookUtil {
         Log.runtime(TAG, "Hook AccountManagerListAdapter#getCount END")
     }
 
-    fun hookActive(lpparam: XposedModuleInterface.PackageLoadedParam) {
+    /*fun hookActive(classLoader: ClassLoader) {
         try {
             XposedBridge.log("Hooking fansirsqi.xposed.sesame.ui.MainActivity...")
             // Hook updateSubTitle 方法
             XposedHelpers.findAndHookMethod(
                 "fansirsqi.xposed.sesame.ui.MainActivity",
-                lpparam.classLoader,
+                classLoader,
                 "updateSubTitle",
                 String::class.java,
                 object : XC_MethodHook() {
@@ -241,7 +241,7 @@ object HookUtil {
         } catch (e: java.lang.Exception) {
             XposedBridge.log("Error hooking MainActivity: $e")
         }
-    }
+    }*/
 
 
     fun getMicroApplicationContext(classLoader: ClassLoader): Any? {
@@ -282,13 +282,13 @@ object HookUtil {
         Log.printStackTrace(TAG, it)
     }.getOrNull()
 
-    fun hookUser(lpparam: XposedModuleInterface.PackageLoadedParam) {
+    fun hookUser(classLoader: ClassLoader) {
         runCatching {
             UserMap.unload()
-            val selfId = getUserId(lpparam.classLoader)
+            val selfId = getUserId(classLoader)
             UserMap.setCurrentUserId(selfId) //有些地方要用到 要set一下
-            val clsUserIndependentCache = lpparam.classLoader.loadClass("com.alipay.mobile.socialcommonsdk.bizdata.UserIndependentCache")
-            val clsAliAccountDaoOp = lpparam.classLoader.loadClass("com.alipay.mobile.socialcommonsdk.bizdata.contact.data.AliAccountDaoOp")
+            val clsUserIndependentCache = classLoader.loadClass("com.alipay.mobile.socialcommonsdk.bizdata.UserIndependentCache")
+            val clsAliAccountDaoOp = classLoader.loadClass("com.alipay.mobile.socialcommonsdk.bizdata.contact.data.AliAccountDaoOp")
             val aliAccountDaoOp = XposedHelpers.callStaticMethod(clsUserIndependentCache, "getCacheObj", clsAliAccountDaoOp)
             val allFriends = XposedHelpers.callMethod(aliAccountDaoOp, "getAllFriends") as? List<*> ?: emptyList<Any>()
             if (allFriends.isEmpty()) return

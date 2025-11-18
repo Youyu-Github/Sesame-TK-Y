@@ -38,6 +38,7 @@ import java.lang.reflect.InvocationTargetException;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
+import de.robv.android.xposed.callbacks.XC_LoadPackage;
 import fansirsqi.xposed.sesame.BuildConfig;
 import fansirsqi.xposed.sesame.data.Config;
 import fansirsqi.xposed.sesame.data.DataCache;
@@ -70,11 +71,13 @@ import fansirsqi.xposed.sesame.util.TimeUtil;
 import fansirsqi.xposed.sesame.util.maps.UserMap;
 import fi.iki.elonen.NanoHTTPD;
 import io.github.libxposed.api.XposedModuleInterface;
+import io.github.libxposed.api.XposedInterface;
 import kotlin.jvm.JvmStatic;
 import lombok.Getter;
 
 public class ApplicationHook {
     static final String TAG = ApplicationHook.class.getSimpleName();
+    public XposedInterface xposedInterface = null;
     private ModuleHttpServer httpServer;
     private static final String modelVersion = BuildConfig.VERSION_NAME;
     private static final Map<String, PendingIntent> wakenAtTimeAlarmMap = new ConcurrentHashMap<>();
@@ -128,9 +131,9 @@ public class ApplicationHook {
     private volatile long lastExecTime = 0; // 添加为类成员变量
     private static final long MAX_INACTIVE_TIME = 3600000; // 最大不活动时间：1小时
 
-    private XposedModuleInterface.PackageLoadedParam modelLoadPackageParam;
+    // private XposedModuleInterface.PackageLoadedParam modelLoadPackageParam;
 
-    private XposedModuleInterface.PackageLoadedParam appLloadPackageParam;
+    // private XposedModuleInterface.PackageLoadedParam appLloadPackageParam;
 
     static {
         dayCalendar = Calendar.getInstance();
@@ -231,216 +234,227 @@ public class ApplicationHook {
         }
     }
 
-    public void loadModelPackage(XposedModuleInterface.PackageLoadedParam loadPackageParam) {
-        if (General.MODULE_PACKAGE_NAME.equals(loadPackageParam.getPackageName())) {
-            try {
-                Class<?> applicationClass = loadPackageParam.getClassLoader().loadClass("android.app.Application");
-                XposedHelpers.findAndHookMethod(applicationClass, "onCreate", new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(XC_MethodHook.MethodHookParam param) {
-                        moduleContext = (Context) param.thisObject;
-                        // 可以在这里调用其他需要 Context 的 Hook 方法
-                        HookUtil.INSTANCE.hookActive(loadPackageParam);
-                    }
-                });
-            } catch (Exception e) {
-                Log.printStackTrace(e);
-            }
-        }
+    /**
+     * ✅ 原有新版入口：LibXposed / LSPosed ≥ 1.9 使用
+     */
+    public void loadPackage(XposedModuleInterface.PackageLoadedParam lpparam) {
+        Log.runtime(TAG, "xposed start loadPackage: " + lpparam.getPackageName());
+        if (!General.PACKAGE_NAME.equals(lpparam.getPackageName())) return;
+        classLoader = lpparam.getClassLoader();
+        handleHookLogic(classLoader, lpparam.getPackageName(), lpparam.getApplicationInfo().sourceDir, null);
     }
 
-    public void loadPackage(XposedModuleInterface.PackageLoadedParam loadPackageParam) {
-        if (General.PACKAGE_NAME.equals(loadPackageParam.getPackageName())) {
-            try {
-                if (hooked) return;
-                appLloadPackageParam = loadPackageParam;
-                classLoader = appLloadPackageParam.getClassLoader();
-                // Hook验证码关闭功能（需要在应用初始化之前就Hook配置写入）
-                try {
-                    CaptchaHook.INSTANCE.setupHook(classLoader);
-                    Log.runtime(TAG, "验证码Hook系统已初始化");
-                } catch (Throwable t) {
-                    Log.runtime(TAG, "验证码Hook初始化失败");
-                    Log.printStackTrace(TAG, t);
-                }
-                // 在Hook Application.attach 之前，先 deoptimize LoadedApk.makeApplicationInner
-                try {
-                    @SuppressLint("PrivateApi") Class<?> loadedApkClass = classLoader.loadClass("android.app.LoadedApk");
-                    deoptimizeMethod(loadedApkClass, "makeApplicationInner");
-                } catch (Throwable t) {
-                    Log.printStackTrace(TAG,"deoptimize makeApplicationInner err:", t);
-                }
-                XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        mainHandler = new Handler(Looper.getMainLooper());
-                        appContext = (Context) param.args[0];
-                        PackageInfo pInfo = appContext.getPackageManager().getPackageInfo(appContext.getPackageName(), 0);
-                        assert pInfo.versionName != null;
-                        alipayVersion = new AlipayVersion(pInfo.versionName);
-                        Log.runtime(TAG, "handleLoadPackage alipayVersion: " + alipayVersion.getVersionString());
-                        loadNativeLibs(appContext, AssetUtil.INSTANCE.getCheckerDestFile());
-                        loadNativeLibs(appContext, AssetUtil.INSTANCE.getDexkitDestFile());
-                        HookUtil.INSTANCE.fuckAccounLimit(loadPackageParam);
-                        if (BuildConfig.DEBUG) {
-                            try {
-                                Log.runtime(TAG, "start service for debug rpc");
-                                httpServer = new ModuleHttpServer(8080, "ET3vB^#td87sQqKaY*eMUJXP");
-                                httpServer.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
-                            } catch (IOException e) {
-                                Log.printStackTrace(e);
-                            }
-                        } else {
-                            Log.runtime(TAG, "need not start service for debug rpc");
-                        }
-                        super.afterHookedMethod(param);
-                    }
-                });
-            } catch (Exception e) {
-                Log.printStackTrace(e);
-            }
+    /**
+     * ✅ 新增旧版兼容入口：传统 Xposed / EdXposed / LSPosed < 1.9 使用
+     */
+    public void loadPackageCompat(XC_LoadPackage.LoadPackageParam lpparam) {
+        Log.runtime(TAG, "xp82 start loadPackageCompat: " + lpparam.packageName);
+        XposedBridge.log(TAG + "|Hook in  " + lpparam.packageName + " in process ${lpparam.processName}");
+        if (!General.PACKAGE_NAME.equals(lpparam.packageName)) return;
+        classLoader = lpparam.classLoader;
+        // 注意：旧版没有 ApplicationInfo.sourceDir，需要自己从 appInfo 获取
+        String apkPath = lpparam.appInfo != null ? lpparam.appInfo.sourceDir : null;
+        handleHookLogic(classLoader, lpparam.packageName, apkPath, lpparam);
+    }
 
+    @SuppressLint("PrivateApi")
+    private void handleHookLogic(ClassLoader classLoader, String packageName, String apkPath, Object rawParam) {
+        XposedBridge.log(TAG + "|handleHookLogic " + packageName + " success!");
+        if (hooked) return;
+        hooked = true;
+        try {
+            // Hook验证码关闭功能（需要在应用初始化之前就Hook配置写入）
             try {
-                XposedHelpers.findAndHookMethod("com.alipay.mobile.quinox.LauncherActivity", classLoader, "onResume",
-                        new XC_MethodHook() {
-                            @Override
-                            protected void afterHookedMethod(MethodHookParam param) {
-                                Log.runtime(TAG, "hook onResume after start");
-                                String targetUid = getUserId();
-                                Log.runtime(TAG, "onResume targetUid: " + targetUid);
-                                if (targetUid == null) {
-                                    Log.record(TAG, "onResume:用户未登录");
-                                    Toast.show("用户未登录");
-                                    return;
-                                }
-                                if (!init) {
-                                    if (initHandler(true)) {
-                                        init = true;
-                                    }
-                                    Log.runtime(TAG, "initHandler success");
-                                    return;
-                                }
-                                String currentUid = UserMap.getCurrentUid();
-                                Log.runtime(TAG, "onResume currentUid: " + currentUid);
-                                if (!targetUid.equals(currentUid)) {
-                                    if (currentUid != null) {
-                                        initHandler(true);
-                                        Log.record(TAG, "用户已切换");
-                                        Toast.show("用户已切换");
-                                        return;
-                                    }
-                                    HookUtil.INSTANCE.hookUser(appLloadPackageParam);
-                                }
-                                if (offline) {
-                                    offline = false;
-                                    execHandler();
-                                    ((Activity) param.thisObject).finish();
-                                    Log.runtime(TAG, "Activity reLogin");
-                                }
-                                Log.runtime(TAG, "hook onResume after end");
-                            }
-                        });
-                Log.runtime(TAG, "hook login successfully");
+                CaptchaHook.INSTANCE.setupHook(classLoader);
+                Log.runtime(TAG, "验证码Hook系统已初始化");
             } catch (Throwable t) {
-                Log.runtime(TAG, "hook login err");
+                Log.runtime(TAG, "验证码Hook初始化失败");
                 Log.printStackTrace(TAG, t);
             }
+            // 在Hook Application.attach 之前，先 deoptimize LoadedApk.makeApplicationInner
             try {
-                XposedHelpers.findAndHookMethod("android.app.Service", classLoader, "onCreate",
-                        new XC_MethodHook() {
-                            @Override
-                            protected void afterHookedMethod(MethodHookParam param) {
-                                Service appService = (Service) param.thisObject;
-                                if (!General.CURRENT_USING_SERVICE.equals(appService.getClass().getCanonicalName())) {
-                                    return;
-                                }
+                @SuppressLint("PrivateApi") Class<?> loadedApkClass = classLoader.loadClass("android.app.LoadedApk");
+                deoptimizeMethod(loadedApkClass, "makeApplicationInner");
+            } catch (Throwable t) {
+                Log.printStackTrace(TAG,"deoptimize makeApplicationInner err:", t);
+            }
+            XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    mainHandler = new Handler(Looper.getMainLooper());
+                    appContext = (Context) param.args[0];
+                    PackageInfo pInfo = appContext.getPackageManager().getPackageInfo(appContext.getPackageName(), 0);
+                    assert pInfo.versionName != null;
+                    alipayVersion = new AlipayVersion(pInfo.versionName);
+                    Log.runtime(TAG, "handleLoadPackage alipayVersion: " + alipayVersion.getVersionString());
+                    loadNativeLibs(appContext, AssetUtil.INSTANCE.getCheckerDestFile());
+                    loadNativeLibs(appContext, AssetUtil.INSTANCE.getDexkitDestFile());
+                    
+                    HookUtil.INSTANCE.fuckAccounLimit(classLoader);
 
-                                Log.runtime(TAG, "Service onCreate");
-                                appContext = appService.getApplicationContext();
-                                boolean isok = Detector.INSTANCE.isLegitimateEnvironment(appContext);
-                                if (isok) {
-                                    Detector.INSTANCE.dangerous(appContext);
-                                    return;
-                                }
-                                String packageName = loadPackageParam.getPackageName();
-                                String apkPath = loadPackageParam.getApplicationInfo().sourceDir;
-                                try (DexKitBridge bridge = DexKitBridge.create(apkPath)) {
-                                    // Other use cases
-                                    Log.runtime(TAG, "hook dexkit successfully");
-                                }
-                                service = appService;
-                                mainTask = BaseTask.newInstance("MAIN_TASK", () -> {
-                                    try {
-                                        if (!init) {
-                                            Log.record(TAG, "️🐣跳过执行-未初始化");
-                                            return;
-                                        }
-                                        if (!Config.isLoaded()) {
-                                            Log.record(TAG, "️⚙跳过执行-用户模块配置未加载");
-                                            return;
-                                        }
-                                        Log.record(TAG, "开始执行");
-                                        long currentTime = System.currentTimeMillis();
-                                        if (lastExecTime + 2000 > currentTime) {
-                                            Log.record(TAG, "执行间隔较短，跳过执行");
-                                            execDelayedHandler(BaseModel.getCheckInterval().getValue());
-                                            return;
-                                        }
-                                        String currentUid = UserMap.getCurrentUid();
-                                        String targetUid = HookUtil.INSTANCE.getUserId(appLloadPackageParam.getClassLoader());
-                                        if (targetUid == null || !targetUid.equals(currentUid)) {
-                                            Log.record(TAG, "用户切换或为空，重新登录");
-                                            reLogin();
-                                            return;
-                                        }
-                                        lastExecTime = currentTime; // 更新最后执行时间
-                                        ModelTask.startAllTask(false);
-                                        scheduleNextExecution(lastExecTime);
-                                    } catch (Exception e) {
-                                        Log.record(TAG, "❌执行异常");
-                                        Log.printStackTrace(TAG, e);
-                                    }
-                                });
-                                registerBroadcastReceiver(appService);
-                                dayCalendar = Calendar.getInstance();
+                    if (BuildConfig.DEBUG) {
+                        try {
+                            Log.runtime(TAG, "start service for debug rpc");
+                            httpServer = new ModuleHttpServer(8080, "ET3vB^#td87sQqKaY*eMUJXP");
+                            httpServer.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
+                        } catch (IOException e) {
+                            Log.printStackTrace(e);
+                        }
+                    } else {
+                        Log.runtime(TAG, "need not start service for debug rpc");
+                    }
+                    super.afterHookedMethod(param);
+                }
+            });
+        } catch (Exception e) {
+            Log.printStackTrace(e);
+        }
+
+        try {
+            XposedHelpers.findAndHookMethod("com.alipay.mobile.quinox.LauncherActivity", classLoader, "onResume",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) {
+                            Log.runtime(TAG, "hook onResume after start");
+                            String targetUid = getUserId();
+                            Log.runtime(TAG, "onResume targetUid: " + targetUid);
+                            if (targetUid == null) {
+                                Log.record(TAG, "onResume:用户未登录");
+                                Toast.show("用户未登录");
+                                return;
+                            }
+                            if (!init) {
                                 if (initHandler(true)) {
                                     init = true;
                                 }
+                                Log.runtime(TAG, "initHandler success");
+                                return;
+                            }
+                            String currentUid = UserMap.getCurrentUid();
+                            Log.runtime(TAG, "onResume currentUid: " + currentUid);
+                            if (!targetUid.equals(currentUid)) {
+                                if (currentUid != null) {
+                                    initHandler(true);
+                                    Log.record(TAG, "用户已切换");
+                                    Toast.show("用户已切换");
+                                    return;
+                                }
+                                HookUtil.INSTANCE.hookUser(classLoader);
+                            }
+                            if (offline) {
+                                offline = false;
+                                execHandler();
+                                ((Activity) param.thisObject).finish();
+                                Log.runtime(TAG, "Activity reLogin");
+                            }
+                            Log.runtime(TAG, "hook onResume after end");
+                        }
+                    });
+            Log.runtime(TAG, "hook login successfully");
+        } catch (Throwable t) {
+            Log.runtime(TAG, "hook login err");
+            Log.printStackTrace(TAG, t);
+        }
+        try {
+            XposedHelpers.findAndHookMethod("android.app.Service", classLoader, "onCreate",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) {
+                            Service appService = (Service) param.thisObject;
+                            if (!General.CURRENT_USING_SERVICE.equals(appService.getClass().getCanonicalName())) {
+                                return;
+                            }
+
+                            Log.runtime(TAG, "Service onCreate");
+                            appContext = appService.getApplicationContext();
+                            boolean isok = Detector.INSTANCE.isLegitimateEnvironment(appContext);
+                            if (isok) {
+                                Detector.INSTANCE.dangerous(appContext);
+                                return;
+                            }
+                            // [修复 #2] 此处代码是正确的，因为它使用了来自外部方法handleHookLogic的apkPath参数。
+                            // 之前被注释掉的错误代码是不必要的。
+                            try (DexKitBridge bridge = DexKitBridge.create(apkPath)) {
+                                // Other use cases
+                                Log.runtime(TAG, "hook dexkit successfully");
+                            } catch (Exception e) {
+                                Log.printStackTrace(TAG, e);
+                            }
+                            service = appService;
+                            mainTask = BaseTask.newInstance("MAIN_TASK", () -> {
+                                try {
+                                    if (!init) {
+                                        Log.record(TAG, "️🐣跳过执行-未初始化");
+                                        return;
+                                    }
+                                    if (!Config.isLoaded()) {
+                                        Log.record(TAG, "️⚙跳过执行-用户模块配置未加载");
+                                        return;
+                                    }
+                                    Log.record(TAG, "开始执行");
+                                    long currentTime = System.currentTimeMillis();
+                                    if (lastExecTime + 2000 > currentTime) {
+                                        Log.record(TAG, "执行间隔较短，跳过执行");
+                                        execDelayedHandler(BaseModel.getCheckInterval().getValue());
+                                        return;
+                                    }
+                                    String currentUid = UserMap.getCurrentUid();
+                                    String targetUid = HookUtil.INSTANCE.getUserId(classLoader);
+                                    if (targetUid == null || !targetUid.equals(currentUid)) {
+                                        Log.record(TAG, "用户切换或为空，重新登录");
+                                        reLogin();
+                                        return;
+                                    }
+                                    lastExecTime = currentTime; // 更新最后执行时间
+                                    ModelTask.startAllTask(false);
+                                    scheduleNextExecution(lastExecTime);
+                                } catch (Exception e) {
+                                    Log.record(TAG, "❌执行异常");
+                                    Log.printStackTrace(TAG, e);
+                                }
+                            });
+                            registerBroadcastReceiver(appService);
+                            dayCalendar = Calendar.getInstance();
+                            if (initHandler(true)) {
+                                init = true;
                             }
                         }
+                    }
 
-                );
-                Log.runtime(TAG, "hook service onCreate successfully");
-            } catch (Throwable t) {
-                Log.runtime(TAG, "hook service onCreate err");
-                Log.printStackTrace(TAG, t);
-            }
-
-            try {
-                XposedHelpers.findAndHookMethod("android.app.Service", classLoader, "onDestroy",
-                        new XC_MethodHook() {
-                            @Override
-                            protected void afterHookedMethod(MethodHookParam param) {
-                                Service service = (Service) param.thisObject;
-                                if (!General.CURRENT_USING_SERVICE.equals(service.getClass().getCanonicalName()))
-                                    return;
-                                Log.record(TAG, "支付宝前台服务被销毁");
-                                Notify.updateStatusText("支付宝前台服务被销毁");
-                                destroyHandler(true);
-                                httpServer.stop();
-                                restartByBroadcast();
-                            }
-                        });
-            } catch (Throwable t) {
-                Log.runtime(TAG, "hook service onDestroy err");
-                Log.printStackTrace(TAG, t);
-            }
-
-            HookUtil.INSTANCE.hookOtherService(loadPackageParam);
-
-            hooked = true;
-            Log.runtime(TAG, "load success: " + loadPackageParam.getPackageName());
+            );
+            Log.runtime(TAG, "hook service onCreate successfully");
+        } catch (Throwable t) {
+            Log.runtime(TAG, "hook service onCreate err");
+            Log.printStackTrace(TAG, t);
         }
+
+        try {
+            XposedHelpers.findAndHookMethod("android.app.Service", classLoader, "onDestroy",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) {
+                            Service service = (Service) param.thisObject;
+                            if (!General.CURRENT_USING_SERVICE.equals(service.getClass().getCanonicalName()))
+                                return;
+                            Log.record(TAG, "支付宝前台服务被销毁");
+                            Notify.updateStatusText("支付宝前台服务被销毁");
+                            destroyHandler(true);
+                            if (httpServer != null) {
+                                httpServer.stop();
+                            }
+                            restartByBroadcast();
+                        }
+                    });
+        } catch (Throwable t) {
+            Log.runtime(TAG, "hook service onDestroy err");
+            Log.printStackTrace(TAG, t);
+        }
+
+        HookUtil.INSTANCE.hookOtherService(classLoader);
+
+        hooked = true;
+        // [修复 #3] 恢复关键的成功日志，以便调试
+        Log.runtime(TAG, "load success: " + packageName);
     }
 
     /**
@@ -559,13 +573,13 @@ public class ApplicationHook {
                 return false;
             }
             if (force) {
-                String userId = HookUtil.INSTANCE.getUserId(appLloadPackageParam.getClassLoader());
+                String userId = HookUtil.INSTANCE.getUserId(classLoader);
                 if (userId == null) {
                     Log.record(TAG, "initHandler:用户未登录");
                     Toast.show("initHandler:用户未登录");
                     return false;
                 }
-                HookUtil.INSTANCE.hookUser(appLloadPackageParam);
+                HookUtil.INSTANCE.hookUser(classLoader);
                 String startMsg = "芝麻粒-TK 开始初始化...";
                 Log.record(TAG, startMsg);
                 Log.record(TAG, "⚙️模块版本：" + modelVersion);
@@ -591,6 +605,7 @@ public class ApplicationHook {
                 }
                 // 检查并请求后台运行权限
                 if (BaseModel.getBatteryPerm().getValue() && !init && !PermissionUtil.checkBatteryPermissions()) {
+                // if (!init && !PermissionUtil.checkBatteryPermissions()) {
                     Log.record(TAG, "支付宝无始终在后台运行权限");
                     mainHandler.postDelayed(
                             () -> {
@@ -638,8 +653,8 @@ public class ApplicationHook {
                 rpcBridge.load();
                 rpcVersion = rpcBridge.getVersion();
                 if (BaseModel.getNewRpc().getValue() && BaseModel.getDebugMode().getValue()) {
-                    HookUtil.INSTANCE.hookRpcBridgeExtension(appLloadPackageParam, BaseModel.getSendHookData().getValue(), BaseModel.getSendHookDataUrl().getValue());
-                    HookUtil.INSTANCE.hookDefaultBridgeCallback(appLloadPackageParam);
+                    HookUtil.INSTANCE.hookRpcBridgeExtension(classLoader, BaseModel.getSendHookData().getValue(), BaseModel.getSendHookDataUrl().getValue());
+                    HookUtil.INSTANCE.hookDefaultBridgeCallback(classLoader);
                 }
                 Model.bootAllModel(classLoader);
                 Status.load(userId);
