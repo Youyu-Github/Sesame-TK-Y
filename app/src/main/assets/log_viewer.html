@@ -114,7 +114,7 @@
             white-space: pre-wrap;
             word-break: break-word;
             padding: 8px;
-            font-size: 10px;
+            font-size: 12px; /* <-- 修改：默认字体大小改为 12px */
             margin-top: calc(var(--toolbar-height) + var(--searchbar-height));
         }
         
@@ -205,6 +205,9 @@
                 自动滚动
             </label>
             <button onclick="clearLog()">清空显示</button>
+            <!-- 新增：字体大小控制按钮 -->
+            <button onclick="decreaseFontSize()">A-</button>
+            <button onclick="increaseFontSize()">A+</button>
         </div>
         <div class="right-section">
             <span class="file-info" id="fileInfo"></span>
@@ -235,11 +238,13 @@
         let currentSearchIndex = -1;
         let userManuallyScrolled = false;
         let scrollCheckTimeout = null;
+        let currentFontSize = 12; // 新增：跟踪当前字体大小
         
         // 页面加载时直接显示空日志
         window.addEventListener('load', function() {
             // 初始为空，不添加任何示例内容
             statusEl.textContent = '就绪';
+            logEl.style.fontSize = currentFontSize + 'px'; // 初始化字体大小
         });
         
         // 监听滚动事件，检测用户是否手动滚动
@@ -322,6 +327,22 @@
             userManuallyScrolled = false;
             autoScrollEl.checked = true;
         }
+        
+        // --- 新增：字体大小控制函数 ---
+        function decreaseFontSize() {
+            if (currentFontSize > 6) { // 设置最小字体为6px
+                currentFontSize--;
+                logEl.style.fontSize = currentFontSize + 'px';
+            }
+        }
+
+        function increaseFontSize() {
+            if (currentFontSize < 30) { // 设置最大字体为30px
+                currentFontSize++;
+                logEl.style.fontSize = currentFontSize + 'px';
+            }
+        }
+        // --- 结束新增 ---
 
         // 执行搜索
         function performSearch() {
