@@ -593,19 +593,26 @@ public class AntForest extends ModelTask {
             tc.countDebug("拼手速");
 
             if (selfHomeObj != null) {
+                if (isTeam(selfHomeObj)) {
+                    processObj = selfHomeObj.optJSONObject("teamHomeResult").optJSONObject("mainMember");
+                } else {
+                    processObj = selfHomeObj;
+                }
 
                 if (collectWateringBubble.getValue()) {
-                    wateringBubbles(selfHomeObj);//浇水金球
+                    wateringBubbles(processObj);//浇水金球
                     tc.countDebug("收取浇水金球");
                 }
                 if (getRunCents() >= collectProp.getValue()) {
-                    givenProps(selfHomeObj);//收取道具
+                    givenProps(processObj);//收取道具
                     tc.countDebug("收取道具");
                 }
                 if (getRunCents() >= userPatrol.getValue()) {
                     queryUserPatrol();//动物巡护任务[保护地巡护]
                     tc.countDebug("动物巡护任务");
                 }
+                handleUserProps(selfHomeObj);//收取动物派遣能量
+                tc.countDebug("收取动物派遣能量");
                 //森林巡护
                 if (canConsumeAnimalProp &&  (getRunCents() >= consumeAnimalProp.getValue())) {
                     queryAndConsumeAnimal();
@@ -614,9 +621,6 @@ public class AntForest extends ModelTask {
                     String _msg = "已经有动物伙伴在巡护森林~";
                     Log.record(_msg);
                 }
-
-                handleUserProps(selfHomeObj);//收取动物派遣能量
-                tc.countDebug("收取动物派遣能量");
 
                 //合成动物碎片
                 if (getRunCents() >= combineAnimalPiece.getValue()) {
@@ -946,7 +950,15 @@ public class AntForest extends ModelTask {
      */
     private void handleUserProps(JSONObject selfHomeObj) {
         try {
-            JSONArray usingUserProps = selfHomeObj.optJSONArray("usingUserPropsNew");
+            // JSONArray usingUserProps = selfHomeObj.optJSONArray("usingUserPropsNew");
+            if (isTeam(selfHomeObj)) {
+                usingUserProps = selfHomeObj.optJSONObject("teamHomeResult")
+                                            .optJSONObject("mainMember")
+                                            .optJSONArray("usingUserProps");
+            } else {
+                usingUserProps = selfHomeObj.optJSONArray("usingUserPropsNew");
+            }
+            canConsumeAnimalProp = true;
             if (usingUserProps == null || usingUserProps.length() == 0) {
                 return; // 如果没有使用中的用户道具，直接返回
             }
@@ -956,12 +968,12 @@ public class AntForest extends ModelTask {
                 if (!"animal".equals(jo.getString("propGroup"))) {
                     continue; // 如果当前道具不是动物类型，跳过
                 }
+                canConsumeAnimalProp = false; // 设置标志位，表示不可再使用动物道具
                 JSONObject extInfo = new JSONObject(jo.getString("extInfo"));
                 if (extInfo.optBoolean("isCollected")) {
                     Log.runtime(TAG, "动物派遣能量已被收取");
                     continue; // 如果动物能量已经被收取，跳过
                 }
-                canConsumeAnimalProp = false; // 设置标志位，表示不可再使用动物道具
                 String propId = jo.getString("propId");
                 String propType = jo.getString("propType");
                 String shortDay = extInfo.getString("shortDay");
@@ -1389,9 +1401,16 @@ public class AntForest extends ModelTask {
      */
 
     private void extractBubbleInfo(JSONObject userHomeObj, long serverTime, List<Long> availableBubbles, List<Pair<Long, Long>> waitingBubbles, String userId) throws JSONException {
-        if (!userHomeObj.has("bubbles")) return;
-        JSONArray jaBubbles = userHomeObj.getJSONArray("bubbles");
-        if (jaBubbles.length() == 0) return;
+        if (isTeam(userHomeObj)) {
+            jaBubbles = userHomeObj.optJSONObject("teamHomeResult")
+                                .optJSONObject("mainMember")
+                                .optJSONArray("bubbles");
+        } else {
+            jaBubbles = userHomeObj.optJSONArray("bubbles");
+        }
+        if (jaBubbles == null || jaBubbles.length() == 0) {
+            return;
+        }
         // int checkInterval = checkIntervalInt + checkIntervalInt / 2;
         for (int i = 0; i < jaBubbles.length(); i++) {
             JSONObject bubble = jaBubbles.getJSONObject(i);
@@ -2323,10 +2342,27 @@ public class AntForest extends ModelTask {
      */
     private void updateSelfHomePage(JSONObject joHomePage) {
         try {
-            JSONArray usingUserPropsNew = joHomePage.getJSONArray("loginUserUsingPropNew");
-            if (usingUserPropsNew.length() == 0) {
-                usingUserPropsNew = joHomePage.getJSONArray("usingUserPropsNew");
+            // JSONArray usingUserPropsNew = joHomePage.getJSONArray("loginUserUsingPropNew");
+            JSONArray usingUserPropsNew = null; // 使用局部变量，避免影响类的状态
+
+            if (isTeam(joHomePage)) {
+                // 首先尝试从 team 路径获取
+                usingUserPropsNew = joHomePage.optJSONObject("teamHomeResult")
+                                            .optJSONObject("mainMember")
+                                            .optJSONArray("usingUserProps");
             }
+
+            // 如果不是 team，或者从 team 路径获取失败/结果为空，则从常规路径获取
+            // 注意这里加入了 null 判断，代码更健壮
+            if (usingUserPropsNew == null || usingUserPropsNew.length() == 0) {
+                usingUserPropsNew = joHomePage.optJSONArray("usingUserPropsNew");
+            }
+            
+            // 如果最终还是 null 或者空，就没必要往下执行了
+            if (usingUserPropsNew == null || usingUserPropsNew.length() == 0) {
+                return;
+            }
+
             for (int i = 0; i < usingUserPropsNew.length(); i++) {
                 JSONObject userUsingProp = usingUserPropsNew.getJSONObject(i);
                 String propGroup = userUsingProp.getString("propGroup");
@@ -4282,5 +4318,16 @@ public class AntForest extends ModelTask {
      */
     public static String getEnergyTimerTid(String uid, long bid) {
         return "BT|" + uid + "|" + bid;
+    }
+
+    /**
+     * 判断是否为团队
+     *
+     * @param homeObj 用户主页的 JSON 对象
+     * @return 是否为团队
+     */
+    private boolean isTeam(JSONObject homeObj) {
+        // 使用 .equals() 来比较字符串内容
+        return "Team".equals(homeObj.optString("nextAction", ""));
     }
 }
