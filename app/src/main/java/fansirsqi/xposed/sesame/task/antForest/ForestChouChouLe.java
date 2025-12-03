@@ -284,13 +284,13 @@ public class ForestChouChouLe {
         try {
             // 处理普通森林抽抽乐
             processChouChouLeActivity("普通森林抽抽乐", 
-                "2025060301", 
+                "2025112701", 
                 "ANTFOREST_NORMAL_DRAW", 
                 "ANTFOREST_NORMAL_DRAW_TASK",
                 "FOREST_NORMAL_DRAW");
             
-            // 处理千里江山图活动
-            processChouChouLeActivity("千里江山图", 
+            // 处理活动森林抽抽乐
+            processChouChouLeActivity("活动森林抽抽乐", 
                 "20251024", 
                 "ANTFOREST_ACTIVITY_DRAW", 
                 "ANTFOREST_ACTIVITY_DRAW_TASK",
@@ -313,16 +313,16 @@ public class ForestChouChouLe {
             Set<String> presetBad = new LinkedHashSet<>();
             if ("普通森林抽抽乐".equals(activityName)) {
                 presetBad.add("FOREST_NORMAL_DRAW_SHARE");  // 邀请好友任务（屏蔽）
-            } else if ("千里江山图".equals(activityName)) {
+            } else if ("活动森林抽抽乐".equals(activityName)) {
                 presetBad.add("FOREST_ACTIVITY_DRAW_SHARE"); // 邀请好友任务（屏蔽）
-                presetBad.add("FOREST_ACTIVITY_DRAW_XSSLXCC");  // 千里江山图邀请好友任务，【限时】玩游戏得新机会（屏蔽）
-                presetBad.add("FOREST_ACTIVITY_DRAW_XSSLLXX");  // 千里江山图邀请好友任务，【限时】玩游戏得新机会（屏蔽）
+                presetBad.add("FOREST_ACTIVITY_DRAW_XSSLXCC");  // 活动森林抽抽乐邀请好友任务，【限时】玩游戏得新机会（屏蔽）
+                presetBad.add("FOREST_ACTIVITY_DRAW_XSSLLXX");  // 活动森林抽抽乐邀请好友任务，【限时】玩游戏得新机会（屏蔽）
             }
             // =====================================================
 
             // 根据活动类型选择对应的进入方法
             JSONObject jo;
-            if ("千里江山图".equals(activityName)) {
+            if ("活动森林抽抽乐".equals(activityName)) {
                 jo = new JSONObject(AntForestRpcCall.enterDrawActivityQianli(source));
             } else {
                 jo = new JSONObject(AntForestRpcCall.enterDrawActivityopengreen(source));
@@ -350,7 +350,7 @@ public class ForestChouChouLe {
 
                     // 根据活动类型选择对应的任务列表方法
                     JSONObject listTaskopengreen;
-                    if ("千里江山图".equals(activityName)) {
+                    if ("活动森林抽抽乐".equals(activityName)) {
                         listTaskopengreen = new JSONObject(AntForestRpcCall.listTaskQianli(currentTaskSceneCode, source));
                     } else {
                         listTaskopengreen = new JSONObject(AntForestRpcCall.listTaskopengreen(currentActivityId, currentTaskSceneCode, source));
@@ -382,7 +382,7 @@ public class ForestChouChouLe {
                             // ==================== 活力值兑换任务 ====================
                             if (taskType.equals("NORMAL_DRAW_EXCHANGE_VITALITY") && taskStatus.equals(TaskStatus.TODO.name())) {
                                 String sginRes;
-                                if ("千里江山图".equals(activityName)) {
+                                if ("活动森林抽抽乐".equals(activityName)) {
                                     sginRes = AntForestRpcCall.exchangeTimesFromTaskQianli(
                                             currentActivityId, currentSceneCode, source, taskScene, taskType
                                     );
@@ -407,13 +407,13 @@ public class ForestChouChouLe {
                                 // 调用对应完成接口
                                 String result;
                                 if (taskType.contains("XLIGHT")) {
-                                    if ("千里江山图".equals(activityName)) {
+                                    if ("活动森林抽抽乐".equals(activityName)) {
                                         result = AntForestRpcCall.finishTask4Qianli(taskType, taskScene);
                                     } else {
                                         result = AntForestRpcCall.finishTask4Chouchoule(taskType, taskScene);
                                     }
                                 } else {
-                                    if ("千里江山图".equals(activityName)) {
+                                    if ("活动森林抽抽乐".equals(activityName)) {
                                         result = AntForestRpcCall.finishTaskQianli(taskType, taskScene);
                                     } else {
                                         result = AntForestRpcCall.finishTaskopengreen(taskType, taskScene);
@@ -447,7 +447,7 @@ public class ForestChouChouLe {
             } while (doublecheck && ++loopCount < MAX_LOOP);
 
             // ==================== 执行抽奖 ====================
-            if ("千里江山图".equals(activityName)) {
+            if ("活动森林抽抽乐".equals(activityName)) {
                 jo = new JSONObject(AntForestRpcCall.enterDrawActivityQianli(source));
             } else {
                 jo = new JSONObject(AntForestRpcCall.enterDrawActivityopengreen(source));
@@ -463,7 +463,7 @@ public class ForestChouChouLe {
                 int blance = drawAsset.optInt("blance", 0);
                 while (blance > 0) {
                     JSONObject drawResult;
-                    if ("千里江山图".equals(activityName)) {
+                    if ("活动森林抽抽乐".equals(activityName)) {
                         drawResult = new JSONObject(AntForestRpcCall.drawQianli(currentActivityId, currentSceneCode, source, UserMap.getCurrentUid()));
                     } else {
                         drawResult = new JSONObject(AntForestRpcCall.drawopengreen(currentActivityId, currentSceneCode, source, UserMap.getCurrentUid()));
