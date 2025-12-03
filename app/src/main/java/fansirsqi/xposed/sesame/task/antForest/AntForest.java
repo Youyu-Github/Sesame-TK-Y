@@ -3162,7 +3162,7 @@ public class AntForest extends ModelTask {
             String propType = animalProp.getJSONObject("main").getString("propType");
             String name = animalProp.getJSONObject("partner").getString("name");
             // 调用API进行伙伴派遣
-            JSONObject jo = new JSONObject(AntForestRpcCall.consumeProp(propGroup, propType, false));
+            JSONObject jo = new JSONObject(AntForestRpcCall.consumeProp(propGroup, "", propType, false));
             if (ResChecker.checkRes(TAG + "巡护派遣失败:", jo)) {
                 Log.forest("巡护派遣🐆[" + name + "]");
             } else {
