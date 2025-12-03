@@ -762,6 +762,25 @@ object AntFarmRpcCall {
         return requestString("com.alipay.antfarm.enterFamily", args)
     }
 
+    /**
+     * 家庭任务入口 - 查询当前是否还有「道早安」等家庭任务
+     *
+     * @param animals enterFamily 接口返回的家庭 animals 数组（原样透传给 RPC）
+     */
+    fun familyTaskTips(animals: JSONArray): String {
+        val args = """
+        [{
+            "animals": $animals,
+            "requestType": "NORMAL",
+            "sceneCode": "ANTFARM",
+            "source": "H5",
+            "taskSceneCode": "ANTFARM_FAMILY_TASK",
+            "timeZoneId": "Asia/Shanghai"
+        }]
+        """.trimIndent()
+        return RequestManager.requestString("com.alipay.antfarm.familyTaskTips", args)
+    }
+
     fun familyReceiveFarmTaskAward(taskId: String): String {
         val args =
             "[{\"awardType\":\"FAMILY_INTIMACY\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"taskId\":\"" + taskId + "\",\"taskSceneCode\":\"ANTFARM_FAMILY_TASK\"}]"
