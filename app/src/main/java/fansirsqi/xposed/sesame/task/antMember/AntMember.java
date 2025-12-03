@@ -355,14 +355,14 @@ public class AntMember extends ModelTask {
     }
   }
   /**
-   * 执行芝麻信用攒进度的主方法（已根据新日志修复）
+   * 执行芝麻信用攒进度的主方法（已修复方法名调用错误）
    */
   private void doSesameCreditScoreTask() {
       try {
           Log.record(TAG, "芝麻信用攒进度-开始执行任务...");
 
           // 步骤1: 查询初始任务列表
-          String toDoListStr = AntMemberRpcCall.queryGrowthBehaviorToDoList();
+          String toDoListStr = AntMemberRpcCall.queryGrowthBehaviorToDoList(); // <--- 已修正
           JSONObject toDoListJo = new JSONObject(toDoListStr);
 
           if (!toDoListJo.optBoolean("success")) {
@@ -397,7 +397,7 @@ public class AntMember extends ModelTask {
           }
 
           // 步骤3: 重新查询任务列表，执行“待完成”的任务（如每日答题）
-          toDoListStr = AntMemberRpcCall.queryGrowthBehaviorToDoList();
+          toDoListStr = AntMemberRpcCall.queryGrowthBehaviorToDoList(); // <--- 已修正
           toDoListJo = new JSONObject(toDoListStr);
           tasks = toDoListJo.optJSONArray("toDoList");
           if (tasks != null) {
@@ -410,7 +410,7 @@ public class AntMember extends ModelTask {
                       handleDailyQuiz(); // 执行每日答题
                       GlobalThreadPools.sleep(2000); // 等待答题结果处理
                       collectTaskProgress(behaviorId); // 答题后立刻尝试领取进度
-                      break;
+                      break; 
                   }
               }
           }
@@ -468,7 +468,7 @@ public class AntMember extends ModelTask {
   private void collectTaskProgress(String behaviorId) {
       try {
           Log.record(TAG, "芝麻信用攒进度-检查任务["+ behaviorId +"]是否产生可领取的进度...");
-          String toDoListStr = AntMemberRpcCall.queryToDoList();
+          String toDoListStr = AntMemberRpcCall.queryGrowthBehaviorToDoList(); // <--- 已修正
           JSONObject toDoListJo = new JSONObject(toDoListStr);
           JSONArray tasks = toDoListJo.optJSONArray("toDoList");
 
@@ -500,7 +500,6 @@ public class AntMember extends ModelTask {
           Log.printStackTrace(TAG, t);
       }
   }
-
 
   /**
    * 处理每日答题的逻辑（逻辑未变，根据新日志仍然有效）

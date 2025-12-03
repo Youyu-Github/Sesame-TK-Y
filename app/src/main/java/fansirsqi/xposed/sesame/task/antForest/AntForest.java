@@ -593,6 +593,7 @@ public class AntForest extends ModelTask {
             tc.countDebug("拼手速");
 
             if (selfHomeObj != null) {
+                JSONObject processObj;
                 if (isTeam(selfHomeObj)) {
                     processObj = selfHomeObj.optJSONObject("teamHomeResult").optJSONObject("mainMember");
                 } else {
@@ -951,6 +952,7 @@ public class AntForest extends ModelTask {
     private void handleUserProps(JSONObject selfHomeObj) {
         try {
             // JSONArray usingUserProps = selfHomeObj.optJSONArray("usingUserPropsNew");
+            JSONArray usingUserProps;
             if (isTeam(selfHomeObj)) {
                 usingUserProps = selfHomeObj.optJSONObject("teamHomeResult")
                                             .optJSONObject("mainMember")
@@ -1399,8 +1401,8 @@ public class AntForest extends ModelTask {
      * @param waitingBubbles   等待成熟的能量球ID列表
      * @throws JSONException JSON解析异常
      */
-
     private void extractBubbleInfo(JSONObject userHomeObj, long serverTime, List<Long> availableBubbles, List<Pair<Long, Long>> waitingBubbles, String userId) throws JSONException {
+        JSONArray jaBubbles;
         if (isTeam(userHomeObj)) {
             jaBubbles = userHomeObj.optJSONObject("teamHomeResult")
                                 .optJSONObject("mainMember")

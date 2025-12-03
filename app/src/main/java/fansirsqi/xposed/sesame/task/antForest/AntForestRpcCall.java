@@ -931,7 +931,7 @@ public class AntForestRpcCall {
     }
 
     /**
-     * 千里江山图-进入活动
+     * 活动森林抽抽乐-进入活动
      */
     public static String enterDrawActivityQianli(String source) throws JSONException {
         JSONObject params = new JSONObject();
@@ -944,7 +944,7 @@ public class AntForestRpcCall {
     }
 
     /**
-     * 千里江山图-任务列表
+     * 活动森林抽抽乐-任务列表
      */
     public static String listTaskQianli(String sceneCode, String source) throws JSONException {
         JSONObject params = new JSONObject();
@@ -956,7 +956,7 @@ public class AntForestRpcCall {
     }
 
     /**
-     * 千里江山图-活力值兑换
+     * 活动森林抽抽乐-活力值兑换
      */
     public static String exchangeTimesFromTaskQianli(String activityId, String sceneCode, String source, String taskSceneCode, String taskType) throws JSONException {
         JSONObject params = new JSONObject();
@@ -971,7 +971,7 @@ public class AntForestRpcCall {
     }
 
     /**
-     * 千里江山图-广告任务
+     * 活动森林抽抽乐-广告任务
      */
     public static String finishTask4Qianli(String taskType, String sceneCode) throws JSONException {
         JSONObject params = new JSONObject();
@@ -985,7 +985,7 @@ public class AntForestRpcCall {
     }
 
     /**
-     * 千里江山图-完成任务
+     * 活动森林抽抽乐-完成任务
      */
     public static String finishTaskQianli(String taskType, String sceneCode) throws JSONException {
         JSONObject params = new JSONObject();
@@ -999,7 +999,7 @@ public class AntForestRpcCall {
     }
 
     /**
-     * 千里江山图-抽奖
+     * 活动森林抽抽乐-抽奖
      */
     public static String drawQianli(String activityId, String sceneCode, String source, String userId) throws JSONException {
         JSONObject params = new JSONObject();
