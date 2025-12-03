@@ -1040,11 +1040,6 @@ public class AntOcean extends ModelTask {
                     String sceneCode = task.getString("sceneCode");
                     String taskType = task.getString("taskType");
                     String taskStatus = task.getString("taskStatus");
-                    // 在处理任何任务前，先检查黑名单
-                    if (badTaskSet.contains(taskTitle)) {
-                        Log.record(TAG, "海洋任务🌊[" + taskTitle + "]已在黑名单中，跳过处理");
-                        continue;
-                    }
                     if (TaskStatus.FINISHED.name().equals(taskStatus)) {
                         JSONObject joAward = new JSONObject(AntOceanRpcCall.receiveTaskAward(sceneCode, taskType));
                         if (ResChecker.checkRes(TAG + "领取海洋任务奖励失败:", joAward)) {
@@ -1055,6 +1050,11 @@ public class AntOcean extends ModelTask {
                         }
                         GlobalThreadPools.sleep(500);
                     } else if (TaskStatus.TODO.name().equals(taskStatus)) {
+                        // 在处理任何任务前，先检查黑名单
+                        if (badTaskSet.contains(taskTitle)) {
+                            Log.record(TAG, "海洋任务🌊[" + taskTitle + "]已在黑名单中，跳过处理");
+                            continue;
+                        }
                         if (taskTitle.contains("答题")) {
                             answerQuestion();
                         } else {
