@@ -120,7 +120,8 @@ public class AntOrchard extends ModelTask {
 
                     if (batchHireAnimal.getValue()) {
                         try {
-                            JSONObject joo = new JSONObject(AntOrchardRpcCall.mowGrassInfo());
+                            // JSONObject joo = new JSONObject(AntOrchardRpcCall.mowGrassInfo());
+                            JSONObject joo = new JSONObject(AntOrchardRpcCall.friendList());
                             if ("100".equals(joo.getString("resultCode"))) {
                                 if (!joo.optBoolean("hireCountOnceLimit", true) && !joo.optBoolean("hireCountOneDayLimit", true)) {
                                     batchHireAnimalRecommend();

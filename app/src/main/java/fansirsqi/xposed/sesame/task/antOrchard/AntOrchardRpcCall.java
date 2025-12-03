@@ -18,6 +18,16 @@ public class AntOrchardRpcCall {
                         + VERSION + "\"}]");
     }
 
+    /**
+     * 获取好友列表
+     * @return
+     */
+    public static String friendList() {
+        return RequestManager.requestString("com.alipay.antorchard.friendList",
+                "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
+                        + VERSION + "\"}]");
+    }
+
     public static String batchHireAnimalRecommend(String orchardUserId) {
         return RequestManager.requestString("com.alipay.antorchard.batchHireAnimalRecommend",
                 "[{\"orchardUserId\":\"" + orchardUserId
