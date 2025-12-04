@@ -60,6 +60,8 @@ public class Status {
     // ==========================sport
     private Set<String> syncStepList = new HashSet<>();
     private Set<String> exchangeList = new HashSet<>();
+    // 可以存各种今日计数（步数、次数等）
+    private Map<String, Integer> intFlagMap = new HashMap<>();//2025/12/4  GSMT  用来存储int类型数据，无需再重复定义
     /**
      * 捐运动币
      */
@@ -592,6 +594,16 @@ public class Status {
             getINSTANCE().flagList.add(flag);
             save();
         }
+    }
+
+    //2025/12/4 用来获取 自定义flag的int
+    public static Integer getIntFlagToday(String key) {
+        return getINSTANCE().intFlagMap.get(key);
+    }
+
+    public static void setIntFlagToday(String key, int value) {
+        getINSTANCE().intFlagMap.put(key, value);
+        save();
     }
 
     public static Boolean canMemberPointExchangeBenefitToday(String benefitId) {

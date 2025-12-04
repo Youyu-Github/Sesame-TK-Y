@@ -159,34 +159,74 @@ public class AntMemberRpcCall {
 
     /**
      * 游戏中心签到查询
+     * 对应: com.alipay.gamecenteruprod.biz.rpc.v3.querySignInBall
      */
     public static String querySignInBall() {
         return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.v3.querySignInBall",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\"}]");
+                "[{\"source\":\"ch_alipaysearch__chsub_normal\"}]");
     }
 
     /**
      * 游戏中心签到
+     * 对应: com.alipay.gamecenteruprod.biz.rpc.continueSignIn
      */
     public static String continueSignIn() {
         return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.continueSignIn",
-                "[{\"sceneId\":\"GAME_CENTER\",\"signType\":\"NORMAL_SIGN\",\"source\":\"ch_appcenter__chsub_9patch\"}]");
+                "[{\"sceneId\":\"GAME_CENTER\",\"signType\":\"NORMAL_SIGN\",\"source\":\"ch_alipaysearch__chsub_normal\"}]");
+    }
+
+    /**
+     * 游戏中心任务列表
+     * 对应: com.alipay.gamecenteruprod.biz.rpc.v4.queryTaskList
+     */
+    public static String queryGameCenterTaskList() {
+        return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.v4.queryTaskList",
+                "[{\"source\":\"ch_alipaysearch__chsub_normal\"}]");
     }
 
     /**
      * 游戏中心查询待领取乐豆列表
+     * 对应: com.alipay.gamecenteruprod.biz.rpc.v3.queryPointBallList
      */
     public static String queryPointBallList() {
         return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.v3.queryPointBallList",
-                "[{\"source\":\"ch_appcenter__chsub_9patch\"}]");
+                "[{\"source\":\"ch_alipaysearch__chsub_normal\"}]");
+    }
+
+    /**
+     * 收取单个乐豆球
+     * 对应: com.alipay.gamecenteruprod.biz.rpc.v3.receivePointBall
+     */
+    public static String receivePointBall(String ballId) {
+        return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.v3.receivePointBall",
+                "[{\"ballId\":\"" + ballId + "\",\"source\":\"ch_alipaysearch__chsub_normal\"}]");
     }
 
     /**
      * 游戏中心全部领取
+     * 对应: com.alipay.gamecenteruprod.biz.rpc.v3.batchReceivePointBall
      */
     public static String batchReceivePointBall() {
         return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.v3.batchReceivePointBall",
                 "[{}]");
+    }
+
+    /**
+     * 游戏中心普通平台任务完成（如貔貅任务）
+     * 对应: com.alipay.gamecenteruprod.biz.rpc.v3.doTaskSend
+     */
+    public static String doTaskSend(String taskId) {
+        return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.v3.doTaskSend",
+                "[{\"taskId\":\"" + taskId + "\"}]");
+    }
+
+    /**
+     * 游戏中心签到类平台任务完成（needSignUp = true）
+     * 对应: com.alipay.gamecenteruprod.biz.rpc.v3.doTaskSignup
+     */
+    public static String doTaskSignup(String taskId) {
+        return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.v3.doTaskSignup",
+                "[{\"source\":\"ch_alipaysearch__chsub_normal\",\"taskId\":\"" + taskId + "\"}]");
     }
 
     /**

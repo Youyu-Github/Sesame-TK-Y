@@ -68,23 +68,30 @@ public class AntSportsRpcCall {
         return RequestManager.requestString("com.alipay.sportshealth.biz.rpc.SportsHealthCoinTaskRpc.signInCoinTask", args1);
     }
 
-    // 领取任务奖励 - 默认不领取所有能量球
+    // 领取任务奖励 - 默认不领取所有能量球（抢好友能量球）
     public static String pickBubbleTaskEnergy(String medEnergyBallInfoRecordId) {
         return pickBubbleTaskEnergy(medEnergyBallInfoRecordId, false);
     }
 
-    // 领取任务奖励 - 可指定是否领取所有能量球
+    // 领取任务奖励 - 可指定是否领取所有能量球（抢好友能量球）
+    // 对应文档：com.alipay.neverland.biz.rpc.pickBubbleTaskEnergy
+    // {
+    //   "apiVersion": "energy",
+    //   "chInfo": "healthstep",
+    //   "medEnergyBallInfoRecordIds":["824a1eb3..."],
+    //   "pickAllEnergyBall": false,
+    //   "source": "SPORT"
+    // }
+    
     public static String pickBubbleTaskEnergy(String medEnergyBallInfoRecordId, boolean pickAllEnergyBall) {
-        String args1 = "[\n" +
-                "    {\n" +
-                "        \"apiVersion\": \"energy\",\n" +
-                "        \"chInfo\": \"medical_health\",\n" +
-                "        \"clientOS\": \"android\",\n" +
-                "        \"features\": " + features +
-                "        \"medEnergyBallInfoRecordIds\": [\"" + medEnergyBallInfoRecordId + "\"],\n" +
-                "        \"pickAllEnergyBall\": " + pickAllEnergyBall + ",\n" +
-                "        \"source\": \"SPORT\"\n" +
-                "    }\n" +
+        String args1 = "[" +
+                "{" +
+                "\"apiVersion\":\"energy\"," +
+                "\"chInfo\":\"healthstep\"," +
+                "\"medEnergyBallInfoRecordIds\":[\"" + medEnergyBallInfoRecordId + "\"]," +
+                "\"pickAllEnergyBall\":" + pickAllEnergyBall + "," +
+                "\"source\":\"SPORT\"" +
+                "}" +
                 "]";
         return RequestManager.requestString("com.alipay.neverland.biz.rpc.pickBubbleTaskEnergy", args1);
     }
@@ -346,38 +353,102 @@ public class AntSportsRpcCall {
     }
 
     /* 抢好友大战 */
+    // 查询抢好友主页
+    // 对应文档：alipay.antsports.club.home.queryClubHome
+    // 请求：{"apiVersion":"energy","chInfo":"healthstep","timeZone":"Asia/Shanghai"}
     public static String queryClubHome() {
-        return RequestManager.requestString("alipay.antsports.club.home.queryClubHome",
-                "[{\"chInfo\":\"healthstep\",\"timeZone\":\"Asia/Shanghai\"}]");
+        String args = "[" +
+                "{" +
+                "\"apiVersion\":\"energy\"," +
+                "\"chInfo\":\"healthstep\"," +
+                "\"timeZone\":\"Asia/Shanghai\"" +
+                "}" +
+                "]";
+        return RequestManager.requestString("alipay.antsports.club.home.queryClubHome", args);
     }
 
+    // 兼容旧接口名：内部直接走 pickBubbleTaskEnergy（基于 bubbleId）
     public static void collectBubble(String bubbleId) {
-        RequestManager.requestString("alipay.antsports.club.home.collectBubble",
-                "[{\"bubbleId\":\"" + bubbleId + "\",\"chInfo\":\"healthstep\"}]");
+        try {
+            pickBubbleTaskEnergy(bubbleId, false);
+        } catch (Throwable ignored) {
+        }
     }
 
+    // 查询训练项目
+    // 对应文档：alipay.antsports.club.train.queryTrainItem
+    // 请求：{"apiVersion":"energy","chInfo":"healthstep"}
     public static String queryTrainItem() {
-        return RequestManager.requestString("alipay.antsports.club.train.queryTrainItem",
-                "[{\"chInfo\":\"healthstep\"}]");
+        String args = "[" +
+                "{" +
+                "\"apiVersion\":\"energy\"," +
+                "\"chInfo\":\"healthstep\"" +
+                "}" +
+                "]";
+        return RequestManager.requestString("alipay.antsports.club.train.queryTrainItem", args);
     }
 
-    public static String trainMember(String itemType, String memberId, String originBossId) {
-        return RequestManager.requestString("alipay.antsports.club.train.trainMember",
-                "[{\"chInfo\":\"healthstep\",\"itemType\":\"" + itemType + "\",\"memberId\":\"" + memberId + "\",\"originBossId\":\"" + originBossId + "\"}]");
+    // 训练好友
+    // 对应文档：alipay.antsports.club.train.trainMember
+    // 请求：{"apiVersion":"energy","bizId":"...","chInfo":"healthstep","itemType":"skate","memberId":"...","originBossId":"..."}
+    public static String trainMember(String bizId, String itemType, String memberId, String originBossId) {
+        String args = "[" +
+                "{" +
+                "\"apiVersion\":\"energy\"," +
+                "\"bizId\":\"" + bizId + "\"," +
+                "\"chInfo\":\"healthstep\"," +
+                "\"itemType\":\"" + itemType + "\"," +
+                "\"memberId\":\"" + memberId + "\"," +
+                "\"originBossId\":\"" + originBossId + "\"" +
+                "}" +
+                "]";
+        return RequestManager.requestString("alipay.antsports.club.train.trainMember", args);
     }
 
-    public static String queryMemberPriceRanking(String coinBalance) {
-        return RequestManager.requestString("alipay.antsports.club.ranking.queryMemberPriceRanking",
-                "[{\"buyMember\":\"true\",\"chInfo\":\"healthstep\",\"coinBalance\":\"" + coinBalance + "\"}]");
+    // 查询好友是否可抢
+    // 对应文档：alipay.antsports.club.ranking.queryMemberPriceRanking
+    // 请求：{"apiVersion":"energy","buyMember":true,"chInfo":"healthstep","coinBalance":26}
+    public static String queryMemberPriceRanking(int coinBalance) {
+        String args = "[" +
+                "{" +
+                "\"apiVersion\":\"energy\"," +
+                "\"buyMember\":true," +
+                "\"chInfo\":\"healthstep\"," +
+                "\"coinBalance\":" + coinBalance +
+                "}" +
+                "]";
+        return RequestManager.requestString("alipay.antsports.club.ranking.queryMemberPriceRanking", args);
     }
 
+    // 查询玩家
+    // 对应文档：alipay.antsports.club.trade.queryClubMember
     public static String queryClubMember(String memberId, String originBossId) {
-        return RequestManager.requestString("alipay.antsports.club.trade.queryClubMember",
-                "[{\"chInfo\":\"healthstep\",\"memberId\":\"" + memberId + "\",\"originBossId\":\"" + originBossId + "\"}]");
+        String args = "[" +
+                "{" +
+                "\"apiVersion\":\"energy\"," +
+                "\"chInfo\":\"healthstep\"," +
+                "\"memberId\":\"" + memberId + "\"," +
+                "\"originBossId\":\"" + originBossId + "\"" +
+                "}" +
+                "]";
+        return RequestManager.requestString("alipay.antsports.club.trade.queryClubMember", args);
     }
 
+    // 抢好友
+    // 对应文档：alipay.antsports.club.trade.buyMember
+    // 请求：{"apiVersion":"energy","chInfo":"healthstep","currentBossId":"...","memberId":"...","originBossId":"...","priceInfo":{...},"roomId":"..."}
     public static String buyMember(String currentBossId, String memberId, String originBossId, String priceInfo, String roomId) {
-        String requestData = "[{\"chInfo\":\"healthstep\",\"currentBossId\":\"" + currentBossId + "\",\"memberId\":\"" + memberId + "\",\"originBossId\":\"" + originBossId + "\",\"priceInfo\":" + priceInfo + ",\"roomId\":\"" + roomId + "\"}]";
+        String requestData = "[" +
+                "{" +
+                "\"apiVersion\":\"energy\"," +
+                "\"chInfo\":\"healthstep\"," +
+                "\"currentBossId\":\"" + currentBossId + "\"," +
+                "\"memberId\":\"" + memberId + "\"," +
+                "\"originBossId\":\"" + originBossId + "\"," +
+                "\"priceInfo\":" + priceInfo + "," +
+                "\"roomId\":\"" + roomId + "\"" +
+                "}" +
+                "]";
         return RequestManager.requestString("alipay.antsports.club.trade.buyMember", requestData);
     }
 
@@ -634,6 +705,58 @@ public class AntSportsRpcCall {
                             + "\"deviceLevel\":\"high\","
                             + "\"newGame\":0,"
                             + "\"source\":\"jkdsportcard\"}]"
+            );
+        }
+
+        /**
+         * 查询指定类型任务信息  打开任务只中心弹出的浏览任务，   使用energyReceive进行领取
+         * RPC: com.alipay.neverland.biz.rpc.queryTaskInfo
+         *
+         * @param source  来源，例如 "health-island"
+         * @param type    任务类型，例如 "LIGHT_FEEDS_TASK"
+         * @return RPC 返回 JSON 字符串
+         *  * RPC: com.alipay.neverland.biz.rpc.queryTaskInfo
+         *  *
+         *          * 请求示例：
+         *                 * [
+         *                 *   {"source":"health-island","type":"LIGHT_FEEDS_TASK"}
+         *  * ]
+         *          *
+         *          * @param source 来源
+         *  * @param type   任务类型
+         *  * @return RPC 返回的 JSON 字符串
+         *
+         */
+
+        public static String queryTaskInfo(String source, String type) {
+            return RequestManager.requestString(
+                    "com.alipay.neverland.biz.rpc.queryTaskInfo",
+                    "{\"source\":\"" + source + "\",\"type\":\"" + type + "\"}"
+            );
+        }
+
+
+        /**
+         * 领取能量任务奖励
+         * RPC: com.alipay.neverland.biz.rpc.energyReceive
+         *
+         * @param encryptValue 任务唯一标识
+         * @param energyNum    能量数量
+         * @param type         任务类型，例如 "LIGHT_FEEDS_TASK"
+         * @return RPC 返回 JSON 字符串
+         */
+        public static String energyReceive(String encryptValue, int energyNum, String type) {
+
+            String paramJson = "{" +
+                    "\"encryptValue\":\"" + encryptValue + "\"," +
+                    "\"energyNum\":" + energyNum + "," +
+                    "\"source\":\"jkdsportcard\"," +
+                    "\"type\":\"" + type + "\"" +
+                    "}";
+
+            return RequestManager.requestString(
+                    "com.alipay.neverland.biz.rpc.energyReceive",
+                    paramJson
             );
         }
 
