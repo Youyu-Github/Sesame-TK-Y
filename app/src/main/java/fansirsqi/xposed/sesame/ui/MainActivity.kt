@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -181,24 +182,33 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    /**
+     * 处理按钮点击事件
+     *
+     * @param v 被点击的视图
+     *
+     * @details 根据不同的按钮ID执行相应操作：
+     * - 日志查看按钮：打开对应的日志文件
+     * - GitHub按钮：跳转到项目主页
+     * - 设置按钮：打开设置界面
+     * - 一言按钮：获取并显示随机句子
+     */
     fun onClick(v: View) {
-        var data = "file://"
-        val id = v.id
-        when (id) {
+        when (v.id) {
             R.id.btn_forest_log -> {
-                data += Files.getForestLogFile().absolutePath
+                openLogFile(Files.getForestLogFile())
             }
 
             R.id.btn_farm_log -> {
-                data += Files.getFarmLogFile().absolutePath
+                openLogFile(Files.getFarmLogFile())
             }
 
             R.id.btn_other_log -> {
-                data += Files.getOtherLogFile().absolutePath
+                openLogFile(Files.getOtherLogFile())
             }
 
             R.id.btn_github -> {
-                data = "https://github.com/Fansirsqi/Sesame-TK"
+                openGitHub()
             }
 
             R.id.btn_settings -> {
@@ -222,19 +232,56 @@ class MainActivity : BaseActivity() {
             }
 
             R.id.one_word -> {
-                oneWord.text = "正在获取句子，请稍后……"
-                updateSubTitle(RunType.LOADED.nickName)
-
-                lifecycleScope.launch {
-                    val result = FansirsqiUtil.getOneWord()
-                    oneWord.text = result
-                }
-                return
+                fetchOneWord()
             }
         }
-        val it = Intent(this, HtmlViewerActivity::class.java)
-        it.data = data.toUri()
-        startActivity(it)
+    }
+
+    /**
+     * 打开日志文件查看器
+     *
+     * @param logFile 要打开的日志文件
+     *
+     * @details 使用HtmlViewerActivity打开指定的日志文件，
+     * 并启用清空功能和禁用自动换行
+     */
+    private fun openLogFile(logFile: File) {
+        val fileUri = Uri.parse("file://${logFile.absolutePath}")
+        val intent = Intent(this, HtmlViewerActivity::class.java).apply {
+            data = fileUri
+            putExtra("nextLine", false)
+            putExtra("canClear", true)
+        }
+        startActivity(intent)
+    }
+
+    /**
+     * 打开GitHub项目页面
+     *
+     * @details 尝试使用浏览器打开项目的GitHub链接，
+     * 如果没有可用浏览器则显示错误提示
+     */
+    private fun openGitHub() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Fansirsqi/Sesame-TK"))
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "未找到可用的浏览器", Toast.LENGTH_SHORT).show()
+            Log.error(TAG, "无法打开浏览器: ${e.message}")
+        }
+    }
+
+    /**
+     * 获取并显示一言（随机句子）
+     *
+     * @details 显示加载提示，然后异步获取句子并更新UI
+     */
+    private fun fetchOneWord() {
+        oneWord.text = "😡 正在获取句子，请稍后……"
+        lifecycleScope.launch {
+            val result = FansirsqiUtil.getOneWord()
+            oneWord.text = result
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
