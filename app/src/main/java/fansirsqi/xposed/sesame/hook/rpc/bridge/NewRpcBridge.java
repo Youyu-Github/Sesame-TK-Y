@@ -213,11 +213,11 @@ public class NewRpcBridge implements RpcBridge {
                                     ApplicationHook.setOffline(true);
                                     Notify.updateStatusText("网络连接异常，已进入离线模式");
                                     if (BaseModel.getErrNotify().getValue()) {
-                                        Notify.sendErrorNotification(TimeUtil.getTimeStr() + " | 网络异常次数超过阈值[" + setMaxErrorCount + "]", response);
+                                        Notify.sendNewNotification(TimeUtil.getTimeStr() + " | 网络异常次数超过阈值[" + setMaxErrorCount + "]", response);
                                     }
                                 }
                                 if (BaseModel.getErrNotify().getValue()) {
-                                    Notify.sendErrorNotification(TimeUtil.getTimeStr() + " | 网络异常: " + methodName, response);
+                                    Notify.sendNewNotification(TimeUtil.getTimeStr() + " | 网络异常: " + methodName, response);
                                 }
                                 if (BaseModel.getTimeoutRestart().getValue()) {
                                     Log.record(TAG, "尝试重新登录-延时10s");
