@@ -1,11 +1,15 @@
 package fansirsqi.xposed.sesame.hook;
+
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+
 import fansirsqi.xposed.sesame.model.BaseModel;
 import fansirsqi.xposed.sesame.util.Log;
+
 public class Toast {
     private static final String TAG = Toast.class.getSimpleName();
+
     /**
      * 显示 Toast 消息
      *
@@ -14,6 +18,7 @@ public class Toast {
     public static void show(CharSequence message) {
         show(message, false);
     }
+
     /**
      * 显示 Toast 消息
      *
@@ -26,11 +31,12 @@ public class Toast {
             Log.runtime(TAG, "Context is null, cannot show toast");
             return;
         }
-        boolean shouldShow = force || (BaseModel.getShowToast() != null && BaseModel.getShowToast().getValue());
+        boolean shouldShow = force || BaseModel.getShowToast().getValue();
         if (shouldShow) {
             displayToast(context.getApplicationContext(), message);
         }
     }
+
     /**
      * 显示 Toast 消息（确保在主线程中调用）
      *
@@ -48,10 +54,10 @@ public class Toast {
                 mainHandler.post(() -> createAndShowToast(context, message));
             }
         } catch (Throwable t) {
-            Log.runtime(TAG, "displayToast err:");
-            Log.printStackTrace(TAG, t);
+            Log.printStackTrace(TAG, "displayToast err:", t);
         }
     }
+
     /**
      * 创建并显示 Toast
      *
@@ -64,12 +70,11 @@ public class Toast {
             toast.setGravity(
                     toast.getGravity(),
                     toast.getXOffset(),
-                    BaseModel.getToastOffsetY() != null ? BaseModel.getToastOffsetY().getValue() : 0
+                    BaseModel.getToastOffsetY().getValue()
             );
             toast.show();
         } catch (Throwable t) {
-            Log.runtime(TAG, "createAndShowToast err:");
-            Log.printStackTrace(TAG, t);
+            Log.printStackTrace(TAG, "createAndShowToast err:", t);
         }
     }
 }
