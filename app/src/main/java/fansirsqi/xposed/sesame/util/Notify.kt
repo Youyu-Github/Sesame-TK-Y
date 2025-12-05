@@ -459,7 +459,7 @@ object Notify {
 
     @SuppressLint("StaticFieldLeak")
     @JvmStatic
-    fun sendErrorNotification(title: String?, content: String?) {
+    fun sendNewNotification(title: String?, content: String?) {
         try {
             val localContext = context ?: return
             
