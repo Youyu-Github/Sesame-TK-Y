@@ -5,7 +5,7 @@ pluginManagement {
         google()
     }
     plugins {
-        kotlin("jvm") version "2.2.0-Beta2"  // 使用与libs.versions.toml中kotlin-plugin相同的版本
+        kotlin("jvm") version "2.2.21"  // 使用与libs.versions.toml中kotlin-plugin相同的版本
     }
 }
 
@@ -26,6 +26,6 @@ dependencyResolutionManagement {
     }
 }
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.10.0"
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 include(":app")

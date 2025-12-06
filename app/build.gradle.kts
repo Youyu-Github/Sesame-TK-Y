@@ -135,8 +135,8 @@ android {
         externalNativeBuild {
             cmake {
                 path = cmakeFile
-                version = "3.31.6"
-                ndkVersion = "29.0.13113456"
+                version = "4.1.2"
+                ndkVersion = "29.0.14206865"
             }
         }
     }
@@ -160,7 +160,7 @@ dependencies {
     implementation(libs.ui.tooling.preview.android)
 
     // Compose 相关依赖 - 现代化 UI 框架
-    val composeBom = platform("androidx.compose:compose-bom:2025.05.00")  // Compose BOM 版本管理
+    val composeBom = platform("androidx.compose:compose-bom:2025.12.00")  // Compose BOM 版本管理
     implementation(composeBom)
     testImplementation(composeBom)
     androidTestImplementation(composeBom)
