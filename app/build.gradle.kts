@@ -46,7 +46,7 @@ android {
     defaultConfig {
         vectorDrawables.useSupportLibrary = true
         applicationId = "fansirsqi.xposed.sesame"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
 
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).apply {

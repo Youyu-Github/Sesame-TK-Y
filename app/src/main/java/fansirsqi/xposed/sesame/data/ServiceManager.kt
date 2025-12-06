@@ -1,10 +1,10 @@
 package fansirsqi.xposed.sesame.data
 
-
 import fansirsqi.xposed.sesame.util.Log
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 object ServiceManager {
@@ -29,11 +29,12 @@ object ServiceManager {
     /** 状态监听器列表 */
     private val listeners = CopyOnWriteArrayList<(ConnectionState) -> Unit>()
 
-    /** 是否已初始化 */
-    private val isInitialized = AtomicReference(false)
+    /** 是否已初始化 - 使用 AtomicBoolean 替代 AtomicReference<Boolean> 以消除警告 */
+    private val isInitialized = AtomicBoolean(false)
 
     /** 初始化 ServiceManager 并注册 XposedService 监听 */
     fun init() {
+        // compareAndSet(expect, update) 用法与 AtomicReference 相同
         if (!isInitialized.compareAndSet(false, true)) return
 
         val listener = object : XposedServiceHelper.OnServiceListener {
