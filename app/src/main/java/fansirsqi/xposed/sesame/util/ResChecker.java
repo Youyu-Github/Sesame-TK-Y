@@ -59,6 +59,7 @@ public class ResChecker {
                     memo.contains("不支持rpc完成的任务") ||
                     memo.contains("饲料槽已满") ||
                     memo.contains("已经在限时挑战玩法里啦") ||
+                    memo.contains("二级能量类目未生效") ||
                     memo.contains("手速太快")) {
                 return false; // 返回false，但不打印错误日志
             }
