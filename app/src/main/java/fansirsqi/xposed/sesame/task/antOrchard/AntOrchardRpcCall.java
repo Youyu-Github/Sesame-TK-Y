@@ -1,10 +1,11 @@
 package fansirsqi.xposed.sesame.task.antOrchard;
+
 import java.util.List;
 import fansirsqi.xposed.sesame.hook.RequestManager;
 
 public class AntOrchardRpcCall {
-    // [修复] 更新版本号
-    private static final String VERSION = "20250812.01";
+    // 保持使用较新版本号
+    private static final String VERSION = "20251128.01";
 
     public static String orchardIndex() {
         return RequestManager.requestString("com.alipay.antfarm.orchardIndex",
@@ -12,19 +13,16 @@ public class AntOrchardRpcCall {
                         + VERSION + "\"}]");
     }
 
-    public static String mowGrassInfo() {
-        return RequestManager.requestString("com.alipay.antorchard.mowGrassInfo",
-                "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"showRanking\":true,\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
-                        + VERSION + "\"}]");
-    }
-
-    /**
-     * 获取好友列表
-     * @return
-     */
+    // Java版保留的一键捉鸡功能需要此方法
     public static String friendList() {
         return RequestManager.requestString("com.alipay.antorchard.friendList",
                 "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
+                        + VERSION + "\"}]");
+    }
+
+    public static String extraInfoGet() {
+        return RequestManager.requestString("com.alipay.antorchard.extraInfoGet",
+                "[{\"from\":\"entry\",\"requestType\":\"NORMAL\",\"sceneCode\":\"FUGUO\",\"source\":\"ch_alipaysearch__chsub_normal\",\"version\":\""
                         + VERSION + "\"}]");
     }
 
@@ -36,15 +34,10 @@ public class AntOrchardRpcCall {
     }
 
     public static String batchHireAnimal(List<String> recommendGroupList) {
+        String groups = recommendGroupList != null ? String.join(",", recommendGroupList) : "";
         return RequestManager.requestString("com.alipay.antorchard.batchHireAnimal",
-                "[{\"recommendGroupList\":[" + String.join(",", recommendGroupList)
+                "[{\"recommendGroupList\":[" + groups
                         + "],\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"sceneType\":\"weed\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
-                        + VERSION + "\"}]");
-    }
-
-    public static String extraInfoGet() {
-        return RequestManager.requestString("com.alipay.antorchard.extraInfoGet",
-                "[{\"from\":\"entry\",\"requestType\":\"NORMAL\",\"sceneCode\":\"FUGUO\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
                         + VERSION + "\"}]");
     }
 
@@ -60,13 +53,11 @@ public class AntOrchardRpcCall {
                         + treeLevel + "\",\"version\":\"" + VERSION + "\"}]");
     }
 
-    // [修复] 增加了对 optionKey 为 null 的处理，因为落叶任务不需要 optionKey
     public static String triggerSubplotsActivity(String activityId, String activityType, String optionKey) {
-        String optionKeyJson = optionKey == null ? "" : ",\"optionKey\":\"" + optionKey + "\"";
         return RequestManager.requestString("com.alipay.antorchard.triggerSubplotsActivity",
                 "[{\"activityId\":\"" + activityId + "\",\"activityType\":\"" + activityType
-                        + "\"" + optionKeyJson
-                        + ",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
+                        + "\",\"optionKey\":\"" + (optionKey == null ? "" : optionKey)
+                        + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
                         + VERSION + "\"}]");
     }
 
@@ -89,17 +80,20 @@ public class AntOrchardRpcCall {
                         + VERSION + "\"}]");
     }
 
-    // [修复] 施肥方法增加 plantScene 和 useBatchSpread 参数
+    /**
+     * 施肥
+     * 注意：Kotlin代码中 "version":$VERSION (无引号)，此处严格同步
+     */
     public static String orchardSpreadManure(String wua) {
         return RequestManager.requestString("com.alipay.antfarm.orchardSpreadManure",
-                "[{\"plantScene\":\"main\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"useBatchSpread\":false,\"useWua\":true,\"version\":\""
-                        + VERSION + "\",\"wua\":\"" + wua + "\"}]");
+                "[{\"plantScene\":\"main\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"useBatchSpread\":false,\"version\":"
+                        + VERSION + ",\"wua\":\"" + wua + "\"}]");
     }
 
     public static String receiveTaskAward(String sceneCode, String taskType) {
         return RequestManager.requestString("com.alipay.antiep.receiveTaskAward",
                 "[{\"ignoreLimit\":false,\"requestType\":\"NORMAL\",\"sceneCode\":\"" + sceneCode
-                        + "\",\"source\":\"ch_appcenter__chsub_9patch\",\"taskType\":\""
+                        + "\",\"source\":\"ch_alipaysearch__chsub_normal\",\"taskType\":\""
                         + taskType + "\",\"version\":\"" + VERSION + "\"}]");
     }
 
