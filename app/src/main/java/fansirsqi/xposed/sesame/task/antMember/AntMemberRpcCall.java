@@ -1,5 +1,6 @@
 package fansirsqi.xposed.sesame.task.antMember;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -285,7 +286,7 @@ public class AntMemberRpcCall {
      * @param ballIdList 进度球ID列表
      * @return RPC响应
      */
-    public static String collectProgressBall(org.json.JSONArray ballIdList) {
+    public static String collectProgressBall(JSONArray ballIdList) {
         String requestData = "[{\"ballIdList\":" + ballIdList.toString() + "}]";
         return RequestManager.requestString("com.antgroup.zmxy.zmcustprod.biz.rpc.growthbehavior.apiGrowthBehaviorRpcManager.collectProgressBall", requestData);
     }
@@ -676,5 +677,143 @@ public class AntMemberRpcCall {
             "{\"chInfo\":\"%s\",\"stageCode\":\"receive\",\"taskId\":\"%s\"}",
             chInfo, taskId);
         return sesameTreeTrigger("RENT_GREEN_TASK_FINISH", extInfo);
+    }
+
+    // ================= 年度回顾（任务中心） =================
+    public static final String ANNUAL_REVIEW_OPERATION_IDENTIFY =
+            "independent_component_program2025111803036407";
+    public static final String ANNUAL_REVIEW_COMPONENT_PREFIX =
+            "independent_component_task_reward_v2_02888775";
+    public static final String ANNUAL_REVIEW_QUERY_COMPONENT =
+            ANNUAL_REVIEW_COMPONENT_PREFIX + "_independent_component_task_reward_query";
+    public static final String ANNUAL_REVIEW_APPLY_COMPONENT =
+            ANNUAL_REVIEW_COMPONENT_PREFIX + "_independent_component_task_reward_apply";
+    public static final String ANNUAL_REVIEW_PROCESS_COMPONENT =
+            ANNUAL_REVIEW_COMPONENT_PREFIX + "_independent_component_task_reward_process";
+    public static final String ANNUAL_REVIEW_Get =
+            ANNUAL_REVIEW_COMPONENT_PREFIX + "_independent_component_task_reward_process";
+    public static final String ANNUAL_REVIEW_GET_REWARD_COMPONENT =
+            ANNUAL_REVIEW_COMPONENT_PREFIX + "_independent_component_task_reward_get_reward";
+
+    private static JSONObject buildAnnualReviewBasePayload() throws JSONException {
+        JSONObject root = new JSONObject();
+        root.put("channel", "share");
+        root.put("cityCode", "110000");
+        root.put("operationParamIdentify", ANNUAL_REVIEW_OPERATION_IDENTIFY);
+        // 默认 source 为查询组件，具体请求中可覆盖
+        root.put("source", ANNUAL_REVIEW_QUERY_COMPONENT);
+        return root;
+    }
+
+    /**
+     * 年度回顾 - 查询任务列表
+     *
+     * 对应文档示例：components 中携带
+     *   independent_component_task_reward_v2_02888775_independent_component_task_reward_query
+     */
+    public static String annualReviewQueryTasks() {
+        try {
+            JSONObject body = buildAnnualReviewBasePayload();
+            JSONObject components = new JSONObject();
+            components.put(ANNUAL_REVIEW_QUERY_COMPONENT, new JSONObject());
+            body.put("components", components);
+            body.put("source", ANNUAL_REVIEW_QUERY_COMPONENT);
+
+            return RequestManager.requestString(
+                    "alipay.imasp.program.programInvoke",
+                    new JSONArray().put(body).toString()
+            );
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    /**
+     * 年度回顾 - 领取单个任务（apply）
+     *
+     * 请求示例参见文档：components 中携带
+     *   independent_component_task_reward_v2_02888775_independent_component_task_reward_apply
+     */
+    public static String annualReviewApplyTask(String code) {
+        try {
+            JSONObject body = buildAnnualReviewBasePayload();
+
+            JSONObject compBody = new JSONObject();
+            compBody.put("code", code);
+            compBody.put("consultAfterLuckDraw", "false");
+            compBody.put("skipLuckDrawConsult", "true");
+
+            JSONObject components = new JSONObject();
+            components.put(ANNUAL_REVIEW_APPLY_COMPONENT, compBody);
+
+            body.put("components", components);
+            body.put("source", ANNUAL_REVIEW_APPLY_COMPONENT);
+
+            return RequestManager.requestString(
+                    "alipay.imasp.program.programInvoke",
+                    new JSONArray().put(body).toString()
+            );
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    /**
+     * 年度回顾 - 提交任务完成（process）
+     *
+     * 请求示例参见文档：components 中携带
+     *   independent_component_task_reward_v2_02888775_independent_component_task_reward_process
+     */
+    public static String annualReviewProcessTask(String code, String recordNo) {
+        try {
+            JSONObject body = buildAnnualReviewBasePayload();
+
+            JSONObject compBody = new JSONObject();
+            compBody.put("code", code);
+            compBody.put("recordNo", recordNo);
+
+            JSONObject components = new JSONObject();
+            components.put(ANNUAL_REVIEW_PROCESS_COMPONENT, compBody);
+
+            body.put("components", components);
+            body.put("source", ANNUAL_REVIEW_PROCESS_COMPONENT);
+
+            return RequestManager.requestString(
+                    "alipay.imasp.program.programInvoke",
+                    new JSONArray().put(body).toString()
+            );
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    /**
+     * 年度回顾 - 领取奖励（get_reward）
+     *
+     * 在任务完成后，根据 code + recordNo 领取成长值奖励。
+     */
+    public static String annualReviewGetReward(String code, String recordNo) {
+        try {
+            JSONObject body = buildAnnualReviewBasePayload();
+
+            JSONObject compBody = new JSONObject();
+            compBody.put("code", code);
+            compBody.put("consultAfterLuckDraw", "false");
+            compBody.put("recordNo", recordNo);
+            compBody.put("skipLuckDrawConsult", "true");
+
+            JSONObject components = new JSONObject();
+            components.put(ANNUAL_REVIEW_GET_REWARD_COMPONENT, compBody);
+
+            body.put("components", components);
+            body.put("source", ANNUAL_REVIEW_GET_REWARD_COMPONENT);
+
+            return RequestManager.requestString(
+                    "alipay.imasp.program.programInvoke",
+                    new JSONArray().put(body).toString()
+            );
+        } catch (Throwable e) {
+            return null;
+        }
     }
 }

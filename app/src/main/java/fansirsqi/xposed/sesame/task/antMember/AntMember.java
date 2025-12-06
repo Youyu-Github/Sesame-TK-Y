@@ -61,6 +61,8 @@ public class AntMember extends ModelTask {
   private BooleanModelField sesameTreeTask;
   private BooleanModelField purifySesameTree;
   private BooleanModelField sesameCreditScoreTask; // 新增：芝麻信用攒进度开关
+  //年度回顾
+  private BooleanModelField AnnualReview;
 
   @Override
   public ModelFields getFields() {
@@ -87,6 +89,7 @@ public class AntMember extends ModelTask {
     modelFields.addField(merchantMoreTask = new BooleanModelField("merchantMoreTask", "商家服务 | 积分任务", false));
     modelFields.addField(beanSignIn = new BooleanModelField("beanSignIn", "安心豆签到", false));
     modelFields.addField(beanExchangeBubbleBoost = new BooleanModelField("beanExchangeBubbleBoost", "安心豆兑换时光加速器", false));
+    modelFields.addField(AnnualReview = new BooleanModelField("AnnualReview", "年度回顾", false));
     return modelFields;
   }
   @Override
@@ -169,6 +172,10 @@ public class AntMember extends ModelTask {
       if (beanExchangeBubbleBoost.getValue()) {
         beanExchangeBubbleBoost();
         tc.countDebug("安心豆兑换时光加速器");
+      }
+      if (AnnualReview.getValue()) {
+        doAnnualReview();
+        tc.countDebug("年度回顾");
       }
       if (merchantSign.getValue() || merchantKmdk.getValue() || merchantMoreTask.getValue()) {
         JSONObject jo = new JSONObject(AntMemberRpcCall.transcodeCheck());
@@ -673,6 +680,8 @@ public class AntMember extends ModelTask {
     "坚持逛裹酱领福利",
     "芝麻租赁下单得芝麻粒",
     "去订阅芝麻小组件",
+    "租游戏账号得芝麻粒",
+    "租会员下单得芝麻粒",
     "逛淘宝签到",              // 需要淘宝操作
     "坚持签到领奖励"            // 需要淘宝操作
   };
@@ -1654,7 +1663,7 @@ public class AntMember extends ModelTask {
     }
   }
   private void enableGameCenter() {
-    try {
+      try {
           // 1. 查询签到状态并尝试签到
           try {
               String resp = AntMemberRpcCall.querySignInBall();
@@ -1936,6 +1945,280 @@ public class AntMember extends ModelTask {
           Log.runtime(TAG, "beanSignIn err:");
           Log.printStackTrace(TAG, t);
       }
+  }
+
+  /**
+   * 年度回顾任务：通过 programInvoke 查询并自动完成任务
+   *
+   *
+   * 1) alipay.imasp.program.programInvoke + ..._task_reward_query 查询 playTaskOrderInfoList
+   * 2) 对于 taskStatus = "init" 的任务，使用 ..._task_reward_apply(code) 领取，得到 recordNo
+   * 3) 使用 ..._task_reward_process(code, recordNo) 上报完成，服务端自动发放成长值奖励
+   */
+  private void doAnnualReview() {
+    try {
+      Log.record(TAG + ".doAnnualReview", "年度回顾🎞[开始执行]");
+
+      String resp = AntMemberRpcCall.annualReviewQueryTasks();
+      if (resp == null || resp.isEmpty()) {
+        Log.record(TAG + ".doAnnualReview", "年度回顾[查询返回空]");
+        return;
+      }
+
+      JSONObject root;
+      try {
+        root = new JSONObject(resp);
+      } catch (Throwable e) {
+        Log.printStackTrace(TAG + ".doAnnualReview.parseRoot", e);
+        return;
+      }
+
+      if (!root.optBoolean("isSuccess", false)) {
+        Log.record(TAG + ".doAnnualReview", "年度回顾[查询失败]#" + resp);
+        return;
+      }
+
+      JSONObject components = root.optJSONObject("components");
+      if (components == null || components.length() == 0) {
+        Log.record(TAG + ".doAnnualReview", "年度回顾[components 为空]");
+        return;
+      }
+
+      JSONObject queryComp = components.optJSONObject(AntMemberRpcCall.ANNUAL_REVIEW_QUERY_COMPONENT);
+      if (queryComp == null) {
+        // 兜底：取第一个组件
+        try {
+          java.util.Iterator<String> it = components.keys();
+          if (it.hasNext()) {
+            queryComp = components.optJSONObject(it.next());
+          }
+        } catch (Throwable ignored) {
+        }
+      }
+      if (queryComp == null) {
+        Log.record(TAG + ".doAnnualReview", "年度回顾[未找到查询组件]");
+        return;
+      }
+      if (!queryComp.optBoolean("isSuccess", true)) {
+        Log.record(TAG + ".doAnnualReview", "年度回顾[查询组件返回失败]");
+        return;
+      }
+
+      JSONObject content = queryComp.optJSONObject("content");
+      if (content == null) {
+        Log.record(TAG + ".doAnnualReview", "年度回顾[content 为空]");
+        return;
+      }
+
+      JSONArray taskList = content.optJSONArray("playTaskOrderInfoList");
+      if (taskList == null || taskList.length() == 0) {
+        Log.record(TAG + ".doAnnualReview", "年度回顾[当前无可处理任务]");
+        return;
+      }
+
+      int candidate = 0;
+      int applied = 0;
+      int processed = 0;
+      int failed = 0;
+
+      for (int i = 0; i < taskList.length(); i++) {
+        JSONObject task = taskList.optJSONObject(i);
+        if (task == null) {
+          continue;
+        }
+
+        String taskStatus = task.optString("taskStatus", "");
+        if (!"init".equals(taskStatus)) {
+          // 已完成/已领奖等状态直接跳过
+          continue;
+        }
+        candidate++;
+
+        String code = task.optString("code", "");
+        if (code.isEmpty()) {
+          JSONObject extInfo = task.optJSONObject("extInfo");
+          if (extInfo != null) {
+            code = extInfo.optString("taskId", "");
+          }
+        }
+        if (code.isEmpty()) {
+          failed++;
+          continue;
+        }
+
+        String taskName = code;
+        JSONObject displayInfo = task.optJSONObject("displayInfo");
+        if (displayInfo != null) {
+          String name = displayInfo.optString("taskName",
+                  displayInfo.optString("activityName", code));
+          if (!name.isEmpty()) {
+            taskName = name;
+          }
+        }
+
+        // ========== Step 1: 领取任务 (apply) ==========
+        String applyResp = AntMemberRpcCall.annualReviewApplyTask(code);
+        if (applyResp == null || applyResp.isEmpty()) {
+          Log.record(TAG + ".doAnnualReview", "年度回顾[领任务失败]" + taskName + "#响应为空");
+          failed++;
+          continue;
+        }
+
+        JSONObject applyRoot;
+        try {
+          applyRoot = new JSONObject(applyResp);
+        } catch (Throwable e) {
+          Log.printStackTrace(TAG + ".doAnnualReview.parseApply", e);
+          failed++;
+          continue;
+        }
+        if (!applyRoot.optBoolean("isSuccess", false)) {
+          Log.record(TAG + ".doAnnualReview", "年度回顾[领任务失败]" + taskName + "#" + applyResp);
+          failed++;
+          continue;
+        }
+        JSONObject applyComps = applyRoot.optJSONObject("components");
+        if (applyComps == null) {
+          failed++;
+          continue;
+        }
+        JSONObject applyComp = applyComps.optJSONObject(AntMemberRpcCall.ANNUAL_REVIEW_APPLY_COMPONENT);
+        if (applyComp == null) {
+          try {
+            java.util.Iterator<String> it2 = applyComps.keys();
+            if (it2.hasNext()) {
+              applyComp = applyComps.optJSONObject(it2.next());
+            }
+          } catch (Throwable ignored) {
+          }
+        }
+        if (applyComp == null || !applyComp.optBoolean("isSuccess", true)) {
+          failed++;
+          continue;
+        }
+        JSONObject applyContent = applyComp.optJSONObject("content");
+        if (applyContent == null) {
+          failed++;
+          continue;
+        }
+        JSONObject claimedTask = applyContent.optJSONObject("claimedTask");
+        if (claimedTask == null) {
+          failed++;
+          continue;
+        }
+        String recordNo = claimedTask.optString("recordNo", "");
+        if (recordNo.isEmpty()) {
+          failed++;
+          continue;
+        }
+        applied++;
+
+        GlobalThreadPools.sleep(500);
+
+        // ========== Step 2: 提交任务完成 (process) ==========
+        String processResp = AntMemberRpcCall.annualReviewProcessTask(code, recordNo);
+        if (processResp == null || processResp.isEmpty()) {
+          Log.record(TAG + ".doAnnualReview", "年度回顾[提交任务失败]" + taskName + "#响应为空");
+          failed++;
+          continue;
+        }
+
+        JSONObject processRoot;
+        try {
+          processRoot = new JSONObject(processResp);
+        } catch (Throwable e) {
+          Log.printStackTrace(TAG + ".doAnnualReview.parseProcess", e);
+          failed++;
+          continue;
+        }
+        if (!processRoot.optBoolean("isSuccess", false)) {
+          Log.record(TAG + ".doAnnualReview", "年度回顾[提交任务失败]" + taskName + "#" + processResp);
+          failed++;
+          continue;
+        }
+        JSONObject processComps = processRoot.optJSONObject("components");
+        if (processComps == null) {
+          failed++;
+          continue;
+        }
+        JSONObject processComp = processComps.optJSONObject(AntMemberRpcCall.ANNUAL_REVIEW_PROCESS_COMPONENT);
+        if (processComp == null) {
+          try {
+            java.util.Iterator<String> it3 = processComps.keys();
+            if (it3.hasNext()) {
+              processComp = processComps.optJSONObject(it3.next());
+            }
+          } catch (Throwable ignored) {
+          }
+        }
+        if (processComp == null || !processComp.optBoolean("isSuccess", true)) {
+          failed++;
+          continue;
+        }
+        JSONObject processContent = processComp.optJSONObject("content");
+        if (processContent == null) {
+          failed++;
+          continue;
+        }
+        JSONObject processedTask = processContent.optJSONObject("processedTask");
+        if (processedTask == null) {
+          failed++;
+          continue;
+        }
+        String newStatus = processedTask.optString("taskStatus", "");
+        String rewardStatus = processedTask.optString("rewardStatus", "");
+
+        // ========== Step 3: 如仍未发奖，则调用 get_reward 领取奖励 ==========
+        if (!"success".equalsIgnoreCase(rewardStatus)) {
+          try {
+            String rewardResp = AntMemberRpcCall.annualReviewGetReward(code, recordNo);
+            if (rewardResp != null && !rewardResp.isEmpty()) {
+              JSONObject rewardRoot = new JSONObject(rewardResp);
+              if (rewardRoot.optBoolean("isSuccess", false)) {
+                JSONObject rewardComps = rewardRoot.optJSONObject("components");
+                if (rewardComps != null) {
+                  JSONObject rewardComp = rewardComps.optJSONObject(AntMemberRpcCall.ANNUAL_REVIEW_GET_REWARD_COMPONENT);
+                  if (rewardComp == null) {
+                    try {
+                      java.util.Iterator<String> it4 = rewardComps.keys();
+                      if (it4.hasNext()) {
+                        rewardComp = rewardComps.optJSONObject(it4.next());
+                      }
+                    } catch (Throwable ignored) {
+                    }
+                  }
+                  if (rewardComp != null && rewardComp.optBoolean("isSuccess", true)) {
+                    JSONObject rewardContent = rewardComp.optJSONObject("content");
+                    if (rewardContent != null) {
+                      JSONObject rewardTask = rewardContent.optJSONObject("processedTask");
+                      if (rewardTask == null) {
+                        rewardTask = rewardContent.optJSONObject("claimedTask");
+                      }
+                      if (rewardTask != null) {
+                        String rs = rewardTask.optString("rewardStatus", "");
+                        if (!rs.isEmpty()) {
+                          rewardStatus = rs;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } catch (Throwable e) {
+            Log.printStackTrace(TAG + ".doAnnualReview.getReward", e);
+          }
+        }
+
+        processed++;
+        Log.other("年度回顾🎞[任务完成]" + taskName + "#状态=" + newStatus + " 奖励状态=" + rewardStatus);
+      }
+
+      Log.record(TAG + ".doAnnualReview",
+              "年度回顾🎞[执行结束] 待处理=" + candidate + " 已领取=" + applied + " 已提交=" + processed + " 失败=" + failed);
+    } catch (Throwable t) {
+      Log.printStackTrace(TAG + ".doAnnualReview", t);
+    }
   }
 
   private void beanExchangeBubbleBoost() {
