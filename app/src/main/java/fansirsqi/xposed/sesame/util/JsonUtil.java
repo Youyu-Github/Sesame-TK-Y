@@ -5,7 +5,6 @@ import android.content.Context;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
@@ -36,7 +35,13 @@ public class JsonUtil {
         // 配置 ObjectMapper
         MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // 忽略未知属性
         MAPPER.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false); // 忽略空对象
-        MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL); // 忽略空属性
+        
+        // --- 修复部分开始 ---
+        // 原代码: MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        // 修复后: 使用 setDefaultPropertyInclusion 替代弃用的方法
+        MAPPER.setDefaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
+        // --- 修复部分结束 ---
+        
         MAPPER.setTimeZone(TimeZone.getDefault()); // 设置时区
         MAPPER.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())); // 设置日期格式
     }

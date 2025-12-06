@@ -149,7 +149,8 @@ class HtmlViewerActivity : BaseActivity() {
                 '\b' -> sb.append("\\b")
                 else -> {
                     if (c < 0x20.toChar()) {
-                        sb.append(String.format("\\u%04x", c.toInt()))
+                        // 修复: 使用 c.code 替代 c.toInt()
+                        sb.append(String.format("\\u%04x", c.code))
                     } else {
                         sb.append(c)
                     }
@@ -239,10 +240,9 @@ class HtmlViewerActivity : BaseActivity() {
 
                                         webView.evaluateJavascript("setFullText($jsArg)", null)
 
-                                        // 然后启动增量监听（你在 MyWebView 里实现的）
-                                        if (webView is MyWebView) {
-                                            webView.startWatchingIncremental(path)
-                                        }
+                                        // 然后启动增量监听
+                                        // 修复: 移除了 is MyWebView 的检查，因为 mWebView 声明就是 MyWebView?
+                                        webView.startWatchingIncremental(path)
                                     }
                                 }
                             }
@@ -404,21 +404,20 @@ class HtmlViewerActivity : BaseActivity() {
     // 日志实时显示
     override fun onPause() {
         super.onPause()
-        if (mWebView is MyWebView) {
-            (mWebView as MyWebView).stopWatchingIncremental()
-        }
+        // 修复: 移除了 is MyWebView 的检查
+        mWebView?.stopWatchingIncremental()
     }
 
     override fun onStop() {
         super.onStop()
-        if (mWebView is MyWebView) {
-            (mWebView as MyWebView).stopWatchingIncremental()
-        }
+        // 修复: 移除了 is MyWebView 的检查
+        mWebView?.stopWatchingIncremental()
     }
 
     override fun onDestroy() {
         // 先停止文件监听，再做 WebView 清理，最后再 super
-        (mWebView as? MyWebView)?.stopWatchingIncremental()
+        // 修复: 移除了 is MyWebView 的检查
+        mWebView?.stopWatchingIncremental()
         
         val webView = mWebView // 使用局部变量避免并发修改问题
         if (webView != null) {
