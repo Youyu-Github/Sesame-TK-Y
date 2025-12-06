@@ -262,6 +262,10 @@ public class ApplicationHook {
         XposedBridge.log(TAG + "|handleHookLogic " + packageName + " success!");
         if (hooked) return;
         hooked = true;
+
+        // ✅ 第一步: 尽早安装版本号 Hook (在所有其他 Hook 之前)
+        VersionHook.installHook(classLoader);
+
         try {
             // Hook验证码关闭功能（需要在应用初始化之前就Hook配置写入）
             try {
@@ -283,14 +287,47 @@ public class ApplicationHook {
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     mainHandler = new Handler(Looper.getMainLooper());
                     appContext = (Context) param.args[0];
-                    PackageInfo pInfo = appContext.getPackageManager().getPackageInfo(appContext.getPackageName(), 0);
-                    assert pInfo.versionName != null;
-                    alipayVersion = new AlipayVersion(pInfo.versionName);
-                    Log.runtime(TAG, "handleLoadPackage alipayVersion: " + alipayVersion.getVersionString());
+
+                    // ✅ 优先使用 Hook 捕获的版本号
+                    if (VersionHook.hasVersion()) {
+                        alipayVersion = VersionHook.getCapturedVersion();
+                        Log.runtime(TAG, "📦 支付宝版本(Hook): " + alipayVersion.getVersionString());
+                    } else {
+                        // 回退方案: 使用传统 PackageManager 获取
+                        Log.runtime(TAG, "⚠️ Hook 未捕获到版本号,使用回退方案");
+                        try {
+                            PackageInfo pInfo = appContext.getPackageManager()
+                                    .getPackageInfo(packageName, 0);
+                            if (pInfo.versionName != null) {
+                                alipayVersion = new AlipayVersion(pInfo.versionName);
+                                Log.runtime(TAG, "📦 支付宝版本(回退): " + pInfo.versionName);
+
+                                // 特殊版本处理
+                                if (pInfo.versionName.equals("10.7.26.8100")) {
+                                    HookUtil.INSTANCE.fuckAccounLimit(classLoader);
+                                }
+                            } else {
+                                Log.runtime(TAG, "⚠️ 无法获取版本信息");
+                                alipayVersion = new AlipayVersion(""); // 空版本
+                            }
+                        } catch (Exception e) {
+                            Log.runtime(TAG, "❌ 获取版本号失败");
+                            Log.printStackTrace(TAG, e);
+                            alipayVersion = new AlipayVersion(""); // 空版本
+                        }
+                    }
+
                     loadNativeLibs(appContext, AssetUtil.INSTANCE.getCheckerDestFile());
                     loadNativeLibs(appContext, AssetUtil.INSTANCE.getDexkitDestFile());
                     
                     HookUtil.INSTANCE.fuckAccounLimit(classLoader);
+
+                    // 特殊版本处理 (如果使用 Hook 获取的版本)
+                    if (VersionHook.hasVersion() &&
+                            "10.7.26.8100".equals(alipayVersion.getVersionString())) {
+                        HookUtil.INSTANCE.fuckAccounLimit(classLoader);
+                        Log.runtime(TAG, "✅ 已对版本 10.7.26.8100 进行特殊处理");
+                    }
 
                     if (BuildConfig.DEBUG) {
                         try {
