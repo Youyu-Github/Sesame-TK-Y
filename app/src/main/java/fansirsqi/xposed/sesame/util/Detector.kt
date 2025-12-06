@@ -3,6 +3,7 @@ package fansirsqi.xposed.sesame.util
 import android.content.Context
 import android.content.pm.PackageManager
 import fansirsqi.xposed.sesame.BuildConfig
+import java.io.File
 
 object Detector {
     private const val TAG = "Detector"
