@@ -51,6 +51,11 @@ object RequestManager {
         // val result = ApplicationHook.rpcBridge.requestString(rpcEntity, 3, -1)
         val rpcBridge = getRpcBridge() ?: return ""
         val result = rpcBridge.requestString(rpcEntity, 3, -1)
+        // 修复：在调用checkResult前检查result是否为null
+        if (result == null) {
+            Log.record("RPC call [${rpcEntity.methodName}] returned null result.")
+            return ""
+        }
         return checkResult(result, rpcEntity.methodName)
     }
 
@@ -59,6 +64,11 @@ object RequestManager {
         // val result = ApplicationHook.rpcBridge.requestString(rpcEntity, tryCount, retryInterval)
         val rpcBridge = getRpcBridge() ?: return ""
         val result = rpcBridge.requestString(rpcEntity, tryCount, retryInterval)
+        // 修复：在调用checkResult前检查result是否为null
+        if (result == null) {
+            Log.record("RPC call [${rpcEntity.methodName}] returned null result.")
+            return ""
+        }
         return checkResult(result, rpcEntity.methodName)
     }
 
@@ -67,6 +77,11 @@ object RequestManager {
         // val result = ApplicationHook.rpcBridge.requestString(method, data)
         val rpcBridge = getRpcBridge() ?: return ""
         val result = rpcBridge.requestString(method, data)
+        // 修复：在调用checkResult前检查result是否为null
+        if (result == null) {
+            Log.record("RPC call [$method] returned null result.")
+            return ""
+        }
         return checkResult(result, method)
     }
 
@@ -75,6 +90,11 @@ object RequestManager {
         // val result = ApplicationHook.rpcBridge.requestString(method, data, relation)
         val rpcBridge = getRpcBridge() ?: return ""
         val result = rpcBridge.requestString(method, data, relation)
+        // 修复：在调用checkResult前检查result是否为null
+        if (result == null) {
+            Log.record("RPC call [$method] returned null result.")
+            return ""
+        }
         return checkResult(result, method)
     }
 
@@ -83,6 +103,11 @@ object RequestManager {
         // val result = ApplicationHook.rpcBridge.requestString(method, data, appName, methodName, facadeName)
         val rpcBridge = getRpcBridge() ?: return ""
         val result = rpcBridge.requestString(method, data, appName, methodName, facadeName)
+        // 修复：在调用checkResult前检查result是否为null
+        if (result == null) {
+            Log.record("RPC call [$method] returned null result.")
+            return ""
+        }
         return checkResult(result, method)
     }
 
@@ -91,6 +116,11 @@ object RequestManager {
         // val result = ApplicationHook.rpcBridge.requestString(method, data, tryCount, retryInterval)
         val rpcBridge = getRpcBridge() ?: return ""
         val result = rpcBridge.requestString(method, data, tryCount, retryInterval)
+        // 修复：在调用checkResult前检查result是否为null
+        if (result == null) {
+            Log.record("RPC call [$method] returned null result.")
+            return ""
+        }
         return checkResult(result, method)
     }
 
@@ -98,6 +128,11 @@ object RequestManager {
         // val result = ApplicationHook.rpcBridge.requestString(method, data, relation, tryCount, retryInterval)
         val rpcBridge = getRpcBridge() ?: return ""
         val result = rpcBridge.requestString(method, data, relation, tryCount, retryInterval)
+        // 修复：在调用checkResult前检查result是否为null
+        if (result == null) {
+            Log.record("RPC call [$method] returned null result.")
+            return ""
+        }
         return checkResult(result, method)
     }
 
