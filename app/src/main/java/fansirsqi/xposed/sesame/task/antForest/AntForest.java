@@ -673,7 +673,7 @@ public class AntForest extends ModelTask {
                 // 森林集市
                 if ((getRunCents() >= ForestMarket.getValue())) {
                     GreenLife.ForestMarket("GREEN_LIFE");
-                    GreenLife.ForestMarket("ANTFOREST");
+                    // GreenLife.ForestMarket("ANTFOREST");    // 二级条目暂时关闭
                     tc.countDebug("森林集市");
                 }
                 //医疗健康
