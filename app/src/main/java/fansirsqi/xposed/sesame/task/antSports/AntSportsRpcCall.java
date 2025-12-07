@@ -68,6 +68,12 @@ public class AntSportsRpcCall {
         return RequestManager.requestString("com.alipay.sportshealth.biz.rpc.SportsHealthCoinTaskRpc.signInCoinTask", args1);
     }
 
+    public static String queryCoinBubbleModule() {
+        return RequestManager.requestString("com.alipay.sportshealth.biz.rpc.sportsHealthHomeRpc.queryCoinBubbleModule",
+                "[{\"bubbleId\":\"\",\"canAddHome\":false,\"chInfo\":\"" + chInfo
+                        + "\",\"clientAuthStatus\":\"not_support\",\"clientOS\":\"android\",\"distributionChannel\":\"\",\"features\":[\"DAILY_STEPS_RANK_V2\",\"STEP_BATTLE\",\"CLUB_HOME_CARD\",\"NEW_HOME_PAGE_STATIC\",\"CLOUD_SDK_AUTH\",\"STAY_ON_COMPLETE\",\"EXTRA_TREASURE_BOX\",\"NEW_HOME_PAGE_STATIC\",\"SUPPORT_AI\",\"SUPPORT_TAB3\",\"SUPPORT_FLYRABBIT\",\"PROP\",\"PROPV2\",\"ASIAN_GAMES\"]}]");
+    }
+
     // 领取任务奖励 - 默认不领取所有能量球（抢好友能量球）
     public static String pickBubbleTaskEnergy(String medEnergyBallInfoRecordId) {
         return pickBubbleTaskEnergy(medEnergyBallInfoRecordId, false);
@@ -96,10 +102,23 @@ public class AntSportsRpcCall {
         return RequestManager.requestString("com.alipay.neverland.biz.rpc.pickBubbleTaskEnergy", args1);
     }
 
-    public static String queryCoinBubbleModule() {
-        return RequestManager.requestString("com.alipay.sportshealth.biz.rpc.sportsHealthHomeRpc.queryCoinBubbleModule",
-                "[{\"bubbleId\":\"\",\"canAddHome\":false,\"chInfo\":\"" + chInfo
-                        + "\",\"clientAuthStatus\":\"not_support\",\"clientOS\":\"android\",\"distributionChannel\":\"\",\"features\":[\"DAILY_STEPS_RANK_V2\",\"STEP_BATTLE\",\"CLUB_HOME_CARD\",\"NEW_HOME_PAGE_STATIC\",\"CLOUD_SDK_AUTH\",\"STAY_ON_COMPLETE\",\"EXTRA_TREASURE_BOX\",\"NEW_HOME_PAGE_STATIC\",\"SUPPORT_AI\",\"SUPPORT_TAB3\",\"SUPPORT_FLYRABBIT\",\"PROP\",\"PROPV2\",\"ASIAN_GAMES\"]}]");
+    public static String queryEnergyBubbleModule() {
+        // 构建请求的参数 JSON 字符串
+        String features = "[\"DAILY_STEPS_RANK_V2\", \"STEP_BATTLE\", \"CLUB_HOME_CARD\", \"NEW_HOME_PAGE_STATIC\", \"CLOUD_SDK_AUTH\", \"STAY_ON_COMPLETE\", \"EXTRA_TREASURE_BOX\", \"NEW_HOME_PAGE_STATIC\", \"SUPPORT_AI\", \"SUPPORT_TAB3\", \"SUPPORT_FLYRABBIT\", \"SUPPORT_NEW_MATCH\", \"EXTERNAL_ADVERTISEMENT_TASK\", \"PROP\", \"PROPV2\", \"ASIAN_GAMES\"]";
+
+        String args1 = "[{\"apiVersion\":\"energy\",\"bubbleId\":\"\",\"canAddHome\":false,\"chInfo\":\"ch_appid-20001003__chsub_pageid-com.alipay.android.phone.businesscommon.globalsearch.ui.MainSearchActivity\",\"clientAuthStatus\":\"not_support\",\"clientOS\":\"android\",\"distributionChannel\":\"\",\"features\":" + features + ",\"outBizNo\":\"\"}]";
+
+        return RequestManager.requestString("com.alipay.sportshealth.biz.rpc.sportsHealthHomeRpc.queryEnergyBubbleModule", args1);
+    }
+    public static String pickBubbleTaskEnergy() {
+        // features 数组
+        String features = "[\"DAILY_STEPS_RANK_V2\", \"STEP_BATTLE\", \"CLUB_HOME_CARD\", \"NEW_HOME_PAGE_STATIC\", \"CLOUD_SDK_AUTH\", \"STAY_ON_COMPLETE\", \"EXTRA_TREASURE_BOX\", \"NEW_HOME_PAGE_STATIC\", \"SUPPORT_AI\", \"SUPPORT_TAB3\", \"SUPPORT_FLYRABBIT\", \"SUPPORT_NEW_MATCH\", \"EXTERNAL_ADVERTISEMENT_TASK\", \"PROP\", \"PROPV2\", \"ASIAN_GAMES\"]";
+
+        // 构建请求的 JSON 字符串，medEnergyBallInfoRecordIds 传空数组
+        String args1 = "[{\"apiVersion\":\"energy\",\"chInfo\":\"ch_appid-20001003__chsub_pageid-com.alipay.android.phone.businesscommon.globalsearch.ui.MainSearchActivity\",\"clientOS\":\"android\",\"features\":" + features + ",\"medEnergyBallInfoRecordIds\":[],\"pickAllEnergyBall\":true,\"source\":\"SPORT\"}]";
+
+        // 调用请求方法并返回结果
+        return RequestManager.requestString("com.alipay.neverland.biz.rpc.pickBubbleTaskEnergy", args1);
     }
 
     public static String receiveCoinAsset(String assetId, int coinAmount) {
@@ -731,7 +750,7 @@ public class AntSportsRpcCall {
         public static String queryTaskInfo(String source, String type) {
             return RequestManager.requestString(
                     "com.alipay.neverland.biz.rpc.queryTaskInfo",
-                    "{\"source\":\"" + source + "\",\"type\":\"" + type + "\"}"
+                     "[{\"source\":\"" + source + "\",\"type\":\"" + type + "\"}]"
             );
         }
 
@@ -745,18 +764,26 @@ public class AntSportsRpcCall {
          * @param type         任务类型，例如 "LIGHT_FEEDS_TASK"
          * @return RPC 返回 JSON 字符串
          */
-        public static String energyReceive(String encryptValue, int energyNum, String type) {
+        public static String energyReceive(String encryptValue, int energyNum, String type, String lightTaskId) {
+            // 动态构建 JSON 参数，如果有 lightTaskId 则添加该字段
+            StringBuilder paramJson = new StringBuilder("[{");
 
-            String paramJson = "{" +
-                    "\"encryptValue\":\"" + encryptValue + "\"," +
-                    "\"energyNum\":" + energyNum + "," +
-                    "\"source\":\"jkdsportcard\"," +
-                    "\"type\":\"" + type + "\"" +
-                    "}";
+            paramJson.append("\"encryptValue\":\"").append(encryptValue).append("\",")
+                    .append("\"energyNum\":").append(energyNum).append(",")
+                    .append("\"source\":\"jkdsportcard\",")
+                    .append("\"type\":\"").append(type).append("\"");
 
+            // 只有在 lightTaskId 存在时，才加入该字段
+            if (lightTaskId != null && !lightTaskId.isEmpty()) {
+                paramJson.append(",\"lightTaskId\":\"").append(lightTaskId).append("\"");
+            }
+
+            paramJson.append("}]");
+
+            // 发起请求
             return RequestManager.requestString(
                     "com.alipay.neverland.biz.rpc.energyReceive",
-                    paramJson
+                    paramJson.toString()
             );
         }
 
