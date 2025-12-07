@@ -249,7 +249,7 @@ public class AntOrchard extends ModelTask {
         boolean canExchange = plantInfo.getBoolean("canExchange");
         if (canExchange) {
             Log.farm("🎉 农场果树似乎可以兑换了！");
-            Notify.sendNewNotification("发生什么事了？", "芝麻粒TK提醒您：\n 🎉 农场果树似乎可以兑换了！");
+            // Notify.sendNewNotification("发生什么事了？", "芝麻粒TK提醒您：\n 🎉 农场果树似乎可以兑换了！");
         }
         return plantInfo;
     }
