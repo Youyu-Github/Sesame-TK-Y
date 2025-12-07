@@ -593,9 +593,13 @@ public class AntForest extends ModelTask {
             tc.countDebug("拼手速");
 
             if (selfHomeObj != null) {
-                JSONObject processObj;
+
+                JSONObject processObj = null; // 建议初始化为 null
                 if (isTeam(selfHomeObj)) {
-                    processObj = selfHomeObj.optJSONObject("teamHomeResult").optJSONObject("mainMember");
+                    JSONObject teamHomeResult = selfHomeObj.optJSONObject("teamHomeResult");
+                    if (teamHomeResult != null) {
+                        processObj = teamHomeResult.optJSONObject("mainMember");
+                    }
                 } else {
                     processObj = selfHomeObj;
                 }
@@ -952,17 +956,26 @@ public class AntForest extends ModelTask {
     private void handleUserProps(JSONObject selfHomeObj) {
         try {
             // JSONArray usingUserProps = selfHomeObj.optJSONArray("usingUserPropsNew");
-            JSONArray usingUserProps;
+            JSONArray usingUserProps = null; // 1. 先初始化为 null
+
             if (isTeam(selfHomeObj)) {
-                usingUserProps = selfHomeObj.optJSONObject("teamHomeResult")
-                                            .optJSONObject("mainMember")
-                                            .optJSONArray("usingUserProps");
+                // 2. 安全地拆解链式调用
+                JSONObject teamHomeResult = selfHomeObj.optJSONObject("teamHomeResult");
+                if (teamHomeResult != null) {
+                    JSONObject mainMember = teamHomeResult.optJSONObject("mainMember");
+                    if (mainMember != null) {
+                        usingUserProps = mainMember.optJSONArray("usingUserProps");
+                    }
+                }
             } else {
                 usingUserProps = selfHomeObj.optJSONArray("usingUserPropsNew");
             }
+
             canConsumeAnimalProp = true;
+
+            // 3. 同时判断 null 和 长度为0 (这等价于 Kotlin 中的逻辑)
             if (usingUserProps == null || usingUserProps.length() == 0) {
-                return; // 如果没有使用中的用户道具，直接返回
+                return; 
             }
 //            Log.runtime(TAG, "尝试遍历使用中的道具:" + usingUserProps);
             for (int i = 0; i < usingUserProps.length(); i++) {
@@ -1402,14 +1415,23 @@ public class AntForest extends ModelTask {
      * @throws JSONException JSON解析异常
      */
     private void extractBubbleInfo(JSONObject userHomeObj, long serverTime, List<Long> availableBubbles, List<Pair<Long, Long>> waitingBubbles, String userId) throws JSONException {
-        JSONArray jaBubbles;
+        JSONArray jaBubbles = null; // 1. 初始化为 null
+
         if (isTeam(userHomeObj)) {
-            jaBubbles = userHomeObj.optJSONObject("teamHomeResult")
-                                .optJSONObject("mainMember")
-                                .optJSONArray("bubbles");
+            // 2. 安全地拆解链式调用，防止 NPE
+            JSONObject teamHomeResult = userHomeObj.optJSONObject("teamHomeResult");
+            if (teamHomeResult != null) {
+                JSONObject mainMember = teamHomeResult.optJSONObject("mainMember");
+                if (mainMember != null) {
+                    jaBubbles = mainMember.optJSONArray("bubbles");
+                }
+            }
         } else {
             jaBubbles = userHomeObj.optJSONArray("bubbles");
         }
+
+        // 3. 这里的判断逻辑不需要改，保持原样即可
+        // (如果 jaBubbles 没取到值保持为 null，或者取到了空数组，都会 return)
         if (jaBubbles == null || jaBubbles.length() == 0) {
             return;
         }
@@ -2345,22 +2367,35 @@ public class AntForest extends ModelTask {
     private void updateSelfHomePage(JSONObject joHomePage) {
         try {
             // JSONArray usingUserPropsNew = joHomePage.getJSONArray("loginUserUsingPropNew");
-            JSONArray usingUserPropsNew = null; // 使用局部变量，避免影响类的状态
+            // 1. 对应 Kotlin 第一行：优先尝试获取 "loginUserUsingPropNew"
+            // 使用 optJSONArray 比 getJSONArray 更安全，不会抛异常
+            JSONArray usingUserPropsNew = joHomePage.optJSONArray("loginUserUsingPropNew");
 
-            if (isTeam(joHomePage)) {
-                // 首先尝试从 team 路径获取
-                usingUserPropsNew = joHomePage.optJSONObject("teamHomeResult")
-                                            .optJSONObject("mainMember")
-                                            .optJSONArray("usingUserProps");
-            }
-
-            // 如果不是 team，或者从 team 路径获取失败/结果为空，则从常规路径获取
-            // 注意这里加入了 null 判断，代码更健壮
+            // 2. 如果第一步获取结果为 null 或 空，则进入 fallback 逻辑
             if (usingUserPropsNew == null || usingUserPropsNew.length() == 0) {
-                usingUserPropsNew = joHomePage.optJSONArray("usingUserPropsNew");
+
+                if (isTeam(joHomePage)) {
+                    // 3. Team 分支：必须手动拆解链式调用，防止空指针异常
+                    // 注意：这里需要先将变量置为 null，确保逻辑干净
+                    usingUserPropsNew = null; 
+                    
+                    JSONObject teamHomeResult = joHomePage.optJSONObject("teamHomeResult");
+                    if (teamHomeResult != null) {
+                        JSONObject mainMember = teamHomeResult.optJSONObject("mainMember");
+                        if (mainMember != null) {
+                            usingUserPropsNew = mainMember.optJSONArray("usingUserProps");
+                        }
+                    }
+                    // 如果是 Team 但没取到 props，usingUserPropsNew 保持为 null，
+                    // 且【不会】进入下面的 else 分支，这才是正确的逻辑。
+                    
+                } else {
+                    // 4. else 分支：对应 Kotlin 的 else
+                    usingUserPropsNew = joHomePage.optJSONArray("usingUserPropsNew");
+                }
             }
-            
-            // 如果最终还是 null 或者空，就没必要往下执行了
+
+            // 5. 最终检查：如果是 null 或者长度为 0，直接返回
             if (usingUserPropsNew == null || usingUserPropsNew.length() == 0) {
                 return;
             }
@@ -3489,7 +3524,7 @@ public class AntForest extends ModelTask {
                 String status = resData.optString("usePropStatus");
                 Log.record(TAG, "查成功, 状态: " + status);
 
-                if ("NEED_CONFIRM_CAN_PROLONG".equals(status)) {
+                if ("NEED_CONFIRM_CAN_PROLONG".equals(status) || "REPLACE".equals(status)) {
                     // 情况1: 需要二次确认 (真正的续用)
                     Log.record(TAG, "需要二次确认，发送确认请求...");
                     GlobalThreadPools.sleep(2000);
@@ -3498,7 +3533,7 @@ public class AntForest extends ModelTask {
                     // Log.record(TAG, "发送确认请求: " + jo);
                 }  else {
                     // 其他所有情况都视为最终结果，通常是失败
-                    Log.record(TAG, "道具状态异常或使用失败。");
+                    Log.record(TAG, "道具状态异常或使用失败: " + status);
                     jo = checkResponse;
                 }
             } else {
