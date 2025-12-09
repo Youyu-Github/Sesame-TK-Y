@@ -34,8 +34,8 @@ class WatermarkView(context: Context) : View(context) {
             val prefixLines = mutableListOf(
                 "免费模块仅供学习,勿在国内平台传播!!",
                 "该版不是官方版,是个人学习使用分支!!",
-                "版本号: ${BuildConfig.VERSION}.${BuildConfig.BUILD_TYPE}",
-                "VID: $verifyId"
+                "版本号: ${BuildConfig.VERSION}.${BuildConfig.BUILD_TYPE}"
+                // "VID: $verifyId"
             )
             // 当前时间
             val suffix = "${TimeUtil.getFormatDateTime()}"
@@ -66,7 +66,7 @@ class WatermarkView(context: Context) : View(context) {
     }
 
     /** 控制整体水印稀疏度（越大越密集，越小越稀疏） */
-    private var densityFactor: Float = 0.1f
+    private var densityFactor: Float = 2f
 
     /** 旋转角度 */
     var rotationAngle: Float = -30f
@@ -89,7 +89,7 @@ class WatermarkView(context: Context) : View(context) {
     }
 
     /** 调整整体密度，默认 1f = 正常，0.5f = 稀疏，2f = 更密 */
-    fun setDensity(density: Float = 1f) {
+    fun setDensity(density: Float = 3f) {
         densityFactor = density.coerceAtLeast(0.1f) // 防止过稀
         invalidate()
     }
@@ -110,8 +110,8 @@ class WatermarkView(context: Context) : View(context) {
         val lineHeight = paint.fontSpacing
         val totalTextHeight = lineHeight * textLines.size
 
-        var horizontalSpacing = (maxLineWidth * 1.3f / densityFactor).toInt()
-        var verticalSpacing = (totalTextHeight * 2.3f / densityFactor).toInt()
+        var horizontalSpacing = (maxLineWidth * 1.2f / densityFactor).toInt()
+        var verticalSpacing = (totalTextHeight * 1.5f / densityFactor).toInt()
 
         horizontalSpacing = horizontalSpacing.coerceAtMost(width)
         verticalSpacing = verticalSpacing.coerceAtMost(height)
@@ -144,17 +144,31 @@ class WatermarkView(context: Context) : View(context) {
     }
 
     companion object {
+        // [关键修复] 添加一个固定的TAG，用于识别我们添加的水印视图
+        private const val WATERMARK_VIEW_TAG = "fansirsqi_watermark_view_tag"
+
         @JvmStatic
         @JvmOverloads
         fun install(
             activity: Activity,
             text: String = "",
-            dayColor: Int = "#3e273f47".toColorInt(),   // 明确命名：白天色
-            nightColor: Int = "#7e8a9a9e".toColorInt(), // 明确命名：夜色
-            fontSize: Float = 42f,
+            dayColor: Int = "#3e273f47".toColorInt(),      // 明确命名：白天色
+            nightColor: Int = "#7e8a9a9e".toColorInt(),    // 明确命名：夜晚色
+            fontSize: Float = 27f,
             density: Float = 0.9f
         ): WatermarkView {
+            val rootView = activity.findViewById<ViewGroup>(android.R.id.content)
+
+            // [关键修复] 在添加新水印前，先查找并移除已存在的旧水印
+            val existingWatermark = rootView.findViewWithTag<WatermarkView>(WATERMARK_VIEW_TAG)
+            if (existingWatermark != null) {
+                rootView.removeView(existingWatermark)
+            }
+
             val watermarkView = WatermarkView(activity).apply {
+                // [关键修复] 设置TAG，方便下次查找和移除
+                tag = WATERMARK_VIEW_TAG
+
                 // 先设置日夜颜色（必须在 watermarkText 之前！）
                 setDayNightColors(day = dayColor, night = nightColor)
                 // 再设置文本，内部会调用 updateTextColor()
@@ -163,7 +177,6 @@ class WatermarkView(context: Context) : View(context) {
                 setDensity(density)
             }
 
-            val rootView = activity.findViewById<ViewGroup>(android.R.id.content)
             rootView.addView(
                 watermarkView,
                 ViewGroup.LayoutParams(

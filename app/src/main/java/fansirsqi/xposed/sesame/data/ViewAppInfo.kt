@@ -9,7 +9,6 @@ import fansirsqi.xposed.sesame.util.FansirsqiUtil.getFolderList
 import fansirsqi.xposed.sesame.util.Files
 import io.github.libxposed.service.XposedService
 
-
 @SuppressLint("StaticFieldLeak")
 object ViewAppInfo {
     val TAG: String = ViewAppInfo::class.java.simpleName
@@ -62,9 +61,7 @@ object ViewAppInfo {
         Log.d(TAG, "app data init")
         if (ViewAppInfo.context == null) {
             ViewAppInfo.context = context
-            verifyId = kv.decodeString("verify").takeIf { !it.isNullOrEmpty() }
-                ?: UUID.randomUUID().toString().replace("-", "").also { kv.encode("verify", it) }
-            // verifyId = "debug"
+            verifyId = "0123456789ABCDF"
             verifuids = getFolderList(Files.CONFIG_DIR.absolutePath)
             appBuildNumber = BuildConfig.VERSION_CODE.toString()
             appTitle = context.getString(R.string.app_name)
