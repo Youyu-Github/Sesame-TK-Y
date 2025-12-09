@@ -36,6 +36,7 @@ import fansirsqi.xposed.sesame.util.TimeUtil
 import fansirsqi.xposed.sesame.util.maps.IdMapManager
 import fansirsqi.xposed.sesame.util.maps.ParadiseCoinBenefitIdMap
 import fansirsqi.xposed.sesame.util.maps.UserMap
+import fansirsqi.xposed.sesame.util.maps.VipDataIdMap
 import lombok.ToString
 import org.json.JSONArray
 import org.json.JSONException
@@ -3074,6 +3075,27 @@ class AntFarm : ModelTask() {
     companion object {
         private val TAG: String = AntFarm::class.java.getSimpleName()
         private val objectMapper = ObjectMapper()
+
+        // 抽抽乐 / 广告任务使用的 referToken（从 VipDataIdMap 读取并缓存）
+        private var antFarmReferToken: String? = null
+
+        /**
+         * 加载农场抽抽乐广告 referToken
+         *
+         * AntFarmReferToken：
+         *  - 如果本地已有缓存，直接返回
+         *  - 否则从 VipDataIdMap 加载当前账号下保存的 AntFarmReferToken
+         */
+        @JvmStatic
+        fun loadAntFarmReferToken(): String? {
+            if (!antFarmReferToken.isNullOrEmpty()) return antFarmReferToken
+
+            val uid = UserMap.currentUid
+            val vipData = IdMapManager.getInstance(VipDataIdMap::class.java)
+            vipData.load(uid)
+            antFarmReferToken = vipData.get("AntFarmReferToken")
+            return antFarmReferToken
+        }
 
         init {
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
