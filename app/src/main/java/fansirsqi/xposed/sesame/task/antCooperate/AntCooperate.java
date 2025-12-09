@@ -60,7 +60,7 @@ public class AntCooperate extends ModelTask {
 
     // 新增真爱合种字段
     private final BooleanModelField loveCooperateWater = new BooleanModelField("loveCooperateWater", "真爱合种浇水 | 开启", false);
-    private final IntegerModelField loveCooperateWaterCount = new IntegerModelField("loveCooperateWaterCount", "真爱合种浇水能量（默认20g）", 20, 20, 100000);
+    private final IntegerModelField loveCooperateWaterCount = new IntegerModelField("loveCooperateWaterCount", "真爱合种浇水能量（默认20g）", 20);
     private final BooleanModelField cooperateWater = new BooleanModelField("cooperateWater", "合种浇水 | 开启", false);
     private final SelectAndCountModelField cooperateWaterList = new SelectAndCountModelField("cooperateWaterList", "合种浇水列表", new LinkedHashMap<>(), CooperateEntity.Companion.getList(), "开启合种浇水后执行一次重载");
     private final SelectAndCountModelField cooperateWaterTotalLimitList = new SelectAndCountModelField("cooperateWaterTotalLimitList", "浇水总量限制列表", new LinkedHashMap<>(), CooperateEntity.Companion.getList());
