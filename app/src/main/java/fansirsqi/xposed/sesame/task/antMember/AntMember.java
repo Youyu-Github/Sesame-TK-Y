@@ -368,15 +368,16 @@ public class AntMember extends ModelTask {
       Log.printStackTrace(TAG, t);
     }
   }
+
   /**
-   * 执行芝麻信用攒进度的主方法（已修复方法名调用错误）
+   * 执行芝麻信用攒进度的主方法（已重构优化）
    */
   private void doSesameCreditScoreTask() {
       try {
           Log.record(TAG, "芝麻信用攒进度-开始执行任务...");
 
           // 步骤1: 查询初始任务列表
-          String toDoListStr = AntMemberRpcCall.queryGrowthBehaviorToDoList(); // <--- 已修正
+          String toDoListStr = AntMemberRpcCall.queryGrowthBehaviorToDoList();
           JSONObject toDoListJo = new JSONObject(toDoListStr);
 
           if (!toDoListJo.optBoolean("success")) {
@@ -410,29 +411,30 @@ public class AntMember extends ModelTask {
               }
           }
 
-          // 步骤3: 重新查询任务列表，执行“待完成”的任务（如每日答题）
-          toDoListStr = AntMemberRpcCall.queryGrowthBehaviorToDoList(); // <--- 已修正
+          // 步骤3: 重新查询任务列表，查找并执行“待完成”的视频答题任务
+          toDoListStr = AntMemberRpcCall.queryGrowthBehaviorToDoList();
           toDoListJo = new JSONObject(toDoListStr);
           tasks = toDoListJo.optJSONArray("toDoList");
+          boolean quizHandled = false;
           if (tasks != null) {
               for (int i = 0; i < tasks.length(); i++) {
                   JSONObject task = tasks.getJSONObject(i);
-                  String behaviorId = task.optString("behaviorId");
-                  String status = task.optString("status");
-
-                  if ("meiriwenda".equals(behaviorId) && "wait_doing".equals(status)) {
-                      handleDailyQuiz(); // 执行每日答题
-                      GlobalThreadPools.sleep(2000); // 等待答题结果处理
-                      collectTaskProgress(behaviorId); // 答题后立刻尝试领取进度
-                      break; 
+                  // 使用新的任务ID "shipingwenda"
+                  if ("shipingwenda".equals(task.optString("behaviorId")) && "wait_doing".equals(task.optString("status"))) {
+                      handleDailyQuiz(); // 此方法内部已包含答题和领取逻辑
+                      quizHandled = true;
+                      break;
                   }
               }
           }
           
-          // 步骤4: 一键领取所有剩余的进度球（作为补充和最终确认）
-          Log.record(TAG, "芝麻信用攒进度-等待2秒后开始一键领取剩余进度...");
-          GlobalThreadPools.sleep(2000);
+          // 如果处理了答题，稍微等待，让最终的一键领取能拿到最新状态
+          if(quizHandled) {
+              GlobalThreadPools.sleep(2000);
+          }
 
+          // 步骤4: 一键领取所有剩余的进度球（作为补充和最终确认）
+          Log.record(TAG, "芝麻信用攒进度-开始一键领取所有剩余进度...");
           String progressStr = AntMemberRpcCall.queryScoreProgress();
           JSONObject progressJo = new JSONObject(progressStr);
           if (progressJo.optBoolean("success")) {
@@ -476,51 +478,13 @@ public class AntMember extends ModelTask {
   }
 
   /**
-   * 新增：根据任务ID，查询并收取该任务产生的进度球
-   * @param behaviorId 要收取进度的任务ID
-   */
-  private void collectTaskProgress(String behaviorId) {
-      try {
-          Log.record(TAG, "芝麻信用攒进度-检查任务["+ behaviorId +"]是否产生可领取的进度...");
-          String toDoListStr = AntMemberRpcCall.queryGrowthBehaviorToDoList(); // <--- 已修正
-          JSONObject toDoListJo = new JSONObject(toDoListStr);
-          JSONArray tasks = toDoListJo.optJSONArray("toDoList");
-
-          if (tasks == null) return;
-
-          for (int i = 0; i < tasks.length(); i++) {
-              JSONObject task = tasks.getJSONObject(i);
-              if (behaviorId.equals(task.optString("behaviorId")) && "wait_collect".equals(task.optString("status"))) {
-                  JSONObject scoreAwardVO = task.optJSONObject("scoreAwardVO");
-                  if (scoreAwardVO != null) {
-                      JSONArray awardIdList = scoreAwardVO.optJSONArray("awardIdList");
-                      if (awardIdList != null && awardIdList.length() > 0) {
-                          Log.record(TAG, "芝麻信用攒进度-开始领取任务["+ task.optString("title") +"]的进度球");
-                          String collectResultStr = AntMemberRpcCall.collectProgressBall(awardIdList);
-                          JSONObject collectResultJo = new JSONObject(collectResultStr);
-                          if(collectResultJo.optBoolean("success")) {
-                              String collectedProgress = collectResultJo.optString("collectedProgress", "?");
-                              String totalProgress = collectResultJo.optString("totalProgress", "?");
-                              Log.other("芝麻信用攒进度-领取["+ task.optString("title") +"]成功! 本次领取 " + collectedProgress + "%，当前总进度 " + totalProgress + "%");
-                          } else {
-                              Log.record(TAG, "芝麻信用攒进度-领取["+ task.optString("title") +"]失败: " + collectResultJo.optString("resultView"));
-                          }
-                          return; // 领取后退出
-                      }
-                  }
-              }
-          }
-      } catch (Throwable t) {
-          Log.printStackTrace(TAG, t);
-      }
-  }
-
-  /**
-   * 处理每日答题的逻辑（逻辑未变，根据新日志仍然有效）
+   * 处理每日视频答题并收集进度的完整逻辑（已优化）
    */
   private void handleDailyQuiz() {
       try {
-          Log.record(TAG, "芝麻信用攒进度-开始处理每日答题");
+          Log.record(TAG, "芝麻信用攒进度-开始处理每日视频答题");
+
+          // 1. 查询视频答题的题目信息
           String quizStr = AntMemberRpcCall.queryDailyQuiz();
           JSONObject quizJo = new JSONObject(quizStr);
 
@@ -531,29 +495,64 @@ public class AntMember extends ModelTask {
 
           JSONObject data = quizJo.getJSONObject("data");
           JSONObject questionVo = data.getJSONObject("questionVo");
+          long bizDate = data.getLong("bizDate");
           String questionId = questionVo.getString("questionId");
           String questionContent = questionVo.getString("questionContent");
 
-          // 新版接口直接返回了rightAnswer，可以直接使用
+          // 2. 直接获取正确答案
           JSONObject rightAnswer = questionVo.optJSONObject("rightAnswer");
           if (rightAnswer == null) {
-              Log.record(TAG, "芝麻信用攒进度-未找到正确答案，跳过答题");
-              return; // 未找到答案则跳过
+              Log.record(TAG, "芝麻信用攒进度-未在返回数据中找到正确答案，跳过答题");
+              return;
           }
-          
           String answerId = rightAnswer.getString("answerId");
           String answerContent = rightAnswer.getString("answerContent");
           Log.record(TAG, "芝麻信用攒进度-已获取到正确答案: " + answerContent);
-          
-          long bizDate = data.getLong("bizDate");
+
+          // 3. 提交答案
           String pushResultStr = AntMemberRpcCall.pushDailyQuizAnswer(bizDate, questionId, answerId);
           JSONObject pushResultJo = new JSONObject(pushResultStr);
 
-          if (pushResultJo.optBoolean("success")) {
-              Log.other("芝麻信用攒进度-答题成功: " + questionContent + " -> " + answerContent);
-          } else {
+          if (!pushResultJo.optBoolean("success")) {
               Log.record(TAG, "芝麻信用攒进度-答题失败: " + pushResultJo.optString("resultView"));
+              return;
           }
+          Log.other("芝麻信用攒进度-答题成功: " + questionContent + " -> " + answerContent);
+          
+          // 增加延时，等待服务器状态同步
+          Thread.sleep(2000); 
+
+          // 4. 查询任务状态以获取待收集的进度球ID
+          String toDoListStr = AntMemberRpcCall.queryGrowthBehaviorToDoList();
+          JSONObject toDoListJo = new JSONObject(toDoListStr);
+          JSONArray toDoList = toDoListJo.optJSONArray("toDoList");
+          if (toDoList == null) {
+              Log.record(TAG, "芝麻信用攒进度-查询任务列表失败，无法收集进度");
+              return;
+          }
+
+          for (int i = 0; i < toDoList.length(); i++) {
+              JSONObject task = toDoList.getJSONObject(i);
+              if ("shipingwenda".equals(task.optString("behaviorId")) && "wait_collect".equals(task.optString("status"))) {
+                  JSONObject scoreAwardVO = task.optJSONObject("scoreAwardVO");
+                  if (scoreAwardVO != null) {
+                      JSONArray awardIdList = scoreAwardVO.optJSONArray("awardIdList");
+                      if (awardIdList != null && awardIdList.length() > 0) {
+                          
+                          // 5. 使用统一的 collectProgressBall 方法收集进度
+                          String collectResultStr = AntMemberRpcCall.collectProgressBall(awardIdList);
+                          JSONObject collectResultJo = new JSONObject(collectResultStr);
+                          if(collectResultJo.optBoolean("success")) {
+                              Log.other("芝麻信用攒进度-成功收集答题进度: " + collectResultJo.optString("collectedProgress") + "%");
+                          } else {
+                              Log.record(TAG, "芝麻信用攒进度-收集进度失败: " + collectResultJo.optString("resultView"));
+                          }
+                          return; // 收集完成即可退出
+                      }
+                  }
+              }
+          }
+          Log.record(TAG, "芝麻信用攒进度-未找到待收集的答题进度");
 
       } catch (Throwable t) {
           Log.printStackTrace(TAG, t);
