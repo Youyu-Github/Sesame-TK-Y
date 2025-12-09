@@ -605,34 +605,29 @@ object AntFarmRpcCall {
         )
     }
 
-    /* 抽抽乐 */
-    fun enterDrawMachine(): String {
+    fun hireAnimal(farmId: String?, animalId: String?): String {
         return requestString(
-            "com.alipay.antfarm.enterDrawMachine",
-            "[{\"requestType\":\"RPC\",\"sceneCode\":\"ANTFARM\",\"source\":\"siliaorenwu\"}]"
+            "com.alipay.antfarm.hireAnimal",
+            "[{\"friendFarmId\":\"" + farmId + "\",\"hireActionType\":\"HIRE_IN_FRIEND_FARM\",\"hireAnimalId\":\"" + animalId + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"sendCardChat\":false,\"source\":\"H5\",\"version\":\"" + VERSION + "\"}]"
         )
     }
 
     /**
-     * 抽抽乐-抽奖类型选择器
-     *
-     * @param drawType 抽奖类型 ipDraw-对应IP抽奖
-     * @return ""
-     */
+    * 抽抽乐-抽奖类型选择器
+    * @param drawType 抽奖类型 "ipDraw" 或 "dailyDraw"
+    * @return 对应的taskSceneCode
+    */
     private fun chouchouleSelector(drawType: String): String {
-        if (drawType == "ipDraw") {
-            return "ANTFARM_IP_DRAW_TASK"
+        return if ("ipDraw" == drawType) {
+            "ANTFARM_IP_DRAW_TASK"
+        } else {
+            "ANTFARM_DAILY_DRAW_TASK"
         }
-        return "ANTFARM_DRAW_TIMES_TASK"
     }
 
     /**
-     * 查询抽抽乐任务列表
-     *
-     * @param drawType 抽奖类型
-     * @return 返回结果
-     * @throws JSONException 异常
-     */
+    * 查询抽抽乐任务列表 (已统一)
+    */
     @Throws(JSONException::class)
     fun chouchouleListFarmTask(drawType: String): String {
         val taskSceneCode = chouchouleSelector(drawType)
@@ -642,18 +637,13 @@ object AntFarmRpcCall {
         args.put("source", "H5")
         args.put("taskSceneCode", taskSceneCode)
         args.put("topTask", "")
-        val params = "[" + args + "]"
+        val params = "[$args]"
         return requestString("com.alipay.antfarm.listFarmTask", params)
     }
 
     /**
-     * 执行抽抽乐任务
-     *
-     * @param drawType 抽奖类型
-     * @param bizKey   任务ID
-     * @return 返回结果
-     * @throws JSONException 异常
-     */
+    * 执行抽抽乐任务 (已统一)
+    */
     @Throws(JSONException::class)
     fun chouchouleDoFarmTask(drawType: String, bizKey: String?): String {
         val taskSceneCode = chouchouleSelector(drawType)
@@ -661,21 +651,15 @@ object AntFarmRpcCall {
         args.put("bizKey", bizKey)
         args.put("requestType", "RPC")
         args.put("sceneCode", "ANTFARM")
-        args.put("source", "H5")
+        args.put("source", "icon") // source从H5改为icon，与日志保持一致
         args.put("taskSceneCode", taskSceneCode)
-        val params = "[" + args + "]"
+        val params = "[$args]"
         return requestString("com.alipay.antfarm.doFarmTask", params)
     }
 
-
     /**
-     * 领取抽抽乐任务奖励-抽奖次数
-     *
-     * @param drawType 抽奖类型
-     * @param taskId   任务ID
-     * @return 返回结果
-     * @throws JSONException 异常
-     */
+    * 领取抽抽乐任务奖励-抽奖次数 (已统一)
+    */
     @Throws(JSONException::class)
     fun chouchouleReceiveFarmTaskAward(drawType: String, taskId: String?): String {
         val taskSceneCode = chouchouleSelector(drawType)
@@ -685,46 +669,124 @@ object AntFarmRpcCall {
         args.put("source", "H5")
         args.put("taskId", taskId)
         args.put("taskSceneCode", taskSceneCode)
-        val params = "[" + args + "]"
+        val params = "[$args]"
         return requestString("com.alipay.antfarm.receiveFarmTaskAward", params)
     }
 
     /**
-     * IP抽抽乐查询活动与抽奖次数
-     */
-    fun queryDrawMachineActivity(): String {
+    * 查询抽抽乐活动信息与抽奖次数 (已统一)
+    * @param scene "dailyDrawMachine" 或 "ipDrawMachine"
+    */
+    fun queryDrawMachineActivity(scene: String): String {
+        val otherScene = if ("dailyDrawMachine" == scene) "ipDrawMachine" else "dailyDrawMachine"
         return requestString(
             "com.alipay.antfarm.queryDrawMachineActivity",
-            "[{\"otherScenes\":[\"dailyDrawMachine\"],\"requestType\":\"RPC\",\"scene\":\"ipDrawMachine\",\"sceneCode\":\"ANTFARM\",\"source\":\"ip_ccl\"}]"
+            "[{\"otherScenes\":[\"$otherScene\"],\"requestType\":\"RPC\",\"scene\":\"$scene\",\"sceneCode\":\"ANTFARM\",\"source\":\"icon\"}]"
         )
     }
 
     /**
-     * IP抽抽乐抽奖
-     */
-    fun drawMachine(): String {
-        return requestString("com.alipay.antfarm.drawMachine", "[{\"requestType\":\"RPC\",\"scene\":\"ipDrawMachine\",\"sceneCode\":\"ANTFARM\",\"source\":\"ip_ccl\"}]")
-    }
-
-    fun hireAnimal(farmId: String?, animalId: String?): String {
+    * 抽奖 (已统一)
+    * @param scene "dailyDrawMachine" 或 "ipDrawMachine"
+    */
+    fun drawMachine(scene: String): String {
         return requestString(
-            "com.alipay.antfarm.hireAnimal",
-            "[{\"friendFarmId\":\"" + farmId + "\",\"hireActionType\":\"HIRE_IN_FRIEND_FARM\",\"hireAnimalId\":\"" + animalId + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"sendCardChat\":false,\"source\":\"H5\",\"version\":\"" + VERSION + "\"}]"
+            "com.alipay.antfarm.drawMachine",
+            "[{\"requestType\":\"RPC\",\"scene\":\"$scene\",\"sceneCode\":\"ANTFARM\",\"source\":\"icon\"}]"
         )
     }
 
-    fun DrawPrize(): String {
-        return requestString(
-            "com.alipay.antfarm.DrawPrize",
-            "[{\"requestType\":\"RPC\",\"sceneCode\":\"ANTFARM\",\"source\":\"chouchoule\"}]"
-        )
+    /**
+    * 广告插件接口 - 获取广告任务
+    *
+    * @param referToken 引用Token
+    * @param spaceCode 广告位代码
+    * @return 返回结果JSON字符串
+    * @throws JSONException JSON异常
+    */
+    @Throws(JSONException::class)
+    fun xlightPlugin(referToken: String, spaceCode: String): String {
+        val positionRequest = JSONObject().apply {
+            put("referInfo", JSONObject().put("referToken", referToken))
+            put("spaceCode", spaceCode)
+        }
+
+        val sdkPageInfo = JSONObject().apply {
+            put("adComponentType", "GUESS_PRICE")
+            put("adComponentVersion", "4.28.66")
+            put("networkType", "WIFI")
+            put("pageFrom", "ch_url-https://render.alipay.com/p/yuyan/180020380000000182/prizeMachine.html")
+            put("pageNo", 1)
+            put("pageUrl", "https://render.alipay.com/p/yuyan/180020010001256918/antfarm-landing.html?caprMode=sync")
+            put("session", "u_0c09f_b010f")
+            put("unionAppId", "2060090000304921")
+            put("xlightRuntimeSDKversion", "4.28.66")
+            put("xlightSDKType", "h5")
+            put("xlightSDKVersion", "4.28.66")
+        }
+
+        val args = JSONObject().apply {
+            put("positionRequest", positionRequest)
+            put("sdkPageInfo", sdkPageInfo)
+        }
+
+        val params = "[$args]"
+        return RequestManager.requestString("com.alipay.adexchange.ad.facade.xlightPlugin", params)
     }
 
-    fun DrawPrize(activityId: String?): String {
-        return requestString(
-            "com.alipay.antfarm.DrawPrize",
-            "[{\"activityId\":\"" + activityId + "\",\"requestType\":\"RPC\",\"sceneCode\":\"ANTFARM\",\"source\":\"icon\"}]"
-        )
+    /**
+    * 完成广告任务
+    *
+    * @param playBizId 播放业务ID
+    * @param playEventInfo 播放事件信息
+    * @param iepTaskType 任务类型
+    * @param iepTaskSceneCode 任务场景代码
+    * @return 返回结果JSON字符串
+    * @throws JSONException JSON异常
+    */
+    @Throws(JSONException::class)
+    fun finishAdTask(
+        playBizId: String, playEventInfo: JSONObject,
+        iepTaskType: String, iepTaskSceneCode: String
+    ): String {
+        val extendInfo = JSONObject().apply {
+            put("iepTaskSceneCode", iepTaskSceneCode)
+            put("iepTaskType", iepTaskType)
+            put("playEndingStatus", "success")
+        }
+
+        val args = JSONObject().apply {
+            put("extendInfo", extendInfo)
+            put("playBizId", playBizId)
+            put("playEventInfo", playEventInfo)
+            put("source", "adx")
+        }
+
+        val params = "[$args]"
+        return RequestManager.requestString("com.alipay.adtask.biz.mobilegw.service.interaction.finish", params)
+    }
+
+    /**
+    * 完成普通任务（无广告）
+    *
+    * @param taskType 任务类型
+    * @param sceneCode 场景代码
+    * @param outBizNo 外部业务号
+    * @return 返回结果JSON字符串
+    * @throws JSONException JSON异常
+    */
+    @Throws(JSONException::class)
+    fun finishTask(taskType: String, sceneCode: String, outBizNo: String): String {
+        val args = JSONObject().apply {
+            put("outBizNo", outBizNo)
+            put("requestType", "RPC")
+            put("sceneCode", sceneCode)
+            put("source", "ADBASICLIB")
+            put("taskType", taskType)
+        }
+
+        val params = "[$args]"
+        return RequestManager.requestString("com.alipay.antiep.finishTask", params)
     }
 
     fun drawGameCenterAward(): String {
