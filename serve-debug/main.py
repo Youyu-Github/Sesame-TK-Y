@@ -101,15 +101,28 @@ async def get_webhooks(
         .limit(per_page)
         .all()
     )
-
-
-
     return items  # 返回列表会被自动转换
+
+
+def get_lan_ip():
+    import socket, ipaddress
+
+    for family, _, _, _, sockaddr in socket.getaddrinfo(socket.gethostname(), None):
+        if family == socket.AF_INET:  # ✅ 强制 IPv4
+            ip = sockaddr[0]
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj.is_private and not ip_obj.is_loopback:
+                return ip
+    return None
+
+
+
 
 
 if __name__ == "__main__":
     import uvicorn
-
-    logger.info("Starting FastAPI server...")
-    uvicorn.run(app, host="0.0.0.0", port=9527)
+#     host = get_lan_ip()
+    host="192.168.9.112"
+    logger.info(f"Starting FastAPI server on {host} ")
+    uvicorn.run(app, host=host, port=9527)
     logger.info("FastAPI server stopped.")
