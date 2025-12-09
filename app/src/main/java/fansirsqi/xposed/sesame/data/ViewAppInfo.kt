@@ -5,10 +5,9 @@ import android.content.Context
 import android.util.Log
 import fansirsqi.xposed.sesame.BuildConfig
 import fansirsqi.xposed.sesame.R
-import fansirsqi.xposed.sesame.newutil.DataStore
-import fansirsqi.xposed.sesame.newutil.MMKVUtil
+import fansirsqi.xposed.sesame.util.FansirsqiUtil.getFolderList
 import fansirsqi.xposed.sesame.util.Files
-import java.util.UUID
+import io.github.libxposed.service.XposedService
 
 
 @SuppressLint("StaticFieldLeak")
@@ -61,11 +60,10 @@ object ViewAppInfo {
         Log.d(TAG, "app data init")
         if (ViewAppInfo.context == null) {
             ViewAppInfo.context = context
-            MMKVUtil.init(context)
-            val kv = MMKVUtil.getMMKV("sesame-tk")
             verifyId = kv.decodeString("verify").takeIf { !it.isNullOrEmpty() }
                 ?: UUID.randomUUID().toString().replace("-", "").also { kv.encode("verify", it) }
-            DataStore.init(Files.CONFIG_DIR)
+            // verifyId = "debug"
+            verifuids = getFolderList(Files.CONFIG_DIR.absolutePath)
             appBuildNumber = BuildConfig.VERSION_CODE.toString()
             appTitle = context.getString(R.string.app_name)
             appBuildTarget = BuildConfig.BUILD_DATE + " " + BuildConfig.BUILD_TIME + " ⏰"
