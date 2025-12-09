@@ -65,7 +65,8 @@ android {
 
         versionCode = gitCommitCount
         val buildTag = "beta"
-        versionName = "v0.2.8.rc$gitCommitCount"
+        versionName = "v0.2.9.rc$gitCommitCount"
+        // versionName = "v0.2.9.rc$gitCommitCount-$buildTag"
 
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
         buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
@@ -92,7 +93,7 @@ android {
     }
 
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true
+        isCoreLibraryDesugaringEnabled = true //启用脱糖
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -211,8 +212,6 @@ dependencies {
     implementation(libs.okhttp)                    // OkHttp 网络请求库
     implementation(libs.dexkit)                    // DEX 文件分析工具
     implementation(libs.jackson.kotlin)            // Jackson Kotlin 支持
-    // implementation(libs.mmkv)                      // 腾讯 MMKV 高性能键值存储
-    implementation("com.tencent:mmkv:2.2.2")
 
     // 核心库脱糖和系统 API 访问
     coreLibraryDesugaring(libs.desugar)            // Java 8+ API 脱糖支持
