@@ -1,12 +1,9 @@
 package fansirsqi.xposed.sesame.ui;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Color;
-import android.os.Build;
 import android.text.Editable;
-import android.text.Html;
 import android.text.InputType;
 import android.widget.Button;
 import android.widget.EditText;
