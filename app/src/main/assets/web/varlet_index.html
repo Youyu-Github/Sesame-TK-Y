@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Sesame Config - Material Design</title>
+    
+    <style>
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--color-body);
+            color: var(--color-text);
+            font-family: Roboto, -apple-system, sans-serif;
+            transition: background-color 0.25s;
+        }
+        
+        .var-collapse-item__content {
+            padding: 0 16px 16px;
+        }
+        
+        .config-card {
+            margin-bottom: 12px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-1);
+        }
+
+        .row-center {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--color-outline);
+        }
+        
+        .row-label {
+            font-size: 16px;
+            flex: 1;
+            margin-right: 16px;
+        }
+
+        .search-area {
+            padding: 16px;
+            background: var(--color-surface-container-high);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .list-container {
+            height: calc(80vh - 140px);
+            overflow-y: auto;
+        }
+    </style>
+    <script src="./js/vue3.js"></script>
+    <script src="./js/varlet.js"></script>
+    <script src="./js/iife.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部导航栏 -->
+        <var-app-bar title="Sesame Setting" title-position="center" safe-area-top>
+            <template #right>
+                <var-button round text color="transparent" text-color="#fff" @click="toggleTheme">
+                    <span class="material-symbols-outlined">{{ dark ? '🌞' : '🌙' }}</span>
+                </var-button>
+            </template>
+        </var-app-bar>
+
+        <div style="padding: 16px; max-width: 600px; margin: 0 auto;">
+            <!-- 折叠面板 -->
+            <var-collapse v-model="activeTabs" accordion :offset="false">
+                <var-collapse-item 
+                    v-for="tab in tabs" 
+                    :key="tab.modelCode" 
+                    :title="tab.modelName" 
+                    :name="tab.modelCode"
+                    class="config-card"
+                >
+                    <div v-if="modelsMap[tab.modelCode]">
+                        <div v-for="field in modelsMap[tab.modelCode]" :key="field.code">
+                            
+                            <!-- 1. 开关 -->
+                            <div v-if="field.type === 'BOOLEAN'" class="row-center">
+                                <div class="row-label">{{ field.name }}</div>
+                                <var-switch 
+                                    v-model="field.tempBool" 
+                                    @change="(val) => updateField(tab.modelCode, field.code, val)"
+                                    color="var(--color-primary)"
+                                />
+                            </div>
+
+                            <!-- 2. 输入框 -->
+                            <div v-if="['STRING', 'INTEGER', 'MULTIPLY_INTEGER', 'TEXT', 'URL_TEXT'].includes(field.type)" style="padding: 10px 0;">
+                                <var-input 
+                                    :placeholder="field.name" 
+                                    v-model="field.configValue"
+                                    @blur="updateField(tab.modelCode, field.code, field.configValue)"
+                                    variant="outlined"
+                                    size="small"
+                                />
+                            </div>
+
+                            <!-- 3. 单选 -->
+                            <div v-if="field.type === 'CHOICE'" style="padding: 10px 0; border-bottom: 1px solid var(--color-outline);">
+                                <div style="margin-bottom: 8px; font-size: 14px; opacity: 0.8;">{{ field.name }}</div>
+                                <var-space wrap :size="[10, 10]">
+                                    <var-chip 
+                                        v-for="(opt, idx) in field.expandKey" 
+                                        :key="idx"
+                                        :type="Number(field.configValue) === idx ? 'primary' : 'default'"
+                                        @click="updateField(tab.modelCode, field.code, idx)"
+                                    >
+                                        {{ opt }}
+                                    </var-chip>
+                                </var-space>
+                            </div>
+
+                            <!-- 4. 列表弹窗 -->
+                            <div v-if="['SELECT', 'SELECT_AND_COUNT'].includes(field.type)" class="row-center">
+                                <div class="row-label">{{ field.name }}</div>
+                                <var-button type="primary" size="small" @click="openSheet(tab.modelCode, field)">
+                                    设置 ({{ getCount(field.configValue) }})
+                                </var-button>
+                            </div>
+
+                        </div>
+                    </div>
+                    <var-loading v-else description="加载中..." type="wave" />
+                </var-collapse-item>
+            </var-collapse>
+
+            <var-divider />
+            
+            <var-button block type="danger" @click="exitApp">保存并退出</var-button>
+            <div style="text-align: center; margin-top: 10px; opacity: 0.5; font-size: 12px;">{{ buildInfo }}</div>
+        </div>
+
+        <!-- 底部弹窗 (Action Sheet 风格) -->
+        <var-popup v-model:show="sheet.visible" position="bottom" :style="{ height: '80%' }" round-top>
+            <div style="display: flex; flex-direction: column; height: 100%;">
+                <div class="search-area">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="margin: 0;">{{ sheet.title }}</h3>
+                        <var-button text round size="small" @click="saveSheet" text-color="var(--color-primary)">完成</var-button>
+                    </div>
+                    <var-input v-model="sheet.search" placeholder="搜索..." variant="outlined" size="small">
+                        <template #prepend-icon>
+                            <span class="material-symbols-outlined">search</span>
+                        </template>
+                    </var-input>
+                    <div style="margin-top: 8px;">
+                        <var-checkbox v-model="sheet.selectAll" @change="toggleAll">全选当前结果</var-checkbox>
+                    </div>
+                </div>
+
+                <div class="list-container">
+                    <var-cell 
+                        v-for="item in filteredList" 
+                        :key="item.id" 
+                        border
+                        ripple
+                        @click="toggleItem(item.id)"
+                    >
+                        <template #default>
+                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <div style="display: flex; align-items: center; flex: 1; overflow: hidden;">
+                                    <var-checkbox :model-value="selectedIds.has(item.id)" @click.stop="toggleItem(item.id)" />
+                                    <span style="margin-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        {{ item.name }}
+                                    </span>
+                                </div>
+                                
+                                <div v-if="sheet.type === 'SELECT_AND_COUNT' && selectedIds.has(item.id)" @click.stop style="width: 80px;">
+                                    <var-input 
+                                        type="number"
+                                        v-model="selectedCounts[item.id]" 
+                                        placeholder="#"
+                                        variant="outlined" 
+                                        size="small"
+                                    />
+                                </div>
+                            </div>
+                        </template>
+                    </var-cell>
+                    <div v-if="filteredList.length === 0" style="padding: 20px; text-align: center; opacity: 0.5;">
+                        无匹配项
+                    </div>
+                </div>
+            </div>
+        </var-popup>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, onMounted, computed, watch } = Vue;
+        Varlet.StyleProvider(Varlet.Themes.dark);
+        // Mock API
+        const API = {
+            getTabs: () => { try { return JSON.parse(window.HOOK.getTabs()) } catch(e) { return [] } },
+            getModel: (code) => { try { return JSON.parse(window.HOOK.getModel(code)) } catch(e) { return [] } },
+            getField: (mCode, fCode) => { 
+                try { 
+                    const res = JSON.parse(window.HOOK.getField(mCode, fCode));
+                    return res.expandValue || [];
+                } catch(e) { return [] } 
+            },
+            setModel: (code, dataStr) => { if(window.HOOK && window.HOOK.setModel) window.HOOK.setModel(code, dataStr); },
+            getBuild: () => { return window.HOOK ? window.HOOK.getBuildInfo() : 'Unknown' },
+            exit: () => { if(window.HOOK && window.HOOK.saveOnExit) window.HOOK.saveOnExit(); }
+        };
+
+        createApp({
+            setup() {
+                const tabs = ref([]);
+                const modelsMap = reactive({});
+                const activeTabs = ref('');
+                const buildInfo = ref(API.getBuild());
+                const dark = ref(true);
+
+                // 弹窗状态
+                const sheet = reactive({
+                    visible: false,
+                    title: '',
+                    modelCode: '',
+                    fieldCode: '',
+                    type: '',
+                    search: '',
+                    selectAll: false
+                });
+                const sheetList = ref([]);
+                const selectedIds = ref(new Set());
+                const selectedCounts = reactive({});
+
+                onMounted(() => {
+                    tabs.value = API.getTabs();
+                    if(tabs.value.length) activeTabs.value = tabs.value[0].modelCode;
+                    
+                    tabs.value.forEach(tab => {
+                        const fields = API.getModel(tab.modelCode);
+                        fields.forEach(f => {
+                            if(f.type === 'BOOLEAN') f.tempBool = f.configValue === 'true';
+                        });
+                        modelsMap[tab.modelCode] = fields;
+                    });
+                });
+
+                // 更新字段
+                const updateField = (modelCode, fieldCode, val) => {
+                    const fields = modelsMap[modelCode];
+                    const field = fields.find(f => f.code === fieldCode);
+                    if(!field) return;
+
+                    field.configValue = String(val);
+                    
+                    const payload = {};
+                    fields.forEach(f => payload[f.code] = { configValue: f.configValue });
+                    API.setModel(modelCode, JSON.stringify(payload));
+                };
+
+                // 打开弹窗
+                const openSheet = (modelCode, field) => {
+                    const list = API.getField(modelCode, field.code);
+                    sheetList.value = list;
+                    sheet.modelCode = modelCode;
+                    sheet.fieldCode = field.code;
+                    sheet.type = field.type;
+                    sheet.title = field.name;
+                    sheet.search = '';
+                    sheet.visible = true;
+                    
+                    const ids = new Set();
+                    const counts = {};
+                    try {
+                        const p = JSON.parse(field.configValue);
+                        if (Array.isArray(p)) p.forEach(id => ids.add(id));
+                        else Object.entries(p).forEach(([k, v]) => { ids.add(k); counts[k] = v; });
+                    } catch(e){}
+                    
+                    selectedIds.value = ids;
+                    for(const k in selectedCounts) delete selectedCounts[k];
+                    Object.assign(selectedCounts, counts);
+                };
+
+                // 过滤
+                const filteredList = computed(() => {
+                    if(!sheet.search) return sheetList.value;
+                    return sheetList.value.filter(i => i.name.toLowerCase().includes(sheet.search.toLowerCase()));
+                });
+
+                // 切换选中
+                const toggleItem = (id) => {
+                    if(selectedIds.value.has(id)) selectedIds.value.delete(id);
+                    else {
+                        selectedIds.value.add(id);
+                        if(sheet.type === 'SELECT_AND_COUNT' && !selectedCounts[id]) selectedCounts[id] = 1;
+                    }
+                };
+
+                // 全选
+                const toggleAll = (val) => {
+                    filteredList.value.forEach(item => {
+                        if(val) {
+                            selectedIds.value.add(item.id);
+                            if(sheet.type === 'SELECT_AND_COUNT' && !selectedCounts[item.id]) selectedCounts[item.id] = 1;
+                        } else {
+                            selectedIds.value.delete(item.id);
+                        }
+                    });
+                };
+
+                // 保存弹窗
+                const saveSheet = () => {
+                    let val = '';
+                    if(sheet.type === 'SELECT') {
+                        val = JSON.stringify(Array.from(selectedIds.value));
+                    } else {
+                        const obj = {};
+                        selectedIds.value.forEach(id => obj[id] = Number(selectedCounts[id] || 0));
+                        val = JSON.stringify(obj);
+                    }
+                    updateField(sheet.modelCode, sheet.fieldCode, val);
+                    sheet.visible = false;
+                    Varlet.Snackbar.success('保存成功');
+                };
+
+                // 辅助函数
+                const getCount = (str) => {
+                    try {
+                        const p = JSON.parse(str);
+                        return Array.isArray(p) ? p.length : Object.keys(p).length;
+                    } catch(e){ return 0 }
+                };
+
+                const toggleTheme = () => {
+                    dark.value = !dark.value;
+                    Varlet.StyleProvider(dark.value ? Varlet.Themes.dark : null);
+                };
+
+                const exitApp = () => API.exit();
+
+                return {
+                    tabs, modelsMap, activeTabs, buildInfo, dark,
+                    sheet, filteredList, selectedIds, selectedCounts,
+                    updateField, openSheet, toggleItem, toggleAll, saveSheet,
+                    getCount, toggleTheme, exitApp
+                };
+            }
+        }).use(Varlet).mount('#app')
+    </script>
+</body>
+</html>

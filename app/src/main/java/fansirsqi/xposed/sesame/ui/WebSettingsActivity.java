@@ -190,9 +190,9 @@ public class WebSettingsActivity extends BaseActivity {
         if (BuildConfig.DEBUG) {
             WebView.setWebContentsDebuggingEnabled(true);
 //            webView.loadUrl("http://192.168.31.69:5500/app/src/main/assets/web/index.html");
-            webView.loadUrl("file:///android_asset/web/index.html");
+            webView.loadUrl("file:///android_asset/web/semi_index.html");
         } else {
-            webView.loadUrl("file:///android_asset/web/index.html");
+            webView.loadUrl("file:///android_asset/web/semi_index.html");
         }
         webView.addJavascriptInterface(new WebViewCallback(), "HOOK");
 
@@ -366,6 +366,7 @@ public class WebSettingsActivity extends BaseActivity {
             return null;
         }
 
+
         @JavascriptInterface
         public String setField(String modelCode, String fieldCode, String fieldValue) {
             ModelConfig modelConfig = ModelTask.getModelConfigMap().get(modelCode);
@@ -381,6 +382,23 @@ public class WebSettingsActivity extends BaseActivity {
                 }
             }
             return "FAILED";
+        }
+
+        /**
+         * 新增方法：保存并退出
+         * 前端调用 window.HOOK.saveOnExit() 时触发
+         */
+        @JavascriptInterface
+        public boolean saveOnExit() {
+            // 切换到主线程执行 UI 操作和保存逻辑
+            runOnUiThread(() -> {
+                Log.runtime(TAG, "WebViewCallback: saveOnExit called");
+                // 1. 调用外部类 WebSettingsActivity 的 save() 方法进行持久化保存
+                save();
+                // 2. 关闭当前 Activity
+                WebSettingsActivity.this.finish();
+            });
+            return true;
         }
 
         @JavascriptInterface
@@ -409,7 +427,6 @@ public class WebSettingsActivity extends BaseActivity {
                 exportIntent.addCategory(Intent.CATEGORY_OPENABLE);
                 exportIntent.setType("*/*");
                 exportIntent.putExtra(Intent.EXTRA_TITLE, "[" + userName + "]-config_v2.json");
-//                startActivityForResult(exportIntent, EXPORT_REQUEST_CODE);
                 exportLauncher.launch(exportIntent);
                 break;
             case 2:
@@ -417,7 +434,6 @@ public class WebSettingsActivity extends BaseActivity {
                 importIntent.addCategory(Intent.CATEGORY_OPENABLE);
                 importIntent.setType("*/*");
                 importIntent.putExtra(Intent.EXTRA_TITLE, "config_v2.json");
-//                startActivityForResult(importIntent, IMPORT_REQUEST_CODE);
                 importLauncher.launch(importIntent);
                 break;
             case 3:
