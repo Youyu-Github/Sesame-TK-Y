@@ -5,8 +5,8 @@ import android.content.Context
 import android.util.Log
 import fansirsqi.xposed.sesame.BuildConfig
 import fansirsqi.xposed.sesame.R
-import fansirsqi.xposed.sesame.newutil.DataStore
 import fansirsqi.xposed.sesame.newutil.MMKVUtil
+import fansirsqi.xposed.sesame.util.FansirsqiUtil.getFolderList
 import fansirsqi.xposed.sesame.util.Files
 import java.util.UUID
 
@@ -23,6 +23,8 @@ object ViewAppInfo {
     var veriftag: Boolean = true
     var verifyId: String = ""
     var xpFrameworkVersion: String = ""
+
+    var verifuids: List<String> = listOf()
 
     @SuppressLint("HardwareIds")
 
@@ -61,11 +63,12 @@ object ViewAppInfo {
         Log.d(TAG, "app data init")
         if (ViewAppInfo.context == null) {
             ViewAppInfo.context = context
+            // [修复] 将 context 参数传递给 MMKVUtil.init()
             MMKVUtil.init(context)
             val kv = MMKVUtil.getMMKV("sesame-tk")
             verifyId = kv.decodeString("verify").takeIf { !it.isNullOrEmpty() }
                 ?: UUID.randomUUID().toString().replace("-", "").also { kv.encode("verify", it) }
-            DataStore.init(Files.CONFIG_DIR)
+            verifuids = getFolderList(Files.CONFIG_DIR.absolutePath)
             appBuildNumber = BuildConfig.VERSION_CODE.toString()
             appTitle = context.getString(R.string.app_name)
             appBuildTarget = BuildConfig.BUILD_DATE + " " + BuildConfig.BUILD_TIME + " ⏰"

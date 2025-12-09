@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
@@ -64,6 +65,8 @@ class MainActivity : BaseActivity() {
     private var userEntityArray = arrayOf<UserEntity?>(null)
     private lateinit var oneWord: TextView
 
+    private lateinit var v: WatermarkView
+
     private lateinit var c: SecureApiClient
     private var userNickName: String = ""
 
@@ -76,7 +79,7 @@ class MainActivity : BaseActivity() {
         setContentView(R.layout.activity_main)
         oneWord = findViewById(R.id.one_word)
         val deviceInfo: ComposeView = findViewById(R.id.device_info)
-        val v = WatermarkView.install(this)
+        v = WatermarkView.install(this)
         deviceInfo.setContent {
             val customColorScheme = lightColorScheme(
                 primary = Color(0xFF3F51B5), onPrimary = Color.White, background = Color(0xFFF5F5F5), onBackground = Color.Black
@@ -180,6 +183,12 @@ class MainActivity : BaseActivity() {
         } else {
             updateSubTitle(RunType.LOADED.nickName)
         }
+    }
+
+    // 比如在 Activity 的 onConfigurationChanged 中
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        v?.refresh() // 主动刷新水印颜色
     }
 
     /**
