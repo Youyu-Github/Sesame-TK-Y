@@ -118,6 +118,7 @@ public class AntOrchard extends ModelTask {
                         .getJSONObject("plantInfo").getJSONObject("seedStage").getInt("stageLevel"));
 
                 // 获取 userId: 优先从 teamMembers 获取（同步Kotlin逻辑），获取不到则使用 System Uid
+                /*
                 userId = null;
                 if (jo.has("teamMembers")) {
                     JSONArray teamMembers = jo.getJSONArray("teamMembers");
@@ -129,6 +130,8 @@ public class AntOrchard extends ModelTask {
                         }
                     }
                 }
+                */
+                userId = UserMap.currentUid;
                 if (userId == null) {
                     userId = UserMap.getCurrentUid();
                 }
