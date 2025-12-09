@@ -5,7 +5,7 @@ import android.content.ComponentName
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -18,6 +18,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.toColorInt
 import androidx.core.net.toUri
 import androidx.core.util.Consumer
 import androidx.lifecycle.lifecycleScope
@@ -49,7 +50,6 @@ import fansirsqi.xposed.sesame.model.SelectModelFieldFunc
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -182,6 +182,12 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    // 比如在 Activity 的 onConfigurationChanged 中
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        v.refresh() // 主动刷新水印颜色
+    }
+
     /**
      * 处理按钮点击事件
      *
@@ -246,7 +252,7 @@ class MainActivity : BaseActivity() {
      * 并启用清空功能和禁用自动换行
      */
     private fun openLogFile(logFile: File) {
-        val fileUri = Uri.parse("file://${logFile.absolutePath}")
+        val fileUri = "file://${logFile.absolutePath}".toUri()
         val intent = Intent(this, HtmlViewerActivity::class.java).apply {
             data = fileUri
             putExtra("nextLine", false)
@@ -262,7 +268,7 @@ class MainActivity : BaseActivity() {
      * 如果没有可用浏览器则显示错误提示
      */
     private fun openGitHub() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Fansirsqi/Sesame-TK"))
+        val intent = Intent(Intent.ACTION_VIEW, "https://github.com/Fansirsqi/Sesame-TK".toUri())
         try {
             startActivity(intent)
         } catch (e: Exception) {
