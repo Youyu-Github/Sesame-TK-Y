@@ -290,10 +290,12 @@ class ChouChouLe {
             }
 
             val drawTimes = jo.optInt("drawTimes", 0)
-            Log.farm("IP抽抽乐✨[剩余抽奖次数: $drawTimes]")
-            for (i in 0 until drawTimes) {
-                drawPrize("IP抽抽乐", AntFarmRpcCall.drawMachine(scene))
-                GlobalThreadPools.sleep(5 * 1000L)
+            if (drawTimes > 0) {
+                Log.farm("IP抽抽乐✨[剩余抽奖次数: $drawTimes]")
+                for (i in 0 until drawTimes) {
+                    drawPrize("IP抽抽乐", AntFarmRpcCall.drawMachine(scene))
+                    GlobalThreadPools.sleep(5 * 1000L)
+                }
             }
         } catch (t: Throwable) {
             Log.printStackTrace("$TAG.handleIpDraw err:", t)
@@ -314,10 +316,12 @@ class ChouChouLe {
             }
 
             val drawTimes = jo.optInt("drawTimes", 0)
-            Log.farm("普通抽抽乐✨[剩余抽奖次数: $drawTimes]")
-            for (i in 0 until drawTimes) {
-                drawPrize("普通抽抽乐", AntFarmRpcCall.drawMachine(scene))
-                GlobalThreadPools.sleep(5 * 1000L)
+            if (drawTimes > 0) {
+                Log.farm("普通抽抽乐✨[剩余抽奖次数: $drawTimes]")
+                for (i in 0 until drawTimes) {
+                    drawPrize("普通抽抽乐", AntFarmRpcCall.drawMachine(scene))
+                    GlobalThreadPools.sleep(5 * 1000L)
+                }
             }
         } catch (t: Throwable) {
             Log.printStackTrace("$TAG.handleDailyDraw err:", t)
