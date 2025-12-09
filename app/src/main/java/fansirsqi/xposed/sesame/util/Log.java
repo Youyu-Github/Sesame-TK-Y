@@ -6,6 +6,10 @@ import org.slf4j.LoggerFactory;
 import fansirsqi.xposed.sesame.BuildConfig;
 import fansirsqi.xposed.sesame.model.BaseModel;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * 日志工具类，负责初始化和管理各种类型的日志记录器，并提供日志输出方法。
  */
@@ -21,6 +25,10 @@ public class Log {
     private static final Logger OTHER_LOGGER;
     private static final Logger ERROR_LOGGER;
     private static final Logger CAPTURE_LOGGER;
+
+    // 错误去重机制：记录错误特征和出现次数
+    private static final Map<String, AtomicInteger> errorCountMap = new ConcurrentHashMap<>();
+    private static final int MAX_DUPLICATE_ERRORS = 3; // 最多打印3次相同错误
 
     static {
         Logback.configureLogbackDirectly();
@@ -136,32 +144,69 @@ public class Log {
         capture("[" + TAG + "]: " + msg);
     }
 
+    /**
+     * 检查是否应该打印此错误（去重机制）
+     *
+     * @param th 异常对象
+     * @return true=应该打印，false=已重复太多次
+     */
+    private static boolean shouldPrintError(Throwable th) {
+        if (th == null) return false;
+
+        // 提取错误特征（类名+消息的前50个字符）
+        String errorSignature = th.getClass().getSimpleName() + ":" +
+                (th.getMessage() != null ? th.getMessage().substring(0, Math.min(50, th.getMessage().length())) : "null");
+
+        // 特殊处理：JSON解析空字符串错误
+        if (th.getMessage() != null && th.getMessage().contains("End of input at character 0")) {
+            errorSignature = "JSONException:EmptyResponse";
+        }
+
+        AtomicInteger count = errorCountMap.computeIfAbsent(errorSignature, k -> new AtomicInteger(0));
+        int currentCount = count.incrementAndGet();
+
+        // 如果是第3次，记录一个汇总信息
+        if (currentCount == MAX_DUPLICATE_ERRORS) {
+            runtime("⚠️ 错误【" + errorSignature + "】已出现" + currentCount + "次，后续将不再打印详细堆栈");
+            return true;
+        }
+
+        // 超过最大次数后不再打印
+        return currentCount > MAX_DUPLICATE_ERRORS;
+    }
+
     public static void printStackTrace(Throwable th) {
+        if (shouldPrintError(th)) return;
         String stackTrace = "error: " + android.util.Log.getStackTraceString(th);
         error(stackTrace);
     }
 
     public static void printStackTrace(String msg, Throwable th) {
+        if (shouldPrintError(th)) return;
         String stackTrace = "Throwable error: " + android.util.Log.getStackTraceString(th);
         error(msg, stackTrace);
     }
 
     public static void printStackTrace(String TAG, String msg, Throwable th) {
+        if (shouldPrintError(th)) return;
         String stackTrace = "[" + TAG + "] Throwable error: " + android.util.Log.getStackTraceString(th);
         error(msg, stackTrace);
     }
 
     public static void printStackTrace(Exception e) {
+        if (shouldPrintError(e)) return;
         String stackTrace = "Exception error: " + android.util.Log.getStackTraceString(e);
         error(stackTrace);
     }
 
     public static void printStackTrace(String msg, Exception e) {
+        if (shouldPrintError(e)) return;
         String stackTrace = "Throwable error: " + android.util.Log.getStackTraceString(e);
         error(msg, stackTrace);
     }
 
     public static void printStackTrace(String TAG, String msg, Exception e) {
+        if (shouldPrintError(e)) return;
         String stackTrace = "[" + TAG + "] Throwable error: " + android.util.Log.getStackTraceString(e);
         error(msg, stackTrace);
     }
