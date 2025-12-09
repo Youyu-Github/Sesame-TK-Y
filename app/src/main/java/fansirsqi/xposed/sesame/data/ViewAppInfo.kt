@@ -23,6 +23,8 @@ object ViewAppInfo {
     var verifyId: String = ""
     var xpFrameworkVersion: String = ""
 
+    var verifuids: List<String> = listOf()
+
     @SuppressLint("HardwareIds")
 
     val emojiList =
