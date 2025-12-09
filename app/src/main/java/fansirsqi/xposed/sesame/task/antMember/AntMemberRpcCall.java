@@ -234,25 +234,24 @@ public class AntMemberRpcCall {
     }
 
     /**
-     * 查询每日答题的题目信息
+     * 查询视频答题的题目信息
      * @return RPC响应
      */
     public static String queryDailyQuiz() {
-        String requestData = "[{\"behaviorId\":\"meiriwenda\"}]";
+        String requestData = "[{\"behaviorId\":\"shipingwenda\"}]";
         return RequestManager.requestString("com.antgroup.zmxy.zmcustprod.biz.rpc.growthtask.api.GrowthTaskRpcManager.queryDailyQuiz", requestData);
     }
 
     /**
-     * 提交每日答题的答案
+     * 提交视频答题的答案
      * @param bizDate 从queryDailyQuiz获取的bizDate
      * @param questionId 问题ID
      * @param answerId 选择的答案ID
      * @return RPC响应
      */
     public static String pushDailyQuizAnswer(long bizDate, String questionId, String answerId) {
-        // answerStatus直接硬编码为RIGHT，因为我们总是提交正确答案
         String extInfo = "{\"answerId\":\"" + answerId + "\",\"answerStatus\":\"RIGHT\",\"questionId\":\"" + questionId + "\"}";
-        String requestData = "[{\"behaviorId\":\"meiriwenda\",\"bizDate\":" + bizDate + ",\"extInfo\":" + extInfo + "}]";
+        String requestData = "[{\"behaviorId\":\"shipingwenda\",\"bizDate\":" + bizDate + ",\"extInfo\":" + extInfo + "}]";
         return RequestManager.requestString("com.antgroup.zmxy.zmcustprod.biz.rpc.growthtask.api.GrowthTaskRpcManager.pushDailyTask", requestData);
     }
 
@@ -266,11 +265,14 @@ public class AntMemberRpcCall {
     }
 
     /**
-     * 一键收取所有进度球
-     * @param ballIdList 进度球ID列表
+     * [已统一] 收集一个或多个进度球
+     * @param ballIdList 包含一个或多个进度球ID的JSONArray
      * @return RPC响应
      */
     public static String collectProgressBall(JSONArray ballIdList) {
+        if (ballIdList == null || ballIdList.length() == 0) {
+            return "{\"success\":false, \"resultView\":\"ballIdList为空\"}";
+        }
         String requestData = "[{\"ballIdList\":" + ballIdList.toString() + "}]";
         return RequestManager.requestString("com.antgroup.zmxy.zmcustprod.biz.rpc.growthbehavior.apiGrowthBehaviorRpcManager.collectProgressBall", requestData);
     }
