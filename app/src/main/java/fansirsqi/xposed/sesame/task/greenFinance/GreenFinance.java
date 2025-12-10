@@ -241,23 +241,43 @@ public class GreenFinance extends ModelTask {
      */
     private void signIn(final String sceneId) {
         try {
-            String s = GreenFinanceRpcCall.signInQuery(sceneId);
-            JSONObject jo = new JSONObject(s);
-            if (!jo.optBoolean("success")) {
-                Log.runtime(TAG + ".signIn.signInQuery", jo.optString("resultDesc"));
+            // 1. 查询签到状态
+            String queryResponse = GreenFinanceRpcCall.signInQuery(sceneId);
+            JSONObject queryJo = new JSONObject(queryResponse); // queryResponse 本身就是 "Data" 字段的内容
+
+            // 直接从 queryJo 中获取 "success" 和 "result"
+            if (!queryJo.optBoolean("success")) {
+                Log.runtime(TAG + ".signIn.signInQuery", queryJo.optString("resultDesc"));
                 return;
             }
-            JSONObject result = jo.getJSONObject("result");
-            if (result.getBoolean("isTodaySignin")) {
+
+            JSONObject queryResult = queryJo.getJSONObject("result");
+            if (queryResult.optBoolean("isTodaySignin")) {
+                // 根据日志显示，今天已经签到过了
+                Log.record("绿色经营📊今日已签到");
                 return;
             }
-            s = GreenFinanceRpcCall.signInTrigger(sceneId);
-            GlobalThreadPools.sleep(300);
-            jo = new JSONObject(s);
-            if (jo.optBoolean("success")) {
-                Log.other("绿色经营📊签到成功");
+
+            // 2. 如果未签到，则执行签到
+            GlobalThreadPools.sleep(300); // 适当延迟
+            String triggerResponse = GreenFinanceRpcCall.signInTrigger(sceneId);
+            JSONObject triggerJo = new JSONObject(triggerResponse); // triggerResponse 本身就是 "Data" 字段的内容
+
+            // 直接从 triggerJo 中获取 "success" 和 "result"
+            if (triggerJo.optBoolean("success")) {
+                // 签到成功后，解析奖励信息
+                JSONObject triggerResult = triggerJo.getJSONObject("result");
+                JSONArray prizeList = triggerResult.optJSONArray("prizeOrderDTOList");
+                if (prizeList != null && prizeList.length() > 0) {
+                    JSONObject firstPrize = prizeList.getJSONObject(0);
+                    String prizeName = firstPrize.optString("prizeName");
+                    int price = firstPrize.optInt("price");
+                    Log.other("绿色经营📊签到成功: 获得[" + prizeName + "], 奖励: " + price);
+                // } else {
+                //     Log.other("绿色经营📊签到成功");
+                }
             } else {
-                Log.runtime(TAG + ".signIn.signInTrigger", jo.optString("resultDesc"));
+                Log.runtime(TAG + ".signIn.signInTrigger", triggerJo.optString("resultDesc"));
             }
         } catch (Throwable th) {
             Log.runtime(TAG, "signIn err:");
