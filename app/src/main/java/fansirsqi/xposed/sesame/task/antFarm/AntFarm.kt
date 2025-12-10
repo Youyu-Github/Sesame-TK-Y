@@ -278,79 +278,27 @@ class AntFarm : ModelTask() {
         val modelFields = ModelFields()
         modelFields.addField(StringModelField("sleepTime", "小鸡睡觉时间(关闭:-1)", "2330").also { sleepTime = it })
         modelFields.addField(IntegerModelField("sleepMinutes", "小鸡睡觉时长(分钟)", 10 * 36, 1, 10 * 60).also { sleepMinutes = it })
-        modelFields.addField(ChoiceModelField("recallAnimalType", "召回小鸡", RecallAnimalType.Companion.ALWAYS, RecallAnimalType.Companion.nickNames).also {
-            recallAnimalType = it
-        })
+        modelFields.addField(ChoiceModelField("recallAnimalType", "召回小鸡", RecallAnimalType.Companion.ALWAYS, RecallAnimalType.Companion.nickNames).also { recallAnimalType = it })
         // modelFields.addField(PriorityModelField("rewardFriend", "打赏好友", priorityType.PRIORITY_2, priorityType.nickNames).also { rewardFriend = it })
         modelFields.addField(BooleanModelField("rewardFriend", "打赏好友", false).also { rewardFriend = it })
         modelFields.addField(BooleanModelField("feedAnimal", "自动喂小鸡", false).also { feedAnimal = it })
-        modelFields.addField(
-            SelectAndCountModelField(
-                "feedFriendAnimalList",
-                "喂小鸡好友列表",
-                LinkedHashMap<String?, Int?>()
-            ) { AlipayUser.getList() }.also { feedFriendAnimalList = it })
+        modelFields.addField(SelectAndCountModelField("feedFriendAnimalList", "喂小鸡好友列表", LinkedHashMap<String?, Int?>()) { AlipayUser.getList() }.also { feedFriendAnimalList = it })
         modelFields.addField(PriorityModelField("getFeed", "一起拿饲料", priorityType.PRIORITY_2, priorityType.nickNames).also { getFeed = it })
         modelFields.addField(ChoiceModelField("getFeedType", "一起拿饲料 | 动作", GetFeedType.Companion.GIVE, GetFeedType.Companion.nickNames).also { getFeedType = it })
-        modelFields.addField(
-            SelectModelField(
-                "getFeedlList",
-                "一起拿饲料 | 好友列表",
-                LinkedHashSet<String?>()
-            ) { AlipayUser.getList() }.also { getFeedlList = it })
+        modelFields.addField(SelectModelField("getFeedlList", "一起拿饲料 | 好友列表", LinkedHashSet<String?>()) { AlipayUser.getList() }.also { getFeedlList = it })
         modelFields.addField(BooleanModelField("acceptGift", "收麦子", false).also { acceptGift = it })
-        modelFields.addField(
-            SelectAndCountModelField(
-                "visitFriendList",
-                "送麦子好友列表",
-                LinkedHashMap<String?, Int?>()
-            ) { AlipayUser.getList() }.also { visitFriendList = it })
+        modelFields.addField(SelectAndCountModelField("visitFriendList", "送麦子好友列表", LinkedHashMap<String?, Int?>()) { AlipayUser.getList() }.also { visitFriendList = it })
         // modelFields.addField(PriorityModelField("hireAnimal", "雇佣小鸡 | 开启", priorityType.PRIORITY_2, priorityType.nickNames).also { hireAnimal = it })
         modelFields.addField(BooleanModelField("hireAnimal", "雇佣小鸡 | 开启", false).also { hireAnimal = it })
-        modelFields.addField(ChoiceModelField("hireAnimalType", "雇佣小鸡 | 动作", HireAnimalType.Companion.DONT_HIRE, HireAnimalType.Companion.nickNames).also {
-            hireAnimalType = it
-        })
-        modelFields.addField(
-            SelectModelField(
-                "hireAnimalList",
-                "雇佣小鸡 | 好友列表",
-                LinkedHashSet<String?>()
-            ) { AlipayUser.getList() }.also { hireAnimalList = it })
+        modelFields.addField(ChoiceModelField("hireAnimalType", "雇佣小鸡 | 动作", HireAnimalType.Companion.DONT_HIRE, HireAnimalType.Companion.nickNames).also { hireAnimalType = it })
+        modelFields.addField(SelectModelField("hireAnimalList", "雇佣小鸡 | 好友列表", LinkedHashSet<String?>()) { AlipayUser.getList() }.also { hireAnimalList = it })
         modelFields.addField(PriorityModelField("sendBackAnimal", "遣返 | 开启", priorityType.PRIORITY_2, priorityType.nickNames).also { sendBackAnimal = it })
-        modelFields.addField(
-            ChoiceModelField(
-                "sendBackAnimalWay",
-                "遣返 | 方式",
-                SendBackAnimalWay.Companion.NORMAL,
-                SendBackAnimalWay.Companion.nickNames
-            ).also { sendBackAnimalWay = it })
-        modelFields.addField(
-            ChoiceModelField(
-                "sendBackAnimalType",
-                "遣返 | 动作",
-                SendBackAnimalType.Companion.NOT_BACK,
-                SendBackAnimalType.Companion.nickNames
-            ).also { sendBackAnimalType = it })
-        modelFields.addField(
-            SelectModelField(
-                "dontSendFriendList",
-                "遣返 | 好友列表",
-                LinkedHashSet<String?>()
-            ) { AlipayUser.getList() }.also { sendBackAnimalList = it })
+        modelFields.addField(ChoiceModelField("sendBackAnimalWay", "遣返 | 方式", SendBackAnimalWay.Companion.NORMAL, SendBackAnimalWay.Companion.nickNames).also { sendBackAnimalWay = it })
+        modelFields.addField(ChoiceModelField("sendBackAnimalType", "遣返 | 动作", SendBackAnimalType.Companion.NOT_BACK, SendBackAnimalType.Companion.nickNames).also { sendBackAnimalType = it })
+        modelFields.addField(SelectModelField("dontSendFriendList", "遣返 | 好友列表", LinkedHashSet<String?>()) { AlipayUser.getList() }.also { sendBackAnimalList = it })
         modelFields.addField(PriorityModelField("notifyFriend", "通知赶鸡 | 开启", priorityType.PRIORITY_2, priorityType.nickNames).also { notifyFriend = it })
-        modelFields.addField(
-            ChoiceModelField(
-                "notifyFriendType",
-                "通知赶鸡 | 动作",
-                NotifyFriendType.Companion.NOTIFY,
-                NotifyFriendType.Companion.nickNames
-            ).also { notifyFriendType = it })
-        modelFields.addField(
-            SelectModelField(
-                "notifyFriendList",
-                "通知赶鸡 | 好友列表",
-                LinkedHashSet<String?>()
-            ) { AlipayUser.getList() }.also { notifyFriendList = it })
+        modelFields.addField(ChoiceModelField("notifyFriendType", "通知赶鸡 | 动作", NotifyFriendType.Companion.NOTIFY, NotifyFriendType.Companion.nickNames).also { notifyFriendType = it })
+        modelFields.addField(SelectModelField("notifyFriendList", "通知赶鸡 | 好友列表", LinkedHashSet<String?>()) { AlipayUser.getList() }.also { notifyFriendList = it })
         modelFields.addField(BooleanModelField("donation", "每日捐蛋 | 开启", false).also { donation = it })
         modelFields.addField(ChoiceModelField("donationCount", "每日捐蛋 | 次数", DonationCount.Companion.ONE, DonationCount.Companion.nickNames).also { donationCount = it })
         modelFields.addField(BooleanModelField("useAccelerateTool", "加速卡 | 使用", false).also { useAccelerateTool = it })
@@ -365,13 +313,7 @@ class AntFarm : ModelTask() {
         modelFields.addField(PriorityModelField("kitchen", "小鸡厨房", priorityType.PRIORITY_2, priorityType.nickNames).also { kitchen = it })
         modelFields.addField(PriorityModelField("chickenDiary", "小鸡日记", priorityType.PRIORITY_2, priorityType.nickNames).also { chickenDiary = it })
         modelFields.addField(BooleanModelField("diaryTietie", "小鸡日记 | 贴贴", false).also { diaryTietie = it })
-        modelFields.addField(
-            ChoiceModelField(
-                "collectChickenDiary",
-                "小鸡日记 | 点赞",
-                CollectChickenDiaryType.Companion.ONCE,
-                CollectChickenDiaryType.Companion.nickNames
-            ).also { collectChickenDiary = it })
+        modelFields.addField(ChoiceModelField("collectChickenDiary", "小鸡日记 | 点赞", CollectChickenDiaryType.Companion.ONCE, CollectChickenDiaryType.Companion.nickNames).also { collectChickenDiary = it })
         modelFields.addField(PriorityModelField("enableChouchoule", "开启小鸡抽抽乐", priorityType.PRIORITY_2, priorityType.nickNames).also { enableChouchoule = it })
         modelFields.addField(BooleanModelField("listOrnaments", "小鸡每日换装", false).also { listOrnaments = it })
         modelFields.addField(PriorityModelField("enableDdrawGameCenterAward", "开宝箱", priorityType.PRIORITY_2, priorityType.nickNames).also { enableDdrawGameCenterAward = it })
@@ -380,20 +322,10 @@ class AntFarm : ModelTask() {
         modelFields.addField(ListJoinCommaToStringModelField("farmGameTime", "小鸡游戏时间(范围)", ListUtil.newArrayList<String?>("2200-2400")).also { farmGameTime = it })
         modelFields.addField(BooleanModelField("family", "家庭 | 开启", false).also { family = it })
         modelFields.addField(SelectModelField("familyOptions", "家庭 | 选项", LinkedHashSet<String?>(), farmFamilyOption()).also { familyOptions = it })
-        modelFields.addField(
-            SelectModelField(
-                "notInviteList",
-                "家庭 | 好友分享排除列表",
-                LinkedHashSet<String?>()
-            ) { AlipayUser.getList() }.also { notInviteList = it })
-        //        modelFields.addField(giftFamilyDrawFragment = new StringModelField("giftFamilyDrawFragment", "家庭 | 扭蛋碎片赠送用户ID(配置目录查看)", ""));
+        modelFields.addField(SelectModelField("notInviteList", "家庭 | 好友分享排除列表", LinkedHashSet<String?>()) { AlipayUser.getList() }.also { notInviteList = it })
+        // modelFields.addField(giftFamilyDrawFragment = new StringModelField("giftFamilyDrawFragment", "家庭 | 扭蛋碎片赠送用户ID(配置目录查看)", ""));
         modelFields.addField(PriorityModelField("paradiseCoinExchangeBenefit", "小鸡乐园 | 兑换权益", priorityType.PRIORITY_2, priorityType.nickNames).also { paradiseCoinExchangeBenefit = it })
-        modelFields.addField(
-            SelectModelField(
-                "paradiseCoinExchangeBenefitList",
-                "小鸡乐园 | 权益列表",
-                LinkedHashSet<String?>()
-            ) { ParadiseCoinBenefit.getList() }.also { paradiseCoinExchangeBenefitList = it })
+        modelFields.addField(SelectModelField("paradiseCoinExchangeBenefitList", "小鸡乐园 | 权益列表", LinkedHashSet<String?>()) { ParadiseCoinBenefit.getList() }.also { paradiseCoinExchangeBenefitList = it })
         modelFields.addField(PriorityModelField("visitAnimal", "到访小鸡送礼", priorityType.PRIORITY_2, priorityType.nickNames).also { visitAnimal = it })
         return modelFields
     }

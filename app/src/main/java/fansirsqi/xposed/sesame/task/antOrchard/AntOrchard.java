@@ -42,7 +42,7 @@ public class AntOrchard extends ModelTask {
         ORCHARD_TASK_BLACKLIST.add("TOUTIAO");                      // 逛一逛今日头条
     }
 
-    private String userId;
+    private String userId = UserMap.currentUid;
     private String treeLevel;
     private String[] wuaList;
     private Integer executeIntervalInt;
@@ -131,9 +131,8 @@ public class AntOrchard extends ModelTask {
                     }
                 }
                 */
-                userId = UserMap.currentUid;
                 if (userId == null) {
-                    userId = UserMap.getCurrentUid();
+                    userId = UserMap.currentUid;
                 }
                 if (userId == null) {
                     Log.error(TAG, "无法获取 userId");
@@ -304,7 +303,7 @@ public class AntOrchard extends ModelTask {
                             Log.runtime(TAG, "set Wua " + wua);
                         }
                         
-                        String spreadRes = AntOrchardRpcCall.orchardSpreadManure(wua);
+                        String spreadRes = AntOrchardRpcCall.orchardSpreadManure(wua,"ch_appcenter__chsub_9patch");
                         JSONObject spreadManureData = new JSONObject(spreadRes);
                         
                         if (!"100".equals(spreadManureData.getString("resultCode"))) {
