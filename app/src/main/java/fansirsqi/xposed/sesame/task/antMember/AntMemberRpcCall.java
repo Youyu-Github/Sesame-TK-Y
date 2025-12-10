@@ -207,10 +207,10 @@ public class AntMemberRpcCall {
 
     /**
      * 游戏中心签到类平台任务完成（needSignUp = true）
-     * 对应: com.alipay.gamecenteruprod.biz.rpc.v3.doTaskSignup
+     * 对应: com.alipay.gamecenteruprod.biz.rpc.v4.doTaskSignup
      */
     public static String doTaskSignup(String taskId) {
-        return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.v3.doTaskSignup",
+        return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.v4.doTaskSignup",
                 "[{\"source\":\"ch_alipaysearch__chsub_normal\",\"taskId\":\"" + taskId + "\"}]");
     }
 
