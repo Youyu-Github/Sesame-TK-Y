@@ -146,6 +146,10 @@ public class AntMember extends ModelTask {
       if (sesameAlchemyTask.getValue()) {
         doSesameAlchemyTasks();
         tc.countDebug("芝麻炼金|攒粒");
+        GlobalThreadPools.sleep(500);
+        doSesameAlchemyNextDayGift(); // 检查并领取次日礼包
+        tc.countDebug("芝麻炼金|次日礼包");
+
       }
       if (doSesameAlchemy.getValue()) {
         doSesameAlchemy();
@@ -980,6 +984,59 @@ public class AntMember extends ModelTask {
     } catch (Throwable t) {
       Log.printStackTrace(TAG, t);
     }
+  }
+
+  /**
+   * [新增] 芝麻炼金 - 领取次日礼包 (修改版：直接尝试领取)
+   */
+  private void doSesameAlchemyNextDayGift() {
+      try {
+          // [修改] 日志内容调整，因为不再检查，而是直接尝试
+          Log.record(TAG, "芝麻炼金-开始尝试领取次日礼包...");
+
+          /*
+          * [删除] 以下是原有的查询弹窗逻辑，已被整体移除
+          *
+          * String queryStr = AntMemberRpcCall.alchemyQueryPopUp();
+          * JSONObject queryJo = new JSONObject(queryStr);
+          *
+          * if (!queryJo.optBoolean("success") || !queryJo.has("data") || queryJo.getJSONObject("data").length() == 0) {
+          *     Log.record(TAG, "芝麻炼金-领取次日礼包✨[今日无礼包或已领取]");
+          *     return;
+          * }
+          */
+
+          // [修改] 日志内容调整，表明是直接领取
+          Log.record(TAG, "芝麻炼金-领取次日礼包✨");
+          String claimStr = AntMemberRpcCall.alchemyClaimAward();
+          JSONObject claimJo = new JSONObject(claimStr);
+
+          if (claimJo.optBoolean("success")) {
+              // 解析返回的奖励信息
+              JSONObject data = claimJo.getJSONObject("data");
+              // 容错处理，防止 data 为空时崩溃
+              if (data != null) {
+                  JSONArray awards = data.optJSONArray("alchemyAwardSendResultVOS");
+                  if (awards != null && awards.length() > 0) {
+                      // 通常只有一个奖励，我们只记录第一个
+                      JSONObject firstAward = awards.getJSONObject(0);
+                      String pointNum = firstAward.optString("pointNum", "?");
+                      Log.other("芝麻炼金-领取次日礼包✨[领取成功] #获得 " + pointNum + " 芝麻粒");
+                  // } else {
+                      // 成功但没有奖励详情，也记录一下，这可能是已经领取过的正常返回
+                  //     Log.record(TAG, "芝麻炼金-领取次日礼包✨[操作成功，但无奖励详情]");
+                  }
+              // } else {
+              //     Log.other("芝麻炼金-领取次日礼包✨[操作成功，但返回data为空]");
+              }
+          } else {
+              // 领取失败，记录失败原因
+              // 如果当天无礼包或已领取，失败信息会在这里显示
+              Log.record(TAG, "芝麻炼金-领取次日礼包✨[领取失败]: " + claimJo.optString("resultView", "无详细错误信息"));
+          }
+      } catch (Throwable t) {
+          Log.printStackTrace(TAG, t);
+      }
   }
 
   /**

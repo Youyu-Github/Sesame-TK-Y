@@ -562,6 +562,23 @@ public class AntMemberRpcCall {
     }
 
     /**
+     * [新增] 芝麻炼金 - 查询场景弹窗 (用于检查次日礼包)
+     */
+    /*public static String alchemyQueryPopUp() {
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.CommonPopUpRpcManager.query",
+                "[{\"sceneCode\":\"zm_gold_v1\"}]");
+    }*/
+
+    /**
+     * [新增] 芝麻炼金 - 领取奖励 (用于领取次日礼包)
+     */
+    public static String alchemyClaimAward() {
+        // 根据抓包数据，requestData 是一个空对象数组
+        return RequestManager.requestString("com.antgroup.zmxy.zmmemberop.biz.rpc.AlchemyRpcManager.claimAward",
+                "[{}]");
+    }
+
+    /**
      * [新增] 芝麻炼金 - 查询限时任务(早/中/晚饭)
      */
     public static String alchemyQueryTimeLimitedTask() {
