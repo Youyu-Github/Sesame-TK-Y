@@ -1,12 +1,14 @@
 package fansirsqi.xposed.sesame.task.antSports;
 
 import org.json.JSONObject;
-import java.util.List;
+import java.util.List;  // 健康岛导入的
 import fansirsqi.xposed.sesame.hook.RequestManager;
+import java.util.List; 
+import fansirsqi.xposed.sesame.hook.ApplicationHook;
 
 public class AntSportsRpcCall {
     private static final String chInfo = "ch_appcenter__chsub_9patch",
-            timeZone = "Asia\\/Shanghai", version = "3.0.1.2", alipayAppVersion = "0.0.852",
+            timeZone = "Asia\\/Shanghai", version = "3.0.1.2", alipayAppVersion = String.valueOf(ApplicationHook.getAlipayVersion()),
             cityCode = "330100", appId = "2021002116659397";
     private static final String features = "[\n" +
             "            \"DAILY_STEPS_RANK_V2\",\n" +
@@ -54,6 +56,21 @@ public class AntSportsRpcCall {
                 "    }\n" +
                 "]";
         return RequestManager.requestString("com.alipay.sportshealth.biz.rpc.SportsHealthCoinTaskRpc.completeTask", args1);
+    }
+
+    public static String queryMainPage() {
+        String args = "{\n" +
+                "    \"apiVersion\": \"energy\",\n" +
+                "    \"chInfo\": \"ch_shouquan_shouye\",\n" +
+                "    \"cityCode\": "+cityCode+",\n" +
+                "    \"clientOS\": \"android\",\n" +
+                "    \"features\": " + features + ",\n" +
+                "    \"timezone\": \"Asia/Shanghai\"\n" +
+                "}";
+        return RequestManager.requestString(
+                "com.alipay.sportshealth.biz.rpc.queryMainPage",
+                args
+        );
     }
 
     public static String sportsCheck_in() {

@@ -84,9 +84,9 @@ public class AntOrchardRpcCall {
      * 施肥
      * 注意：Kotlin代码中 "version":$VERSION (无引号)，此处严格同步
      */
-    public static String orchardSpreadManure(String wua) {
+    public static String orchardSpreadManure(String wua, String source) {
         return RequestManager.requestString("com.alipay.antfarm.orchardSpreadManure",
-                "[{\"plantScene\":\"main\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"useBatchSpread\":false,\"version\":"
+                "[{\"plantScene\":\"main\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"" + source + "\",\"useBatchSpread\":false,\"version\":"
                         + VERSION + ",\"wua\":\"" + wua + "\"}]");
     }
 
