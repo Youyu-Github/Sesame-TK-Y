@@ -691,6 +691,7 @@ public class AntMember extends ModelTask {
     "芝麻租赁下单得芝麻粒",
     "去订阅芝麻小组件",
     "租游戏账号得芝麻粒",
+    "完成旧衣回收得现金",
     "租会员下单得芝麻粒",
     "逛淘宝签到",              // 需要淘宝操作
     "坚持签到领奖励"            // 需要淘宝操作
@@ -1908,6 +1909,13 @@ public class AntMember extends ModelTask {
 
                                   String taskId = task.optString("taskId");
                                   String status = task.optString("taskStatus");
+                                  String title = task.optString("title");
+                                  String actionType = task.optString("actionType");
+
+                                  if ("从首页访问".equals(title) || "REVISIT_TASK".equals(actionType)) {
+                                      Log.record(TAG + ".enableGameCenter.tasks", "游戏中心🎮任务[" + title + "]为回访任务,已自动跳过");
+                                      continue; // 跳过当前循环，处理下一个任务
+                                  }
 
                                   if (taskId.isEmpty()) continue;
                                   if (!"NOT_DONE".equals(status) && !"SIGNUP_COMPLETE".equals(status)) {
@@ -1929,7 +1937,7 @@ public class AntMember extends ModelTask {
                                   }
 
                                   total++;
-                                  String title = task.optString("title");
+                                  // String title = task.optString("title");
                                   String subTitle = task.optString("subTitle");
                                   boolean needSignUp = task.optBoolean("needSignUp", false);
                                   int pointAmount = task.optInt("pointAmount", 0);
