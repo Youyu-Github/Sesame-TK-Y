@@ -180,7 +180,7 @@ class MyWebView : WebView {
         val outBuf = CharBuffer.allocate((inBuf.remaining() * utf8Decoder.maxCharsPerByte()).toInt() + 8)
 
         // endOfInput=false：允许结尾出现不完整序列，不当成错误
-        val result = utf8Decoder.decode(inBuf, outBuf, /*endOfInput*/ false)
+        utf8Decoder.decode(inBuf, outBuf, /*endOfInput*/ false)
 
         // 剩余未消费的字节（一般是不完整的多字节序列），留到下一轮
         undecodedTail = if (inBuf.hasRemaining()) {
