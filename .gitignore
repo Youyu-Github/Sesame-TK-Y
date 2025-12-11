@@ -93,3 +93,4 @@ serve-debug/webhook.db
 # debug ui
 /serve-debug/web
 webui_debug*
+ai.py
