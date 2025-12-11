@@ -5,9 +5,9 @@ import fansirsqi.xposed.sesame.util.HanziToPinyin
 
 abstract class MapperEntity : Comparable<MapperEntity> {
     @JvmField
-    public var name: String = ""
+    var name: String = ""
     @JvmField
-    public var id: String = ""
+    var id: String = ""
 
     @JsonIgnore
     private var pinyinCache: List<String>? = null
