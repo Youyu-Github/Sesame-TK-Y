@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -13,14 +14,16 @@
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
+
         .container {
             max-width: 600px;
             margin: 0 auto;
             background: var(--semi-color-bg-1);
             min-height: 100vh;
-            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
             padding-bottom: 40px;
         }
+
         .header {
             padding: 16px;
             background: var(--semi-color-bg-2);
@@ -31,9 +34,11 @@
             backdrop-filter: blur(10px);
             background-color: rgba(255, 255, 255, 0.8);
         }
+
         body[theme-mode='dark'] .header {
             background-color: rgba(22, 22, 26, 0.8);
         }
+
         .field-row {
             display: flex;
             justify-content: space-between;
@@ -41,9 +46,11 @@
             padding: 12px 0;
             border-bottom: 1px solid var(--semi-color-border);
         }
+
         .field-row:last-child {
             border-bottom: none;
         }
+
         .field-label {
             font-size: 14px;
             font-weight: 600;
@@ -51,13 +58,16 @@
             flex: 1;
             padding-right: 12px;
         }
+
         .field-control {
             flex-shrink: 0;
             max-width: 60%;
         }
+
         .section-padding {
             padding: 0 16px;
         }
+
         /* 列表弹窗样式 */
         .list-item {
             display: flex;
@@ -66,12 +76,14 @@
             padding: 12px 0;
             border-bottom: 1px solid var(--semi-color-border);
         }
+
         .list-item-left {
             display: flex;
             align-items: center;
             flex: 1;
             overflow: hidden;
         }
+
         .list-item-name {
             margin-left: 10px;
             font-size: 15px;
@@ -79,10 +91,12 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .list-count-input {
             width: 80px;
             margin-left: 10px;
         }
+
         .sheet-footer {
             display: flex;
             justify-content: flex-end;
@@ -90,7 +104,7 @@
             border-top: 1px solid var(--semi-color-border);
         }
     </style>
-    
+
     <!-- React & ReactDOM -->
     <!-- <script crossorigin src="https://unpkg.com/react@17.0.2/umd/react.development.js"></script> -->
     <script src="./js/react.development.js"></script>
@@ -98,19 +112,31 @@
     <script src="./js/react-dom.development.js"></script>
     <!-- Semi UI JS -->
     <!-- <script src="https://unpkg.com/@douyinfe/semi-ui@2.27.0/dist/umd/semi-ui.min.js"></script> -->
-     <script src="./js/semi-ui.min.js"></script>
+    <script src="./js/semi-ui.min.js"></script>
     <!-- Semi Icons -->
     <!-- <script src="https://unpkg.com/@douyinfe/semi-icons@latest/dist/umd/semi-icons.min.js"></script> -->
     <!--              https://unpkg.com/@douyinfe/semi-icons@2.89.0/dist/umd/semi-icons.min.js.map -->
-     <script src="./js/semi-icons.min.js"></script>
+    <script src="./js/semi-icons.min.js"></script>
     <!-- Babel -->
     <!-- <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script> -->
-     <script src="./js/babel.min.js"></script>
+    <script src="./js/babel.min.js"></script>
 </head>
+
 <body>
     <div id="app"></div>
 
     <script type="text/babel">
+        const switchMode = () => {
+            const body = document.body;
+            if (body.hasAttribute('theme-mode')) {
+                body.removeAttribute('theme-mode');
+                // 以下这行代码，window.setMode仅用于当通过本Demo切换时，通知Semi官网Header记录更新当前模式（只用于演示）。在您的代码里无需存在。
+                window.setMode('light');
+            } else {
+                body.setAttribute('theme-mode', 'dark');
+                window.setMode('dark');
+            }
+        };
         const { useState, useEffect, useMemo, useRef } = React;
         const { Collapse, Switch, Input, RadioGroup, Radio, Button, Toast, SideSheet, Checkbox, InputNumber, Typography } = SemiUI;
         const { IconSearch } = SemiIcons;
@@ -126,7 +152,7 @@
         };
 
         const getFieldData = (modelCode, fieldCode) => {
-             try {
+            try {
                 const res = JSON.parse(window.HOOK.getField(modelCode, fieldCode));
                 return res.expandValue || [];
             } catch (e) {
@@ -141,7 +167,7 @@
 
             // 列表弹窗相关的 State
             const [sheetVisible, setSheetVisible] = useState(false);
-            const [sheetConfig, setSheetConfig] = useState({ modelCode: '', fieldCode: '', type: '', title: '' });
+            const [sheetConfig, setSheetConfig] = useState({ modelCode: '', fieldCode: '', type: '', title: '', desc: '' });
             const [sheetList, setSheetList] = useState([]); // 完整列表数据
             const [sheetSearch, setSheetSearch] = useState(''); // 搜索关键词
             const [selectedIds, setSelectedIds] = useState(new Set()); // 选中的ID集合
@@ -166,13 +192,13 @@
                     if (fieldIndex > -1) {
                         currentFields[fieldIndex] = { ...currentFields[fieldIndex], configValue: String(newValue) };
                     }
-                    
+
                     // 构造保存数据
                     const savePayload = {};
                     currentFields.forEach(f => {
                         savePayload[f.code] = { configValue: f.configValue };
                     });
-                    
+
                     if (window.HOOK && window.HOOK.setModel) {
                         window.HOOK.setModel(modelCode, JSON.stringify(savePayload));
                     }
@@ -184,12 +210,12 @@
 
             // 打开弹窗
             const openListSheet = (modelCode, fieldItem) => {
-                const { code, name, type, configValue } = fieldItem;
-                
+                const { code, name, type, desc, configValue } = fieldItem;
+
                 // 1. 获取最新列表数据
                 const listData = getFieldData(modelCode, code);
                 setSheetList(listData);
-                setSheetConfig({ modelCode, fieldCode: code, type, title: name });
+                setSheetConfig({ modelCode, fieldCode: code, type, title: name, desc: desc });
                 setSheetSearch('');
 
                 // 2. 解析当前已保存的值
@@ -215,7 +241,6 @@
                 } catch (e) {
                     console.error("Parse config value failed", e);
                 }
-
                 setSelectedIds(newSelectedIds);
                 setSelectedCounts(newSelectedCounts);
                 setSheetVisible(true);
@@ -252,7 +277,7 @@
                     newIds.add(id);
                     // 如果是计数模式，给个默认值
                     if (sheetConfig.type === 'SELECT_AND_COUNT' && selectedCounts[id] === undefined) {
-                        setSelectedCounts(prev => ({...prev, [id]: 1})); // 默认为 1
+                        setSelectedCounts(prev => ({ ...prev, [id]: 1 })); // 默认为 1
                     }
                 } else {
                     newIds.delete(id);
@@ -269,15 +294,15 @@
             const toggleAll = () => {
                 const filteredList = sheetList.filter(item => item.name.includes(sheetSearch));
                 const allSelected = filteredList.every(item => selectedIds.has(item.id));
-                
+
                 const newIds = new Set(selectedIds);
                 filteredList.forEach(item => {
                     if (allSelected) {
                         newIds.delete(item.id);
                     } else {
                         newIds.add(item.id);
-                         if (sheetConfig.type === 'SELECT_AND_COUNT' && selectedCounts[item.id] === undefined) {
-                            setSelectedCounts(prev => ({...prev, [item.id]: 1}));
+                        if (sheetConfig.type === 'SELECT_AND_COUNT' && selectedCounts[item.id] === undefined) {
+                            setSelectedCounts(prev => ({ ...prev, [item.id]: 1 }));
                         }
                     }
                 });
@@ -287,21 +312,21 @@
             // 渲染过滤后的列表
             const renderSheetList = () => {
                 const filtered = sheetList.filter(item => item.name.toLowerCase().includes(sheetSearch.toLowerCase()));
-                
-                if (filtered.length === 0) return <div style={{padding: 20, textAlign:'center', color:'#999'}}>无数据</div>;
+
+                if (filtered.length === 0) return <div style={{ padding: 20, textAlign: 'center', color: '#999' }}>无数据</div>;
 
                 return filtered.map(item => {
                     const isChecked = selectedIds.has(item.id);
                     return (
                         <div key={item.id} className="list-item">
                             <div className="list-item-left" onClick={() => toggleItem(item.id, !isChecked)}>
-                                <Checkbox checked={isChecked} style={{pointerEvents:'none'}} />
+                                <Checkbox checked={isChecked} style={{ pointerEvents: 'none' }} />
                                 <span className="list-item-name">{item.name}</span>
                             </div>
-                            
+
                             {/* 只有选中且是计数模式时，显示输入框 */}
                             {sheetConfig.type === 'SELECT_AND_COUNT' && isChecked && (
-                                <InputNumber 
+                                <InputNumber
                                     className="list-count-input"
                                     size="small"
                                     min={0}
@@ -317,7 +342,7 @@
 
             // --- 渲染主界面配置项 ---
             const renderFieldItem = (modelCode, item) => {
-                const { type, name, code, configValue, expandKey } = item;
+                const { type, name, code, configValue, desc, expandKey } = item;
 
                 if (type === 'BOOLEAN') {
                     return (
@@ -330,21 +355,30 @@
                     );
                 }
 
-                if (['STRING', 'INTEGER', 'MULTIPLY_INTEGER', 'TEXT', 'URL_TEXT'].includes(type)) {
+                if (['MULTIPLY_INTEGER', 'LIST', 'INTEGER', 'STRING', 'TEXT'].includes(type)) {
                     return (
                         <div className="field-row" key={code}>
                             <div className="field-label">{name}</div>
-                            <div className="field-control" style={{width: '50%'}}>
+                            <div className="field-control" style={{ width: '50%' }}>
                                 <Input value={configValue} onChange={(v) => handleFieldChange(modelCode, code, v)} placeholder="请输入..." />
                             </div>
+                        </div>
+
+                    );
+                }
+
+                if (type === 'URL_TEXT') {
+                    return (
+                        <div className="field-row" key={code}>
+                            <Text link={{ href: configValue }}>{name}</Text>
                         </div>
                     );
                 }
 
                 if (type === 'CHOICE') {
                     return (
-                        <div style={{padding: '12px 0', borderBottom: '1px solid var(--semi-color-border)'}} key={code}>
-                            <div style={{marginBottom: 8, fontWeight: 600, fontSize:14, color:'var(--semi-color-text-0)'}}>{name}</div>
+                        <div style={{ padding: '12px 0', borderBottom: '1px solid var(--semi-color-border)' }} key={code}>
+                            <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 14, color: 'var(--semi-color-text-0)' }}>{name}</div>
                             <RadioGroup type="button" value={Number(configValue)} onChange={(e) => handleFieldChange(modelCode, code, e.target.value)}>
                                 {expandKey && expandKey.map((label, idx) => (<Radio value={idx} key={idx}>{label}</Radio>))}
                             </RadioGroup>
@@ -358,16 +392,16 @@
                     try {
                         const parsed = JSON.parse(configValue);
                         count = Array.isArray(parsed) ? parsed.length : Object.keys(parsed).length;
-                    } catch(e) {}
+                    } catch (e) { }
 
                     return (
                         <div className="field-row" key={code}>
-                             <div className="field-label">{name}</div>
-                             <div className="field-control">
+                            <div className="field-label">{name}</div>
+                            <div className="field-control">
                                 <Button theme='solid' type='secondary' onClick={() => openListSheet(modelCode, item)}>
                                     已选 {count} 项
                                 </Button>
-                             </div>
+                            </div>
                         </div>
                     )
                 }
@@ -377,34 +411,40 @@
             return (
                 <div className="container">
                     <div className="header">
-                        <Title heading={3} style={{margin: 0}}>Sesame-TK 设置</Title>
+                        <Title heading={2} style={{ margin: 0 }}>Sesame-TK 设置</Title>
+
+                        <Button disabled theme="borderless">欢迎加入我们的组织</Button>
+                        <Text style={{ marginRight: 15 }} link={{ href: 'https://t.me/fansirsqi_xposed_sesame' }}> ➤TG </Text> |
+                        <Text style={{ marginLeft: 15 ,marginRight: 15 }} link={{ href: 'https://qm.qq.com/q/740DFRGOXe' }}> ➤QQ </Text>
+                        <Button style={{}} onClick={switchMode} > 切换主题 </Button>
                     </div>
+
 
                     <div className="section-padding">
                         <Collapse accordion defaultActiveKey={tabs[0]?.modelCode}>
                             {tabs.map((tab) => (
-                                <Collapse.Panel 
-                                    header={<div style={{fontWeight:600}}>{tab.modelName}</div>} 
-                                    itemKey={tab.modelCode} 
+                                <Collapse.Panel
+                                    header={<div style={{ fontWeight: 600 }}>{tab.modelName}</div>}
+                                    itemKey={tab.modelCode}
                                     key={tab.modelCode}
                                 >
                                     <div>
                                         {modelsMap[tab.modelCode] ? (
                                             modelsMap[tab.modelCode].map(field => renderFieldItem(tab.modelCode, field))
                                         ) : (
-                                            <div style={{padding:20, textAlign:'center'}}>加载中...</div>
+                                            <div style={{ padding: 20, textAlign: 'center' }}>加载中...</div>
                                         )}
                                     </div>
                                 </Collapse.Panel>
                             ))}
                         </Collapse>
                     </div>
-                    
-                    <div style={{padding: 20, textAlign: 'center'}}>
-                         <Button 
-                            theme='solid' 
-                            type='danger' 
-                            block 
+
+                    <div style={{ padding: 20, textAlign: 'center' }}>
+                        <Button
+                            theme='solid'
+                            type='danger'
+                            block
                             onClick={() => {
                                 if (window.HOOK && window.HOOK.saveOnExit) {
                                     // 1. 如果是在安卓环境，调用 Java 的保存并退出
@@ -420,37 +460,40 @@
                         >
                             退出并保存
                         </Button>
-                         <div style={{marginTop:10, color:'#999', fontSize:12}}>Ver: {window.HOOK.getBuildInfo()}</div>
+                        <Text style={{ marginTop: 15, color: '#999', fontSize: 12 }} link={{ href: 'https://github.com/Fansirsqi/Sesame-TK' }}> Github开源地址 </Text>
+                        <div style={{ marginTop: 5, color: '#999', fontSize: 14 }}>🥳 Power by <Text link={{ href: 'https://semi.design/' }}>Semi.Design</Text> © 2025-12-11 With <Text link={{ href: 'https://github.com/Fansirsqi' }}>Byseven Offical</Text> </div>
+                        <div style={{ marginTop: 5, color: '#999', fontSize: 14 }}>Ver: {window.HOOK.getBuildInfo()}</div>
                     </div>
 
                     {/* 侧边列表弹窗 */}
                     <SideSheet
-                        title={<span style={{fontSize:16, fontWeight:600}}>{sheetConfig.title}</span>}
+                        title={<span style={{ fontSize: 16, fontWeight: 600 }}>{sheetConfig.title}</span>}
                         visible={sheetVisible}
                         onCancel={() => setSheetVisible(false)}
                         width="100%"
                         placement="right" // 手机上 Right 效果比较像新页面
-                        bodyStyle={{padding: 10}} // 去掉默认内边距
+                        bodyStyle={{ padding: 10 }} // 去掉默认内边距
                     >
-                        <div style={{padding: '10px 16px', borderBottom: '1px solid var(--semi-color-border)'}}>
-                            <Input 
-                                prefix={<IconSearch />} 
-                                placeholder="搜索名称..." 
+                        <Text>{sheetConfig.desc}</Text>
+                        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--semi-color-border)' }}>
+                            <Input
+                                prefix={<IconSearch />}
+                                placeholder="搜索名称..."
                                 value={sheetSearch}
                                 onChange={setSheetSearch}
                             />
-                            <div style={{marginTop: 10, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                            <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Checkbox onChange={toggleAll} checked={false /* 这里简化处理，不强求全选状态回显 */}>
                                     全选/反选 (当前可见)
                                 </Checkbox>
                                 <Text size="small" type="secondary">已选: {selectedIds.size}</Text>
                             </div>
                         </div>
-                        <div style={{padding: '0 16px', overflowY: 'auto', height: 'calc(100vh - 180px)'}}>
+                        <div style={{ padding: '0 16px', overflowY: 'auto', height: 'calc(100vh - 180px)' }}>
                             {renderSheetList()}
                         </div>
-                        <div className="sheet-footer" style={{padding: '16px',justifyContent: 'space-around',  position:'absolute', bottom:0, width:'100%', background:'var(--semi-color-bg-1)'}}>
-                            <Button style={{marginRight: 10}} onClick={() => setSheetVisible(false)}>取消</Button>
+                        <div className="sheet-footer" style={{ padding: '16px', justifyContent: 'space-around', position: 'absolute', bottom: 0, width: '100%', background: 'var(--semi-color-bg-1)' }}>
+                            <Button style={{ marginRight: 10 }} onClick={() => setSheetVisible(false)}>取消</Button>
                             <Button theme="solid" onClick={saveSheet}>保存</Button>
                         </div>
                     </SideSheet>
@@ -461,4 +504,5 @@
         ReactDOM.render(<App />, document.getElementById('app'));
     </script>
 </body>
+
 </html>
