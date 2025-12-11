@@ -61,7 +61,7 @@ class HookEntry(
         XposedBridge.log("$tag: Initialized for process $processName")
 
 
-        val baseFw = "${base.frameworkName} \n${base.frameworkVersion} \n${base.applicationInfo} \n${base.frameworkVersionCode}"
+        val baseFw = "${base.frameworkName} ${base.frameworkVersion} ${base.frameworkVersionCode} target_model_process: ${base.applicationInfo.processName}"
         XposedBridge.log("LspEntry: Framework from base: $baseFw ")
     }
 
