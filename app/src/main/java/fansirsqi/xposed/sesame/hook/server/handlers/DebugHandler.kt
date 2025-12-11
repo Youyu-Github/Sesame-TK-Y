@@ -34,7 +34,7 @@ class DebugHandler(secretToken: String) : BaseHandler(secretToken) {
             return badRequest("RPC call failed: ${e.message}")
         }
 
-        return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, BaseHandler.MIME_JSON, result)
+        return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, MIME_JSON, result)
     }
 
 }
