@@ -60,7 +60,10 @@ public class AntCooperate extends ModelTask {
 
     // 新增真爱合种字段
     private final BooleanModelField loveCooperateWater = new BooleanModelField("loveCooperateWater", "真爱合种浇水 | 开启", false);
-    private final IntegerModelField loveCooperateWaterCount = new IntegerModelField("loveCooperateWaterCount", "真爱合种浇水能量（默认20g）", 20);
+    private final IntegerModelField loveCooperateWaterCount = new IntegerModelField("loveCooperateWaterCount", "设置真爱合种浇水能量克数", 20);
+    // 森林组队版配置
+    private final BooleanModelField teamVersionWater = new BooleanModelField("teamVersionWater", "森林组队版浇水 | 开启", false);
+    private final IntegerModelField teamVersionWaterCount = new IntegerModelField("teamVersionWaterCount", "设置森林组队版浇水投能量克数", 200, 200, 5000);
     private final BooleanModelField cooperateWater = new BooleanModelField("cooperateWater", "合种浇水 | 开启", false);
     private final SelectAndCountModelField cooperateWaterList = new SelectAndCountModelField("cooperateWaterList", "合种浇水列表", new LinkedHashMap<>(), CooperateEntity.Companion.getList(), "开启合种浇水后执行一次重载");
     private final SelectAndCountModelField cooperateWaterTotalLimitList = new SelectAndCountModelField("cooperateWaterTotalLimitList", "浇水总量限制列表", new LinkedHashMap<>(), CooperateEntity.Companion.getList());
@@ -73,6 +76,9 @@ public class AntCooperate extends ModelTask {
         // 新增真爱合种字段
         modelFields.addField(loveCooperateWater);
         modelFields.addField(loveCooperateWaterCount);
+        // 森林组队版
+        modelFields.addField(teamVersionWater);
+        modelFields.addField(teamVersionWaterCount);
         
         modelFields.addField(cooperateWater);
         modelFields.addField(cooperateWaterList);
@@ -110,6 +116,11 @@ public class AntCooperate extends ModelTask {
             // 真爱合种浇水逻辑（优先执行）
             if (loveCooperateWater.getValue()) {
                 runLoveCooperateWater();
+            }
+
+            // 森林组队版浇水逻辑
+            if (teamVersionWater.getValue()) {
+                runTeamVersionWater();
             }
 
             // 普通合种浇水逻辑
@@ -276,6 +287,161 @@ public class AntCooperate extends ModelTask {
             Log.printStackTrace(TAG, t);
         } finally {
             GlobalThreadPools.sleep(1500);
+        }
+    }
+
+    /**
+     * 执行森林组队版浇水 (智能无感检测版)
+     */
+    private void runTeamVersionWater() {
+        try {
+            Log.runtime(TAG, "检查森林组队版浇水...");
+
+            // 1. 查询主页
+            String homeJson = AntCooperateRpcCall.queryForestHomePage();
+            if (homeJson == null) return;
+            JSONObject homeJo = new JSONObject(homeJson);
+            if (!ResChecker.checkRes(TAG, homeJo)) return;
+
+            // 2. 获取 TeamID 和 当前模式
+            JSONObject teamHomeResult = homeJo.optJSONObject("teamHomeResult");
+            if (teamHomeResult == null) {
+                Log.record(TAG, "未加入森林组队，跳过");
+                return;
+            }
+            JSONObject teamBaseInfo = teamHomeResult.optJSONObject("teamBaseInfo");
+            if (teamBaseInfo == null) {
+                Log.record(TAG, "获取组队信息失败");
+                return;
+            }
+            String teamId = teamBaseInfo.optString("teamId");
+            if (teamId == null || teamId.isEmpty()) return;
+
+            // 判断是否处于组队版 (存在 memberList 即为组队版)
+            boolean isTeamMode = teamHomeResult.has("memberList");
+            
+            // 3. 获取今日已浇水量
+            int myTodayEnergy = 0;
+            String currentUid = UserMap.getCurrentUid();
+
+            if (isTeamMode) {
+                // 如果是组队版，直接从主页数据读取
+                JSONArray memberList = teamHomeResult.optJSONArray("memberList");
+                if (memberList != null) {
+                    for (int i = 0; i < memberList.length(); i++) {
+                        JSONObject member = memberList.getJSONObject(i);
+                        if (Objects.equals(member.optString("userId"), currentUid)) {
+                            myTodayEnergy = member.optInt("todayEnergy", 0);
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // 如果是个人版，调用 queryTeamMemberList 查询 (不需要切换模式)
+                String memberJson = AntCooperateRpcCall.queryTeamMemberList(teamId);
+                if (memberJson != null) {
+                    JSONObject memberJo = new JSONObject(memberJson);
+                    if (ResChecker.checkRes(TAG, memberJo)) {
+                        JSONArray memberList = memberJo.optJSONArray("memberList");
+                        if (memberList != null) {
+                            for (int i = 0; i < memberList.length(); i++) {
+                                JSONObject member = memberList.getJSONObject(i);
+                                if (Objects.equals(member.optString("userId"), currentUid)) {
+                                    myTodayEnergy = member.optInt("todayEnergy", 0);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 4. 判断达标情况
+            int configTarget = teamVersionWaterCount.getValue();
+            // 边界修正
+            if (configTarget < 200) configTarget = 200;
+            if (configTarget > 5000) configTarget = 5000;
+
+            if (myTodayEnergy >= configTarget) {
+                Log.record(TAG, "森林组队版: 今日已达标 (已浇" + myTodayEnergy + "g / 目标" + configTarget + "g)，停止浇水");
+                return;
+            }
+
+            int neededEnergy = configTarget - myTodayEnergy;
+            Log.record(TAG, "森林组队版: 今日已浇 " + myTodayEnergy + "g，还需要 " + neededEnergy + "g");
+
+            // 5. 计算可浇水量
+            // 获取余额
+            int currentEnergy = 0;
+            if (homeJo.has("userEnergy")) {
+                currentEnergy = homeJo.getJSONObject("userEnergy").optInt("energySummation");
+            } else if (homeJo.has("userBaseInfo")) {
+                currentEnergy = homeJo.getJSONObject("userBaseInfo").optInt("currentEnergy");
+            }
+
+            // 获取服务端限制
+            int serverRemaining = 0;
+            String miscInfoJson = AntCooperateRpcCall.queryTeamMiscInfo(teamId);
+            if (miscInfoJson != null) {
+                JSONObject miscInfoJo = new JSONObject(miscInfoJson);
+                if (ResChecker.checkRes(TAG, miscInfoJo)) {
+                    JSONObject combineMap = miscInfoJo.optJSONObject("combineHandlerVOMap");
+                    if (combineMap != null) {
+                        JSONObject teamWaterInfo = combineMap.optJSONObject("teamCanWaterCount");
+                        if (teamWaterInfo != null) {
+                            serverRemaining = teamWaterInfo.optInt("waterCount", 0);
+                        }
+                    }
+                }
+            }
+
+            if (serverRemaining <= 0) {
+                Log.record(TAG, "服务端限制：今日该队伍已不可浇水");
+                return;
+            }
+
+            // 取三者最小值
+            int realWaterAmount = neededEnergy;
+            if (realWaterAmount > currentEnergy) realWaterAmount = currentEnergy;
+            if (realWaterAmount > serverRemaining) realWaterAmount = serverRemaining;
+
+            if (realWaterAmount < 10) {
+                Log.record(TAG, "计算后可浇水量不足(" + realWaterAmount + "g)，跳过");
+                return;
+            }
+
+            // 6. 确定需要切换模式
+            boolean needSwitch = !isTeamMode;
+
+            if (needSwitch) {
+                // Log.record(TAG, "当前为[个人版]，正在切换至[组队版]以进行浇水...");
+                AntCooperateRpcCall.updateUserConfig("Y");
+                TimeUtil.sleep(500); 
+            }
+
+            // 7. 执行浇水
+            Log.record(TAG, "森林组队版开始浇水: " + realWaterAmount + "g");
+            String res = AntCooperateRpcCall.teamWater(teamId, realWaterAmount);
+            
+            if (res != null) {
+                JSONObject resJo = new JSONObject(res);
+                if (ResChecker.checkRes(TAG, resJo)) {
+                    Log.forest("森林组队版浇水成功🌲: " + realWaterAmount + "g");
+                    Status.cooperateWaterToday(UserMap.getCurrentUid(), "teamVersion_" + teamId);
+                } else {
+                    Log.record(TAG, "森林组队版浇水失败: " + resJo.optString("resultDesc"));
+                }
+            }
+
+            // 8. 如果切过模式，现在切回去
+            if (needSwitch) {
+                TimeUtil.sleep(500);
+                // Log.record(TAG, "浇水完成，正在切回[个人版]...");
+                AntCooperateRpcCall.updateUserConfig("N");
+            }
+
+        } catch (Throwable t) {
+            Log.printStackTrace(TAG, t);
         }
     }
 
