@@ -60,7 +60,10 @@ public class AntCooperate extends ModelTask {
 
     // 新增真爱合种字段
     private final BooleanModelField loveCooperateWater = new BooleanModelField("loveCooperateWater", "真爱合种浇水 | 开启", false);
-    private final IntegerModelField loveCooperateWaterCount = new IntegerModelField("loveCooperateWaterCount", "真爱合种浇水能量（默认20g）", 20);
+    private final IntegerModelField loveCooperateWaterCount = new IntegerModelField("loveCooperateWaterCount", "设置真爱合种浇水能量克数", 20);
+    // 森林组队版配置
+    private final BooleanModelField teamVersionWater = new BooleanModelField("teamVersionWater", "森林组队版浇水 | 开启", false);
+    private final IntegerModelField teamVersionWaterCount = new IntegerModelField("teamVersionWaterCount", "设置森林组队版浇水投能量克数", 200, 200, 5000);
     private final BooleanModelField cooperateWater = new BooleanModelField("cooperateWater", "合种浇水 | 开启", false);
     private final SelectAndCountModelField cooperateWaterList = new SelectAndCountModelField("cooperateWaterList", "合种浇水列表", new LinkedHashMap<>(), CooperateEntity.Companion.getList(), "开启合种浇水后执行一次重载");
     private final SelectAndCountModelField cooperateWaterTotalLimitList = new SelectAndCountModelField("cooperateWaterTotalLimitList", "浇水总量限制列表", new LinkedHashMap<>(), CooperateEntity.Companion.getList());
@@ -73,6 +76,9 @@ public class AntCooperate extends ModelTask {
         // 新增真爱合种字段
         modelFields.addField(loveCooperateWater);
         modelFields.addField(loveCooperateWaterCount);
+        // 森林组队版
+        modelFields.addField(teamVersionWater);
+        modelFields.addField(teamVersionWaterCount);
         
         modelFields.addField(cooperateWater);
         modelFields.addField(cooperateWaterList);
@@ -110,6 +116,11 @@ public class AntCooperate extends ModelTask {
             // 真爱合种浇水逻辑（优先执行）
             if (loveCooperateWater.getValue()) {
                 runLoveCooperateWater();
+            }
+
+            // 森林组队版浇水逻辑
+            if (teamVersionWater.getValue()) {
+                runTeamVersionWater();
             }
 
             // 普通合种浇水逻辑
@@ -276,6 +287,116 @@ public class AntCooperate extends ModelTask {
             Log.printStackTrace(TAG, t);
         } finally {
             GlobalThreadPools.sleep(1500);
+        }
+    }
+
+    /**
+     * 执行森林组队版浇水 (修复版)
+     */
+    private void runTeamVersionWater() {
+        try {
+            Log.runtime(TAG, "检查森林组队版浇水...");
+            
+            // 查询主页获取 TeamID 和 当前能量
+            String homeJson = AntCooperateRpcCall.queryForestHomePage();
+            if (homeJson == null) return;
+            JSONObject homeJo = new JSONObject(homeJson);
+            if (!ResChecker.checkRes(TAG, homeJo)) {
+                return;
+            }
+
+            // 获取 TeamID
+            JSONObject teamHomeResult = homeJo.optJSONObject("teamHomeResult");
+            if (teamHomeResult == null) {
+                Log.record(TAG, "未加入森林组队，跳过");
+                return;
+            }
+            JSONObject teamBaseInfo = teamHomeResult.optJSONObject("teamBaseInfo");
+            if (teamBaseInfo == null) {
+                Log.record(TAG, "获取组队信息失败");
+                return;
+            }
+            String teamId = teamBaseInfo.optString("teamId");
+            if (teamId == null || teamId.isEmpty()) {
+                Log.record(TAG, "TeamID为空");
+                return;
+            }
+            
+            // 检查今日是否已执行
+            if (!Status.canCooperateWaterToday(UserMap.getCurrentUid(), "teamVersion_" + teamId)) {
+                Log.record(TAG, "森林组队版今日已浇水💦");
+                return;
+            }
+
+            // 1. 获取用户当前能量余额
+            int currentEnergy = 0;
+            if (homeJo.has("userEnergy")) {
+                currentEnergy = homeJo.getJSONObject("userEnergy").optInt("energySummation");
+            } else if (homeJo.has("userBaseInfo")) {
+                currentEnergy = homeJo.getJSONObject("userBaseInfo").optInt("currentEnergy");
+            }
+
+            // 2. 获取用户配置的目标浇水量
+            int configEnergy = teamVersionWaterCount.getValue();
+            // 再次校验边界 (尽管ModelField已经做了限制)
+            if (configEnergy < 200) configEnergy = 200;
+            if (configEnergy > 5000) configEnergy = 5000;
+
+            // 3. 获取服务端今日剩余可浇水额度
+            int serverRemaining = 0;
+            String miscInfoJson = AntCooperateRpcCall.queryTeamMiscInfo(teamId);
+            if (miscInfoJson != null) {
+                JSONObject miscInfoJo = new JSONObject(miscInfoJson);
+                if (ResChecker.checkRes(TAG, miscInfoJo)) {
+                    JSONObject combineMap = miscInfoJo.optJSONObject("combineHandlerVOMap");
+                    if (combineMap != null) {
+                        JSONObject teamWaterInfo = combineMap.optJSONObject("teamCanWaterCount");
+                        if (teamWaterInfo != null) {
+                            serverRemaining = teamWaterInfo.optInt("waterCount", 0);
+                            Log.runtime(TAG, "服务端限制: 今日剩余可浇 " + serverRemaining + "g");
+                        }
+                    }
+                }
+            }
+
+            if (serverRemaining <= 0) {
+                Log.record(TAG, "服务端限制：今日该队伍已不可浇水");
+                return;
+            }
+
+            // 4. 核心逻辑：取三者最小值 (配置值，余额，服务端剩余)
+            int realWaterAmount = configEnergy;
+            
+            // 如果余额不足，降级为余额
+            if (realWaterAmount > currentEnergy) {
+                realWaterAmount = currentEnergy;
+            }
+            // 如果超过服务端限制，降级为服务端限制
+            if (realWaterAmount > serverRemaining) {
+                realWaterAmount = serverRemaining;
+            }
+
+            // 5. 最终校验
+            if (realWaterAmount < 10) { // 至少浇10g
+                Log.record(TAG, "计算后可浇水量不足(" + realWaterAmount + "g)，跳过 (余额:" + currentEnergy + ", 限额:" + serverRemaining + ")");
+                return;
+            }
+
+            // 6. 执行浇水
+            Log.record(TAG, "森林组队版开始浇水: " + realWaterAmount + "g");
+            String res = AntCooperateRpcCall.teamWater(teamId, realWaterAmount);
+            if (res == null) return;
+            
+            JSONObject resJo = new JSONObject(res);
+            if (ResChecker.checkRes(TAG, resJo)) {
+                Log.forest("森林组队版浇水成功🌲: " + realWaterAmount + "g");
+                Status.cooperateWaterToday(UserMap.getCurrentUid(), "teamVersion_" + teamId);
+            } else {
+                Log.record(TAG, "森林组队版浇水失败: " + resJo.optString("resultDesc"));
+            }
+
+        } catch (Throwable t) {
+            Log.printStackTrace(TAG, t);
         }
     }
 
