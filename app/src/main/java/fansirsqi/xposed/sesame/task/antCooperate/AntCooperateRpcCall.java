@@ -44,6 +44,28 @@ public class AntCooperateRpcCall {
         return RequestManager.requestString("alipay.greenmatrix.rpc.h5.love.loveForestHome", "[{\"source\":\"chInfo_ch_appcenter__chsub_9patch\"}]");
     }
 
+    // 新增：用于组队浇水功能
+    public static String queryHomePage() {
+        String requestData = "[{\"configVersionMap\":{\"wateringBubbleConfig\":\"0\"},\"source\":\"chInfo_ch_appcenter__chsub_9patch\",\"version\":\"20250818\"}]";
+        return RequestManager.requestString("alipay.antforest.forest.h5.queryHomePage", requestData);
+    }
+
+    public static String queryTeamMemberList(String teamId) {
+        String requestData = "[{\"source\":\"chInfo_ch_appcenter__chsub_9patch\",\"teamId\":\"" + teamId + "\"}]";
+        return RequestManager.requestString("alipay.antforest.forest.h5.queryTeamMemberList", requestData);
+    }
+
+    public static String queryTeamCanWaterCount(String teamId) {
+        String requestData = "[{\"queryBizType\":\"teamCanWaterCount\",\"source\":\"SELF_HOME\",\"targetUserId\":\"" + teamId + "\",\"version\":\"20240201\"}]";
+        return RequestManager.requestString("alipay.antforest.forest.h5.queryMiscInfo", requestData);
+    }
+
+    public static String teamWater(String teamId, int count) {
+        String sToken = System.currentTimeMillis() + "_"; // 构造一个简化的sToken
+        String requestData = "[{\"energyCount\":" + count + ",\"sToken\":\"" + sToken + "\",\"source\":\"chInfo_ch_appcenter__chsub_9patch\",\"teamId\":\"" + teamId + "\"}]";
+        return RequestManager.requestString("alipay.antforest.forest.h5.teamWater", requestData);
+    }
+
     /**
      * 获取合种浇水量排行
      * @param bizType 参数：D/A,"D"为查询当天，"A"为查询所有
