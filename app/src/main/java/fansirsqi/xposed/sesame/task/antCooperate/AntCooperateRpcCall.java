@@ -2,6 +2,7 @@ package fansirsqi.xposed.sesame.task.antCooperate;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import java.util.Random;
 
 import fansirsqi.xposed.sesame.hook.RequestManager;
 public class AntCooperateRpcCall {
@@ -42,6 +43,82 @@ public class AntCooperateRpcCall {
      */
     public static String loveForestHome() {
         return RequestManager.requestString("alipay.greenmatrix.rpc.h5.love.loveForestHome", "[{\"source\":\"chInfo_ch_appcenter__chsub_9patch\"}]");
+    }
+
+    /**
+     * 查询森林主页 (获取TeamID)
+     */
+    public static String queryForestHomePage() {
+        return RequestManager.requestString("alipay.antforest.forest.h5.queryHomePage",
+                "[{\"configVersionMap\":{\"wateringBubbleConfig\":\"0\"},\"source\":\"chInfo_ch_appcenter__chsub_9patch\",\"version\":\"20250818\"}]");
+    }
+
+    /**
+     * 查询组队成员列表 (获取今日已浇水量)
+     */
+    public static String queryTeamMemberList(String teamId) {
+        try {
+            JSONObject args = new JSONObject();
+            args.put("source", "chInfo_ch_appcenter__chsub_9patch");
+            args.put("teamId", teamId);
+            return RequestManager.requestString("alipay.antforest.forest.h5.queryTeamMemberList", "[" + args.toString() + "]");
+        } catch (JSONException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 查询组队版杂项信息 (获取今日剩余浇水次数/额度)
+     */
+    public static String queryTeamMiscInfo(String teamId) {
+        return RequestManager.requestString("alipay.antforest.forest.h5.queryMiscInfo",
+                "[{\"queryBizType\":\"teamCanWaterCount\",\"source\":\"SELF_HOME\",\"targetUserId\":\"" + teamId + "\"}]");
+    }
+
+    /**
+     * 森林组队版浇水
+     */
+    public static String teamWater(String teamId, int count) {
+        try {
+            JSONObject args = new JSONObject();
+            args.put("energyCount", count);
+            
+            // 1. 生成毫秒级时间戳
+            long ts = System.currentTimeMillis();
+            
+            // 2. 生成 8 位随机 Hex 字符串
+            String randomHex = java.util.UUID.randomUUID().toString().substring(0, 8);
+            
+            // 3. 拼接 sToken
+            String sToken = ts + "_" + randomHex;
+            
+            args.put("sToken", sToken);
+            args.put("source", "chInfo_ch_appcenter__chsub_9patch");
+            args.put("teamId", teamId);
+            
+            return RequestManager.requestString("alipay.antforest.forest.h5.teamWater", "[" + args.toString() + "]");
+        } catch (JSONException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 更新用户配置 (切换 组队版/个人版)
+     * @param inTeam "Y" 切换到组队版, "N" 切换到个人版
+     */
+    public static String updateUserConfig(String inTeam) {
+        try {
+            JSONObject configMap = new JSONObject();
+            configMap.put("inTeam", inTeam);
+            
+            JSONObject args = new JSONObject();
+            args.put("configMap", configMap);
+            args.put("source", "chInfo_ch_appcenter__chsub_9patch");
+            
+            return RequestManager.requestString("alipay.antforest.forest.h5.updateUserConfig", "[" + args.toString() + "]");
+        } catch (JSONException e) {
+            return null;
+        }
     }
 
     /**
