@@ -3764,7 +3764,7 @@ public class AntForest extends ModelTask {
     /**
      * 从上下文中解析用户名
      */
-    private String resolveUserNameFromContext(String userId, JSONObject userHomeObj, String fromTag) {
+    /*private String resolveUserNameFromContext(String userId, JSONObject userHomeObj, String fromTag) {
         String userName = null;
         
         if ("pk".equals(fromTag) && userHomeObj != null) {
@@ -3786,6 +3786,49 @@ public class AntForest extends ModelTask {
         }
         
         return userName;
+    }*/
+    /**
+     * 从上下文中解析用户名，并增加后备方案
+     */
+    private String resolveUserNameFromContext(String userId, JSONObject userHomeObj, String fromTag) {
+        String userName = null;
+        
+        // 1. 如果是PK好友，优先从传入的 userHomeObj 中解析
+        if ("pk".equals(fromTag) && userHomeObj != null) {
+            JSONObject userEnergy = userHomeObj.optJSONObject("userEnergy");
+            if (userEnergy != null) {
+                String displayName = userEnergy.optString("displayName");
+                if (displayName != null && !displayName.isEmpty()) {
+                    userName = "PK榜森友|" + displayName;
+                }
+            }
+        }
+        
+        // 2. 如果上面的方法未能获取到用户名 (无论是PK还是普通好友)，尝试从 UserMap 获取
+        if (userName == null || userName.isEmpty()) {
+            String maskName = UserMap.getMaskName(userId);
+            if (maskName != null && !maskName.equals(userId)) {
+                // 如果是从PK场景过来的，并且上面没获取到，这里补充一下前缀
+                if ("pk".equals(fromTag)) {
+                    userName = "PK榜森友|" + maskName;
+                } else {
+                    userName = maskName;
+                }
+            }
+        }
+
+        // 3. 如果以上都失败，再尝试从 userHomeObj 中解析一次（适用于普通好友场景）
+        if ((userName == null || userName.isEmpty()) && userHomeObj != null) {
+            JSONObject userEnergy = userHomeObj.optJSONObject("userEnergy");
+            if (userEnergy != null) {
+                String displayName = userEnergy.optString("displayName");
+                if (displayName != null && !displayName.isEmpty()) {
+                    userName = displayName;
+                }
+            }
+        }
+        
+        return userName; // 如果最终还是 null，将由调用方(cacheCollectedMap)处理
     }
 
     /**
