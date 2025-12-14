@@ -127,9 +127,47 @@ public class AntOrchardRpcCall {
         );
     }
 
+    /**
+     * 收取小组件的回访奖励
+     * @return RPC 调用返回的字符串
+     */
+    public static String receiveOrchardVisitAward() {
+        String args = String.format(
+            "[{\"diversionSource\":\"widget\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"widget_shoufei\",\"version\":\"%s\"}]",
+            VERSION
+        );
+        return RequestManager.requestString("com.alipay.antorchard.receiveOrchardVisitAward", args);
+    }
+
+    /**
+     * 同步农场索引数据，用于获取限时挑战等信息
+     * @param wua 环境参数 Wua
+     * @return RPC 调用返回的字符串
+     */
+    public static String orchardSyncIndex(String wua) {
+        // 使用单引号构建模板，然后替换成双引号，避免繁琐的转义
+        String argsTemplate = "[{'requestType':'NORMAL','sceneCode':'ORCHARD','source':'ch_appcenter__chsub_9patch','syncIndexTypes':'LIMITED_TIME_CHALLENGE','useWua':true,'version':'%s','wua':'%s'}]";
+        String args = String.format(argsTemplate, VERSION, wua).replace('\'', '\"');
+
+        return RequestManager.requestString("com.alipay.antorchard.orchardSyncIndex", args);
+    }
+
+    /**
+     * 通知服务器开始了一个游戏任务
+     * @param appId 游戏的 appId
+     * @return RPC 调用返回的字符串
+     */
+    public static String noticeGame(String appId) {
+        // 使用单引号构建模板，然后替换成双引号
+        String argsTemplate = "[{'appId':'%s','requestType':'NORMAL','sceneCode':'ORCHARD','source':'ch_appcenter__chsub_9patch','version':'%s'}]";
+        String args = String.format(argsTemplate, appId, VERSION).replace('\'', '\"');
+
+        return RequestManager.requestString("com.alipay.antorchard.noticeGame", args);
+    }
+
     public static String receiveTaskAward(String sceneCode, String taskType) {
         return RequestManager.requestString("com.alipay.antiep.receiveTaskAward",
-                "[{\"ignoreLimit\":false,\"requestType\":\"NORMAL\",\"sceneCode\":\"" + sceneCode
+                "[{\"ignoreLimit\":true,\"requestType\":\"NORMAL\",\"sceneCode\":\"" + sceneCode
                         + "\",\"source\":\"ch_alipaysearch__chsub_normal\",\"taskType\":\""
                         + taskType + "\",\"version\":\"" + VERSION + "\"}]");
     }
@@ -171,13 +209,6 @@ public class AntOrchardRpcCall {
     public static String queryGameCenter() {
         return RequestManager.requestString("com.alipay.antorchard.queryGameCenter",
                 "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
-                        + VERSION + "\"}]");
-    }
-
-    public static String noticeGame(String appId) {
-        return RequestManager.requestString("com.alipay.antorchard.noticeGame",
-                "[{\"appId\":\"" + appId
-                        + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
                         + VERSION + "\"}]");
     }
 

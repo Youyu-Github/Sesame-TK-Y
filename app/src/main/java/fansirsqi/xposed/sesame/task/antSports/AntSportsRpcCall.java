@@ -44,6 +44,27 @@ public class AntSportsRpcCall {
         return RequestManager.requestString("com.alipay.sportshealth.biz.rpc.SportsHealthCoinTaskRpc.queryCoinTaskPanel", args1);
     }
 
+    //完整签到，如果任务需要就签到哦
+    public static String signUpTask(String taskId) {
+        // features 列表可根据需要保持一致
+
+        String args = "[\n" +
+                "    {\n" +
+                "        \"apiVersion\": \"energy\",\n" +
+                "        \"chInfo\": \"medical_health\",\n" +
+                "        \"clientOS\": \"android\",\n" +
+                "        \"features\": " + features + ",\n" +
+                "        \"taskCenId\": \"\",\n" +
+                "        \"taskId\": \"" + taskId + "\"\n" +
+                "    }\n" +
+                "]";
+
+        return RequestManager.requestString(
+                "com.alipay.sportshealth.biz.rpc.SportsHealthCoinTaskRpc.signUpTask",
+                args
+        );
+    }
+
     // 去完成任务
     public static String completeExerciseTasks(String taskId) {
         String args1 = "[\n" +
@@ -935,6 +956,27 @@ public class AntSportsRpcCall {
             return RequestManager.requestString(
                     "com.alipay.neverland.biz.rpc.queryMapDetail",
                     "[{\"mapId\":\"" + mapId + "\",\"source\":\"jkdsportcard\"}]"
+            );
+        }
+
+        /**
+         * 领取地图关卡奖励
+         * RPC: com.alipay.neverland.biz.rpc.mapStageReward
+         *
+         * @param branchId 分支 ID（如 MASTER）
+         * @param level    关卡等级
+         * @param mapId    地图 ID（如 MM13）
+         * @return RPC 返回 JSON 字符串
+         */
+        public static String mapStageReward(String branchId, int level, String mapId) {
+            return RequestManager.requestString(
+                    "com.alipay.neverland.biz.rpc.mapStageReward",
+                    "[{" +
+                            "\"branchId\":\"" + branchId + "\"," +
+                            "\"level\":" + level + "," +
+                            "\"mapId\":\"" + mapId + "\"," +
+                            "\"source\":\"jkdsportcard\"" +
+                            "}]"
             );
         }
 
