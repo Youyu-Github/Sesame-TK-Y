@@ -577,11 +577,12 @@ public class AntForest extends ModelTask {
             taskCount.set(0);
 
             selfId = UserMap.getCurrentUid();
-            usePropBeforeCollectEnergy(selfId);
-            tc.countDebug("使用道具卡");
 
             JSONObject selfHomeObj = querySelfHome();
             tc.countDebug("获取自己主页对象信息");
+
+            usePropBeforeCollectEnergy(selfId);
+            tc.countDebug("使用道具卡");
 
             selfHomeObj = collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self"); //收取自己的能量
             tc.countDebug("收取自己的能量");
