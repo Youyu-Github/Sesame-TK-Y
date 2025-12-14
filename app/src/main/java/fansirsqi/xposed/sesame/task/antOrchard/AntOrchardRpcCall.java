@@ -84,10 +84,47 @@ public class AntOrchardRpcCall {
      * 施肥
      * 注意：Kotlin代码中 "version":$VERSION (无引号)，此处严格同步
      */
-    public static String orchardSpreadManure(String wua, String source) {
+    /*public static String orchardSpreadManure(String wua, String source) {
         return RequestManager.requestString("com.alipay.antfarm.orchardSpreadManure",
                 "[{\"plantScene\":\"main\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"" + source + "\",\"useBatchSpread\":false,\"version\":"
                         + VERSION + ",\"wua\":\"" + wua + "\"}]");
+    }*/
+   /**
+     * 施肥
+     * @param wua 用户标识
+     * @param source 来源标识，可自定义
+     * @return 服务器返回的响应字符串
+     */
+    public static String orchardSpreadManure(String wua, String source) {
+        // 使用 String.format 来构建 JSON 字符串，以提高可读性并避免拼接错误
+        String jsonPayload = String.format(
+            "[{\"plantScene\":\"main\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"%s\",\"useBatchSpread\":false,\"version\":%s,\"wua\":\"%s\"}]",
+            source, VERSION, wua
+        );
+
+        return RequestManager.requestString(
+            "com.alipay.antfarm.orchardSpreadManure",
+            jsonPayload
+        );
+    }
+
+    /**
+     * 砸金蛋
+     * @param count 砸蛋的数量
+     * @return 服务器返回的响应字符串
+     */
+    public static String smashedGoldenEgg(int count) {
+        // 使用 String.format() 构建 JSON 字符串，%d 用于整数，%s 用于字符串
+        String jsonArgs = String.format(
+            "[{\"batchSmashCount\":%d,\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\"%s\"}]",
+            count,
+            VERSION
+        );
+
+        return RequestManager.requestString(
+            "com.alipay.antorchard.smashedGoldenEgg",
+            jsonArgs
+        );
     }
 
     public static String receiveTaskAward(String sceneCode, String taskType) {

@@ -870,6 +870,24 @@ public class AntSportsRpcCall {
         }
 
         /**
+         * 健康岛 - 查询地图详情（旧版）
+         * RPC: com.alipay.neverland.biz.rpc.queryMapInfo
+         * 用于获取 buildingEnergyProcess / buildingEnergyFinal / mapStatus 等信息
+         */
+        public static String queryMapInfo(String mapId, String branchId) {
+            String args = "[{" +
+                    "\"branchId\":\"" + branchId + "\"," +
+                    "\"drilling\":false," +
+                    "\"mapId\":\"" + mapId + "\"," +
+                    "\"source\":\"jkdsportcard\"" +
+                    "}]";
+            return RequestManager.requestString(
+                    "com.alipay.neverland.biz.rpc.queryMapInfoNew",
+                    args
+            );
+        }
+
+        /**
          * 健康岛 - 查询地图详情（新接口）
          * RPC: com.alipay.neverland.biz.rpc.queryMapInfoNew
          * 用于获取 buildingEnergyProcess / buildingEnergyFinal / mapStatus 等信息

@@ -2,12 +2,14 @@ package fansirsqi.xposed.sesame.task.antOrchard;
 
 import android.util.Base64;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import fansirsqi.xposed.sesame.entity.AlipayUser;
@@ -19,6 +21,8 @@ import fansirsqi.xposed.sesame.model.modelFieldExt.IntegerModelField;
 import fansirsqi.xposed.sesame.model.modelFieldExt.SelectModelField;
 import fansirsqi.xposed.sesame.task.ModelTask;
 import fansirsqi.xposed.sesame.task.TaskCommon;
+import fansirsqi.xposed.sesame.task.adexchange.UrlUtil;
+import fansirsqi.xposed.sesame.task.adexchange.XLightRpcCall;
 import fansirsqi.xposed.sesame.util.Files;
 import fansirsqi.xposed.sesame.util.GlobalThreadPools;
 import fansirsqi.xposed.sesame.util.Log;
@@ -26,6 +30,7 @@ import fansirsqi.xposed.sesame.util.Notify;
 import fansirsqi.xposed.sesame.util.ResChecker;
 import fansirsqi.xposed.sesame.util.maps.UserMap;
 import fansirsqi.xposed.sesame.util.RandomUtil;
+import fansirsqi.xposed.sesame.util.ResChecker;
 import fansirsqi.xposed.sesame.data.Status;
 
 public class AntOrchard extends ModelTask {
@@ -147,6 +152,19 @@ public class AntOrchard extends ModelTask {
                 // 每日肥料
                 extraInfoGet();
 
+                //如果有🥚 则进行砸🥚
+                JSONObject goldenEggInfo = jo.optJSONObject("goldenEggInfo"); 
+
+                // 确保 goldenEggInfo 对象不是 null
+                if (goldenEggInfo != null) {
+                    int unsmashedGoldenEggs = goldenEggInfo.optInt("unsmashedGoldenEggs");
+
+                    // 如果有未砸的金蛋，则执行砸蛋逻辑
+                    if (unsmashedGoldenEggs > 0) {
+                        smashedGoldenEgg(unsmashedGoldenEggs);
+                    }
+                }
+
                 // 农场任务
                 if (receiveOrchardTaskAward.getValue()) {
                     doOrchardDailyTask(userId);
@@ -258,6 +276,12 @@ public class AntOrchard extends ModelTask {
 
     private void orchardSpreadManureLogic() {
         try {
+            // 创建一个不可变的列表
+            List<String> sourceList = List.of(
+                "DNHZ_NC_zhimajingnangSF",
+                "widget_shoufei",
+                "ch_appcenter__chsub_9patch"
+            );
             int count = 0;
             do {
                 try {
@@ -303,8 +327,10 @@ public class AntOrchard extends ModelTask {
                             Log.runtime(TAG, "set Wua " + wua);
                         }
                         
-                        String spreadRes = AntOrchardRpcCall.orchardSpreadManure(wua,"ch_appcenter__chsub_9patch");
-                        JSONObject spreadManureData = new JSONObject(spreadRes);
+                        // 随机选一个来源，确保完成其他任务 例如芝麻信誉的跳转，小组件的跳转
+                        String randomSource = sourceList.get(new Random().nextInt(sourceList.size()));
+
+                        JSONObject spreadManureData = new JSONObject(AntOrchardRpcCall.orchardSpreadManure(wua, randomSource));
                         
                         if (!"100".equals(spreadManureData.getString("resultCode"))) {
                             Log.record(TAG, "农场 orchardSpreadManure 错误：" + spreadManureData.getString("resultDesc"));
@@ -503,26 +529,139 @@ public class AntOrchard extends ModelTask {
         }
     }
 
+    /**
+     * 执行砸金蛋操作。
+     * 注意：此方法包含一个阻塞性网络调用，必须在后台线程中执行。
+     *
+     * @param count 要砸的金蛋数量
+     */
+    private void smashedGoldenEgg(int count) {
+        try {
+            // 发起网络请求，这是一个阻塞操作
+            String response = AntOrchardRpcCall.smashedGoldenEgg(count);
+            JSONObject jo = new JSONObject(response);
+
+            if (ResChecker.checkRes(TAG, jo)) {
+                // 解析 batchSmashedList
+                JSONArray batchSmashedList = jo.getJSONArray("batchSmashedList");
+                for (int i = 0; i < batchSmashedList.length(); i++) {
+                    JSONObject smashedItem = batchSmashedList.getJSONObject(i);
+                    int manureCount = smashedItem.optInt("manureCount", 0);
+                    boolean jackpot = smashedItem.optBoolean("jackpot", false);
+
+                    // 输出信息
+                    // 使用三元运算符来模拟 Kotlin 的 if-else 表达式
+                    String jackpotMessage = jackpot ? "（触发大奖）" : "";
+                    Log.forest(TAG, "砸出肥料 🎖️: " + manureCount + " g" + jackpotMessage);
+                }
+
+                /*
+                 // 可选：输出 goldenEggInfoVO 状态
+                 JSONObject goldenEggInfo = jo.optJSONObject("goldenEggInfoVO");
+                 if (goldenEggInfo != null) {
+                     int smashedGoldenEggs = goldenEggInfo.optInt("smashedGoldenEggs", 0);
+                     int unsmashedGoldenEggs = goldenEggInfo.optInt("unsmashedGoldenEggs", 0);
+                     Log.forest(TAG, "已砸蛋: " + smashedGoldenEggs + ", 剩余可砸蛋: " + unsmashedGoldenEggs);
+                 }
+                 */
+
+            } else {
+                Log.record(TAG, jo.optString("resultDesc", "未知错误"));
+                Log.runtime(TAG, response);
+            }
+
+        } catch (JSONException e) {
+            // 专门处理 JSON 解析异常，这是一种良好实践
+            Log.runtime(TAG, "smashedGoldenEgg JSON parsing error:");
+            Log.printStackTrace(TAG, e);
+        } catch (Throwable t) {
+            // 捕获所有其他可能的异常，如网络问题等
+            Log.runtime(TAG, "smashedGoldenEgg err:");
+            Log.printStackTrace(TAG, t);
+        }
+    }
+
     private void triggerTbTask() {
         try {
-            String s = AntOrchardRpcCall.orchardListTask();
-            JSONObject jo = new JSONObject(s);
+            String response = AntOrchardRpcCall.orchardListTask();
+            JSONObject jo = new JSONObject(response);
+
             if ("100".equals(jo.getString("resultCode"))) {
                 JSONArray jaTaskList = jo.getJSONArray("taskList");
                 for (int i = 0; i < jaTaskList.length(); i++) {
                     JSONObject jo2 = jaTaskList.getJSONObject(i);
-                    if (!"FINISHED".equals(jo2.getString("taskStatus"))) continue;
-                    
+                    if (!"FINISHED".equals(jo2.getString("taskStatus"))) {
+                        continue;
+                    }
+
+                    // --- 从这里开始是补全和修正的代码 ---
+
                     String title = jo2.getJSONObject("taskDisplayConfig").getString("title");
-                    int awardCount = jo2.optInt("awardCount", 0);
+                    String actionType = jo2.getString("actionType");
                     String taskId = jo2.getString("taskId");
-                    String taskPlantType = jo2.getString("taskPlantType");
-                    
-                    JSONObject jo3 = new JSONObject(AntOrchardRpcCall.triggerTbTask(taskId, taskPlantType));
-                    if ("100".equals(jo3.getString("resultCode"))) {
-                        Log.farm("领取奖励🎖️[" + title + "]#" + awardCount + "g肥料");
+
+                    // 判断任务类型，如果是 XLIGHT，走特殊的浏览广告逻辑
+                    if ("XLIGHT".equals(actionType)) {
+                        // 解析 targetUrl 获取 spaceCodeFeeds 和 pageurl
+                        String targetUrl = jo2.getJSONObject("taskDisplayConfig").getString("targetUrl");
+                        String spaceCodeFeeds = UrlUtil.INSTANCE.getParam(targetUrl, "spaceCodeFeeds");
+                        String pageurl = UrlUtil.INSTANCE.getParam(targetUrl, "urlu");
+
+                        // 如果关键参数缺失，则跳过此任务
+                        if (spaceCodeFeeds == null || pageurl == null) {
+                            continue;
+                        }
+
+                        // 调用广告插件
+                        String xlightResponse = XLightRpcCall.INSTANCE.xlightPlugin("", pageurl, "ch_url-https://render.alipay.com/p/yuyan/180020010001263018/game.html", spaceCodeFeeds);
+                        JSONObject xlightJo = new JSONObject(xlightResponse);
+                        
+                        JSONObject playingResult = xlightJo.getJSONObject("resData").getJSONObject("playingResult");
+                        String playingBizId = playingResult.getString("playingBizId");
+                        JSONArray rewardList = playingResult.getJSONObject("eventRewardDetail").getJSONArray("eventRewardInfoList");
+
+                        // 遍历每个事件，单独提交完成
+                        for (int j = 0; j < rewardList.length(); j++) {
+                            JSONObject reward = rewardList.getJSONObject(j);
+                            // 直接将整个事件对象传递
+                            JSONObject playEventInfo = reward; 
+                            
+                            String finishResponse = XLightRpcCall.INSTANCE.finishTask(playingBizId, playEventInfo);
+                            JSONObject finishJo = new JSONObject(finishResponse);
+
+                            if ("100".equals(finishJo.getString("resultCode"))) {
+                                JSONObject rewardRenderInfo = reward.getJSONObject("rewardRenderInfo");
+                                int rewardNumber = rewardRenderInfo.getInt("rewardDisplayAmount");
+                                String rewardText = rewardRenderInfo.getString("rewardDisplayText");
+
+                                Log.forest(TAG, "领取奖励🎖️[" + title + "]#" + rewardNumber + rewardText);
+                            } else {
+                                Log.record(TAG, finishJo.toString());
+                                Log.runtime(TAG, finishJo.toString());
+                            }
+                        }
+
+                    } else {
+                        // 普通任务逻辑
+                        int awardCount = jo2.optInt("awardCount", 0);
+                        String taskPlantType = jo2.getString("taskPlantType");
+                        
+                        String triggerResponse = AntOrchardRpcCall.triggerTbTask(taskId, taskPlantType);
+                        JSONObject jo3 = new JSONObject(triggerResponse);
+                        
+                        if ("100".equals(jo3.getString("resultCode"))) {
+                            // 注意：这里日志的类名是 Log.forest 而不是 Log.farm
+                            Log.forest(TAG, "领取奖励🎖️[" + title + "]#" + awardCount + "g肥料");
+                        } else {
+                            Log.record(TAG, jo3.toString());
+                            Log.runtime(TAG, jo3.toString());
+                        }
                     }
                 }
+            } else {
+                // 获取任务列表失败的日志记录
+                Log.record(TAG, jo.getString("resultDesc"));
+                Log.runtime(TAG, response);
             }
         } catch (Throwable t) {
             Log.runtime(TAG, "triggerTbTask err:");
