@@ -96,6 +96,20 @@ object AntFarmRpcCall {
         return requestString("com.alipay.antfarm.wakeUp", args1)
     }
 
+    /**
+    * 家庭睡觉
+    *
+    * @param groupId 家庭ID
+    * @return 返回结果
+    */
+    @JvmStatic // 确保 Java 代码可以像调用静态方法一样调用它
+    fun sleep(groupId: String): String {
+        // 使用字符串模板 ($) 直接将变量嵌入字符串，更简洁、安全
+        val jsonArgs = "[{\"groupId\":\"$groupId\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"H5\",\"spaceType\":\"ChickFamily\", \"version\":\"unknown\"}]"
+        
+        return RequestManager.requestString("com.alipay.antfarm.sleep", jsonArgs)
+    }
+
     fun queryLoveCabin(userId: String): String {
         val args1 = "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ANTFARM\",\"source\":\"ENTERFARM\",\"userId\":\"" +
                 userId + "\",\"version\":\"" + VERSION + "\"}]"

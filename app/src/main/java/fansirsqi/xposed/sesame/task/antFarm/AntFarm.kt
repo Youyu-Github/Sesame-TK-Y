@@ -440,6 +440,12 @@ class AntFarm : ModelTask() {
             recallAnimal()
             tc.countDebug("召回小鸡")
 
+            // 雇佣小鸡
+            if (hireAnimal?.value == true) { // 优化: 安全调用
+                hireAnimal()
+                tc.countDebug("雇佣小鸡")
+            }
+
             handleAutoFeedAnimal()
             tc.countDebug("喂食")
 
@@ -465,12 +471,6 @@ class AntFarm : ModelTask() {
                 val ccl = ChouChouLe()
                 ccl.chouchoule()
                 tc.countDebug("抽抽乐")
-            }
-
-            // 雇佣小鸡
-            if (hireAnimal?.value == true) { // 优化: 安全调用
-                hireAnimal()
-                tc.countDebug("雇佣小鸡")
             }
 
             if (getRunCents() >= getFeed!!.value) {
@@ -899,10 +899,19 @@ class AntFarm : ModelTask() {
             if (ResChecker.checkRes(TAG + "查询爱心小屋失败:", jo)) {
                 val sleepNotifyInfo = jo.getJSONObject("sleepNotifyInfo")
                 if (sleepNotifyInfo.optBoolean("canSleep", false)) {
-                    s = AntFarmRpcCall.sleep()
+                    val groupId = jo.optString("groupId")
+                    s = if (groupId.isNotEmpty()) {
+                        AntFarmRpcCall.sleep(groupId)
+                    } else {
+                        AntFarmRpcCall.sleep()
+                    }
                     jo = JSONObject(s)
                     if (ResChecker.checkRes(TAG + "小鸡睡觉失败:", jo)) {
-                        Log.farm("小鸡睡觉🛌")
+                        if (groupId.isNotEmpty()) {
+                            Log.farm("家庭🏡小鸡睡觉🛌")
+                        } else {
+                            Log.farm("小鸡睡觉🛌")
+                        }
                         Status.animalSleep()
                     }
                 } else {
