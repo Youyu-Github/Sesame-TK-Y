@@ -22,4 +22,9 @@ public final class StatusFlags {
     // 运动任务大厅-今日是否已尝试循环处理
     public static final String FLAG_ANTSPORTS_TASKCENTER_DONE = "Flag_AntSports_TaskCenter_Done";
 
+    // --------------------------------------------
+    // 农场 小组件回访
+    // --------------------------------------------
+    public static final String FLAG_ANTORCHARD_WIDGET_DAILY_AWARD = "Flag_Antorchard_Widget_Daily_Award";  // 农场小组件每日奖励领取
+
 }
