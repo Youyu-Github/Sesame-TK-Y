@@ -54,16 +54,21 @@ public class ForestChouChouLe {
             Set<String> presetBad = new LinkedHashSet<>();
             if ("普通森林抽抽乐".equals(activityName)) {
                 presetBad.add("FOREST_NORMAL_DRAW_SHARE");  // 邀请好友任务（屏蔽）
-                presetBad.add("FOREST_NORMAL_DRAW_QYJZFM_ZH");  //【限时】玩游戏得2次机会机会（屏蔽）
-                presetBad.add("FOREST_NORMAL_DRAW_LJZC_ZH");  //【限时】玩游戏得2次机会机会（屏蔽）
                 presetBad.add("FOREST_ACTIVITY_DRAW_SQYT");   //逛逛神奇鱼塘（屏蔽）
+                
+                // 以下被注释掉的行，将由下面的动态关键字检测逻辑替代
+                // presetBad.add("FOREST_NORMAL_DRAW_QYJZFM_ZH"); //【限时】玩游戏得2次机会机会（屏蔽）
+                // presetBad.add("FOREST_NORMAL_DRAW_LJZC_ZH");   //【限时】玩游戏得2次机会机会（屏蔽）
+                
             } else if ("活动森林抽抽乐".equals(activityName)) {
                 presetBad.add("FOREST_ACTIVITY_DRAW_SHARE"); // 邀请好友任务（屏蔽）
-                presetBad.add("FOREST_ACTIVITY_DRAW_XSSLXCC");  //【限时】玩游戏得新机会（屏蔽）
-                presetBad.add("FOREST_ACTIVITY_DRAW_XSSLLXX");  //【限时】玩游戏得新机会（屏蔽）
-                presetBad.add("FOREST_ACTIVITY_DRAW_KDQB_ZH");  //【限时】玩游戏得2次机会机会（屏蔽）
-                presetBad.add("FOREST_ACTIVITY_DRAW_BWXRK_ZH");  //【限时】玩游戏得2次机会机会（屏蔽）
                 presetBad.add("FOREST_ACTIVITY_DRAW_SQYT");   //逛逛神奇鱼塘（屏蔽）
+                
+                // 以下被注释掉的行，将由下面的动态关键字检测逻辑替代
+                // presetBad.add("FOREST_ACTIVITY_DRAW_XSSLXCC");  //【限时】玩游戏得新机会（屏蔽）
+                // presetBad.add("FOREST_ACTIVITY_DRAW_XSSLLXX");  //【限时】玩游戏得新机会（屏蔽）
+                // presetBad.add("FOREST_ACTIVITY_DRAW_KDQB_ZH");  //【限时】玩游戏得2次机会机会（屏蔽）
+                // presetBad.add("FOREST_ACTIVITY_DRAW_BWXRK_ZH"); //【限时】玩游戏得2次机会机会（屏蔽）
             }
             // =====================================================
 
@@ -119,12 +124,19 @@ public class ForestChouChouLe {
                             int rightsTimes = taskRights.getInt("rightsTimes");
                             int rightsTimesLimit = taskRights.getInt("rightsTimesLimit");
 
-                            // ==================== 屏蔽逻辑 ====================
+                             // ==================== 屏蔽逻辑（已修改） ====================
+                            // 1. 基于 taskType 的静态黑名单屏蔽
                             if (presetBad.contains(taskType)) {
-                                Log.record(activityName + "已屏蔽任务，跳过：" + taskName);
+                                Log.record(activityName + "已屏蔽任务(类型)，跳过：" + taskName);
                                 continue;
                             }
-                            // ==============================================
+                            
+                            // 2. 基于 taskName 关键字的动态屏蔽
+                            if (taskName.contains("【限时】玩游戏得")) {
+                                Log.record(activityName + "已屏蔽任务(关键字)，跳过：" + taskName);
+                                continue;
+                            }
+                            // ==============================================================
 
                             // ==================== 活力值兑换任务 ====================
                             if (taskType.equals("NORMAL_DRAW_EXCHANGE_VITALITY") && taskStatus.equals(TaskStatus.TODO.name())) {
