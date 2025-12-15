@@ -487,7 +487,7 @@ public class AntDodo extends ModelTask {
                 if ("COLLECT_TO_FRIEND".equals(limit.getString("actionCode"))) {
                     // 检查是否有开始时间限制
                     if (limit.has("startTime") && limit.getLong("startTime") > System.currentTimeMillis()) {
-                        Log.forest("神奇物种🦕帮好友抽卡未到开放时间: " + limit.getString("startTimeStr"));
+                        Log.record("神奇物种🦕帮好友抽卡未到开放时间: " + limit.getString("startTimeStr"));
                         return;
                     }
                     count = limit.getInt("leftLimit");
@@ -496,7 +496,7 @@ public class AntDodo extends ModelTask {
                 }
 
             if (count <= 0) {
-                Log.forest("神奇物种🦕帮好友抽卡次数已用完");
+                Log.record("神奇物种🦕帮好友抽卡次数已用完");
                 return;
             }
 
@@ -571,6 +571,7 @@ public class AntDodo extends ModelTask {
                     }
                     Log.forest("神奇物种🦕合成勋章[" + ecosystem + "]");
                 }
+                pageStart += pageSize; // 更新下一页起始
             } while (hasMore);
         } catch (Throwable t) {
             Log.runtime(TAG, "generateBookMedal err:");

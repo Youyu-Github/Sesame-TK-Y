@@ -449,12 +449,13 @@ public class AntForest extends ModelTask {
                     break;
                 }
                 selfId = UserMap.getCurrentUid();
-                usePropBeforeCollectEnergy(selfId); // 使用道具卡
+                
                 // 收取自己能量
                 JSONObject selfHomeObj = querySelfHome();
                 if (selfHomeObj != null) {
                     collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self");
                 }
+                usePropBeforeCollectEnergy(selfId); // 使用道具卡
                 collectFriendEnergy(); // 好友能量收取
                 collectPKEnergy(); // PK森友能量
                 // 循环间隔
@@ -541,11 +542,12 @@ public class AntForest extends ModelTask {
             // 午夜强制任务
             if (isMidnight()) {
                 selfId = UserMap.getCurrentUid();
-                usePropBeforeCollectEnergy(selfId); // 使用道具卡
+                
                 JSONObject selfHomeObj = querySelfHome();
                 if (selfHomeObj != null) {
                     collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self");  // 收自己
                 }
+                usePropBeforeCollectEnergy(selfId); // 使用道具卡
                 collectFriendEnergy(); // 好友能量收取
                 collectPKEnergy(); // PK森友能量
                 Log.record(TAG, "午夜任务刷新，强制执行收取PK森友能量和好友能量");
@@ -581,11 +583,11 @@ public class AntForest extends ModelTask {
             JSONObject selfHomeObj = querySelfHome();
             tc.countDebug("获取自己主页对象信息");
 
-            usePropBeforeCollectEnergy(selfId);
-            tc.countDebug("使用道具卡");
-
             selfHomeObj = collectEnergy(UserMap.getCurrentUid(), selfHomeObj, "self"); //收取自己的能量
             tc.countDebug("收取自己的能量");
+
+            usePropBeforeCollectEnergy(selfId);
+            tc.countDebug("使用道具卡");
 
             collectFriendEnergy();
             tc.countDebug("收取好友能量");
