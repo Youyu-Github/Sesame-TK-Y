@@ -1971,7 +1971,7 @@ public class AntSports extends ModelTask {
 
                     // 重置连续空任务计数（有可处理任务）
                     emptyTaskCount = 0;
-                    Log.other(TAG, "本次获取到 " + pendingTasks.size() + " 个待完成任务，开始处理");
+                    Log.record(TAG, "本次获取到 " + pendingTasks.size() + " 个待完成任务，开始处理");
 
                     // 5. 处理当前批次的待完成任务
                     int currentBatchError = 0;
@@ -1980,7 +1980,7 @@ public class AntSports extends ModelTask {
                         if (!handleSuccess) {
                             currentBatchError++;
                         }
-                        GlobalThreadPools.sleep(8000); // 任务间隔
+                        GlobalThreadPools.sleep(3000); // 任务间隔
                     }
 
                     // 6. 统计当前批次失败情况
@@ -1993,7 +1993,7 @@ public class AntSports extends ModelTask {
                             break;
                         }
                     } else {
-                        Log.other(TAG, "本次批次任务全部处理成功");
+                        Log.record(TAG, "本次批次任务全部处理成功");
                     }
 
                     // 7. 任务批次处理完成，延时后重新获取列表
