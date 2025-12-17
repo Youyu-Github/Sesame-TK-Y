@@ -1,5 +1,6 @@
 package fansirsqi.xposed.sesame.task.antForest;
 
+import android.annotation.SuppressLint;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -14,7 +15,7 @@ import fansirsqi.xposed.sesame.util.ResChecker;
 
 /**
  * 6秒拼手速打地鼠（多线程+间隔控制版）
- * 同时开启6局游戏，结算能量最高的一局
+ * 同时开启3局游戏，结算能量最高的一局
  * 
  * @author Ghostxx
  * @date 2025/12/14
@@ -23,30 +24,20 @@ public class WhackMole {
     private static final String TAG = WhackMole.class.getSimpleName();
     
     // 总游戏局数，同时开启3局游戏
-    private static final int TOTAL_ROUNDS = 10;
+    private static final int TOTAL_ROUNDS = 3;
     
     // 单个游戏任务的超时时间（秒），防止任务卡住
     private static final long TASK_TIMEOUT_SECONDS = 30;
-    
+
     // 游戏会话信息
-    private static class GameSession {
-        final String token;
-        final List<String> remainingMoleIds;
-        final int whackedEnergy;
-        final int roundNumber;
-        
-        GameSession(String token, List<String> remainingMoleIds, int whackedEnergy, int roundNumber) {
-            this.token = token;
-            this.remainingMoleIds = remainingMoleIds;
-            this.whackedEnergy = whackedEnergy;
-            this.roundNumber = roundNumber;
-        }
+    private record GameSession(String token, List<String> remainingMoleIds, int whackedEnergy, int roundNumber) {
     }
 
     /**
-     * 开6局游戏打地鼠（并发执行）
+     * 开3局游戏打地鼠（并发执行）
      * 每局游戏独立计时，严格控制在6秒内完成
      */
+    @SuppressLint("DefaultLocale")
     public static void startWhackMole() {
         String source = "senlinguangchangdadishu";
         List<Future<GameSession>> futures = new ArrayList<>();
@@ -68,11 +59,11 @@ public class WhackMole {
         );
         
         try {
-            // 1. 并发提交6局游戏任务
+            // 1. 并发提交3局游戏任务
             Log.runtime(TAG, "启动" + TOTAL_ROUNDS + "局打地鼠游戏（并发模式）");
             for (int round = 1; round <= TOTAL_ROUNDS; round++) {
                 final int currentRound = round;
-                Callable<GameSession> task = () -> playRound(currentRound, source);
+                Callable<GameSession> task = () -> startWhackMole(currentRound, source);
                 futures.add(executor.submit(task));
             }
             
@@ -125,7 +116,8 @@ public class WhackMole {
     /**
      * 进行单局游戏（严格控制在6秒内）
      */
-    private static GameSession playRound(int round, String source) {
+    private static GameSession startWhackMole(int round, String source) {
+        GlobalThreadPools.sleep((long)(Math.random() * 250)); // 随机小延迟，错开请求时间
         long startTime = System.currentTimeMillis();
         
         try {
@@ -148,11 +140,7 @@ public class WhackMole {
             }
             
             String token = response.optString("token");
-            if (token.isEmpty()) {
-                Log.runtime(TAG, "第" + round + "局未获取到游戏token");
-                return null;
-            }
-            
+
             // 收集地鼠信息
             List<Long> allMoleIds = new ArrayList<>();
             List<Long> bubbleMoleIds = new ArrayList<>();
@@ -168,16 +156,14 @@ public class WhackMole {
             
             Log.runtime(TAG, "第" + round + "局发现" + bubbleMoleIds.size() + "个能量地鼠");
             
-            // 打地鼠（带击打间隔）
+            // 打地鼠
             int totalEnergy = 0;
-            int hitCount = 0;
             for (Long moleId : bubbleMoleIds) {
                 try {
                     JSONObject whackResp = new JSONObject(AntForestRpcCall.whackMole(moleId, token, source));
                     if (whackResp.optBoolean("success")) {
                         int energy = whackResp.optInt("energyAmount", 0);
                         totalEnergy += energy;
-                        hitCount++;
                         Log.runtime(TAG, "第" + round + "局击打地鼠" + moleId + " 能量+" + energy + "g");
                     }
                 } catch (Exception e) {
@@ -195,7 +181,7 @@ public class WhackMole {
             
             // 等待接近6秒总时长（严格控制在6秒内）
             long elapsedTime = System.currentTimeMillis() - startTime;
-            long sleepTime = Math.max(0, 6000 - elapsedTime - 100); // 提前100ms结束，确保不超标
+            long sleepTime = Math.max(0, 6000 - elapsedTime - 200); // 提前200ms结束，确保不超标
             if (sleepTime > 0) {
                 GlobalThreadPools.sleep(sleepTime);
             }
@@ -203,7 +189,7 @@ public class WhackMole {
             // 打印该局能量信息到森林日志
             Log.forest("森林能量⚡️[6秒拼手速第" + round + "局 打地鼠能量+" + totalEnergy + "g]");
             
-            Log.runtime(TAG, "第" + round + "局完成，总耗时" + (System.currentTimeMillis() - startTime) + "ms");
+            Log.forest(TAG, "第" + round + "局完成，总耗时" + (System.currentTimeMillis() - startTime) + "ms");
             
             // 返回会话信息
             return new GameSession(token, remainingMoleIds, totalEnergy, round);

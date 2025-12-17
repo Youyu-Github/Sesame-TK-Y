@@ -1441,6 +1441,7 @@ public class AntForest extends ModelTask {
                     Log.runtime(TAG, "未加入PK排行榜,跳过,尝试关闭");
                     pkEnergy.setValue(false);
                 }
+
                 collectUserEnergy(pkObject, "pk");
                 //继续处理靠后的PK森友
                 JSONArray totalData = pkObject.optJSONArray("totalData");
@@ -1685,6 +1686,7 @@ public class AntForest extends ModelTask {
             if (errorWait) return;
             String userId = obj.getString("userId");
             if (Objects.equals(userId, selfId)) return; // 跳过自己
+
             String userName = obj.optString("displayName", UserMap.getMaskName(userId));
 
             if (emptyForestCache.containsKey(userId)) {
@@ -1892,8 +1894,12 @@ public class AntForest extends ModelTask {
             String userName = null; // 先声明，稍后初始化
             try {
                 String userId = collectEnergyEntity.getUserId();
+
+                JSONObject userHome = collectEnergyEntity.getUserHome(); // 在顶部统一定义和初始化
+                userName = cacheCollectedMap(userId, userHome, "friend");  // 使用 userHome 获取正确的用户名
+
                 // 提前获取并缓存用户名
-                userName = cacheCollectedMap(userId);
+                // userName = cacheCollectedMap(userId);
                 
                 usePropBeforeCollectEnergy(userId);
                 RpcEntity rpcEntity = collectEnergyEntity.getRpcEntity();
@@ -2034,7 +2040,7 @@ public class AntForest extends ModelTask {
                         return;
                     }
                     
-                    JSONObject userHome = collectEnergyEntity.getUserHome();
+                    // JSONObject userHome = collectEnergyEntity.getUserHome();
                     if (userHome == null) {
                         return;
                     }
