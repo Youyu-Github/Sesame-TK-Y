@@ -70,7 +70,7 @@ public class AntOrchard extends ModelTask {
 
     @Override
     public String getName() {
-        return "农场";
+        return "芭芭农场";
     }
 
     @Override
@@ -87,9 +87,9 @@ public class AntOrchard extends ModelTask {
     public ModelFields getFields() {
         ModelFields modelFields = new ModelFields();
         modelFields.addField(executeInterval = new IntegerModelField("executeInterval", "执行间隔(毫秒)", 500));
-        modelFields.addField(receiveOrchardTaskAward = new BooleanModelField("receiveOrchardTaskAward", "收取农场任务奖励", false));
+        modelFields.addField(receiveOrchardTaskAward = new BooleanModelField("receiveOrchardTaskAward", "收取芭芭农场任务奖励", false));
         modelFields.addField(orchardSpreadManure = new BooleanModelField("orchardSpreadManure", "果树施肥", false));
-        modelFields.addField(orchardSpreadManureCount = new IntegerModelField("orchardSpreadManureCount", "农场每日施肥次数", 0));
+        modelFields.addField(orchardSpreadManureCount = new IntegerModelField("orchardSpreadManureCount", "芭芭农场每日施肥次数", 0));
         modelFields.addField(assistFriendList = new SelectModelField("assistFriendList", "助力好友列表", new LinkedHashSet<>(), AlipayUser::getList));
         // 保留Java版原有高级功能
         modelFields.addField(batchHireAnimal = new BooleanModelField("batchHireAnimal", "一键捉鸡除草", false));
@@ -168,7 +168,7 @@ public class AntOrchard extends ModelTask {
                     }
                 }
 
-                // 农场任务
+                // 芭芭农场任务
                 if (receiveOrchardTaskAward.getValue()) {
                     doOrchardDailyTask(userId);
                     triggerTbTask();
@@ -220,7 +220,8 @@ public class AntOrchard extends ModelTask {
                 Log.farm("请先开通芭芭农场！");
             }
         } catch (Throwable t) {
-            Log.printStackTrace(TAG, "农场主流程执行异常！", t);
+            Log.runtime(TAG, "芭芭农场主流程执行异常！");
+            Log.printStackTrace(TAG, t);
         } finally {
             Log.record(TAG, "执行结束-" + getName());
         }
@@ -264,14 +265,15 @@ public class AntOrchard extends ModelTask {
                     int awardCount = spreadManureStage.getInt("awardCount");
                     JSONObject joo = new JSONObject(AntOrchardRpcCall.receiveTaskAward(sceneCode, taskType));
                     if (joo.optBoolean("success")) {
-                        Log.farm("农场丰收礼包🎁[返肥料奖励*" + awardCount + "]g");
+                        Log.farm("芭芭农场丰收礼包🎁[返肥料奖励*" + awardCount + "]g");
                     } else {
-                        Log.record(TAG, "农场 丰收礼包 错误：" + joo.optString("desc"));
+                        Log.record(TAG, "芭芭农场 丰收礼包 错误：" + joo.optString("desc"));
                     }
                 }
             }
         } catch (Exception e) {
-            Log.printStackTrace(TAG, "gotHarvest error", e);
+            Log.runtime(TAG, "gotHarvest error");
+            Log.printStackTrace(TAG, e);
         }
     }
 
@@ -279,7 +281,7 @@ public class AntOrchard extends ModelTask {
         JSONObject plantInfo = orchardIndexTaobaoData.getJSONObject("gameInfo").getJSONObject("plantInfo");
         boolean canExchange = plantInfo.getBoolean("canExchange");
         if (canExchange) {
-            Log.farm("🎉 农场果树似乎可以兑换了！");
+            Log.farm("🎉 芭芭农场果树似乎可以兑换了！");
         }
         return plantInfo;
     }
@@ -317,7 +319,7 @@ public class AntOrchard extends ModelTask {
                         return;
                     }
                     if (happyPoint < wateringCost) {
-                        Log.runtime(TAG, "农场肥料不足以施肥 " + wateringCost);
+                        Log.runtime(TAG, "芭芭农场肥料不足以施肥 " + wateringCost);
                         return;
                     }
                     if (wateringLeftTimes == 0) {
@@ -336,7 +338,7 @@ public class AntOrchard extends ModelTask {
                         JSONObject spreadManureData = new JSONObject(AntOrchardRpcCall.orchardSpreadManure(wua, randomSource));
 
                         if (!"100".equals(spreadManureData.getString("resultCode"))) {
-                            Log.record(TAG, "农场 orchardSpreadManure 错误：" + spreadManureData.getString("resultDesc"));
+                            Log.record(TAG, "芭芭农场 orchardSpreadManure 错误：" + spreadManureData.getString("resultDesc"));
                             return;
                         }
 
@@ -344,7 +346,7 @@ public class AntOrchard extends ModelTask {
                         String stageText = spreadTaobaoData.getJSONObject("currentStage").getString("stageText");
                         int dailyAppWateringCount = spreadTaobaoData.getJSONObject("statistics").getInt("dailyAppWateringCount");
 
-                        Log.farm("今日农场已施肥💩 " + dailyAppWateringCount + " 次 [" + stageText + "]");
+                        Log.farm("今日芭芭农场已施肥💩 " + dailyAppWateringCount + " 次 [" + stageText + "]");
                         count++;
 
                         if (!canSpreadManureContinue(seedStage.getInt("totalValue"), spreadTaobaoData.getJSONObject("currentStage").getInt("totalValue"))) {
@@ -359,7 +361,8 @@ public class AntOrchard extends ModelTask {
                 break;
             } while (true);
         } catch (Throwable t) {
-            Log.printStackTrace(TAG, "农场施肥异常！", t);
+            Log.runtime(TAG, "芭芭农场施肥异常！");
+            Log.printStackTrace(TAG, t);
         }
     }
 
@@ -382,7 +385,8 @@ public class AntOrchard extends ModelTask {
                 Log.runtime(TAG, jo.toString());
             }
         } catch (Throwable t) {
-            Log.printStackTrace(TAG, "extraInfoGet err:", t);
+            Log.runtime(TAG, "extraInfoGet err:");
+            Log.printStackTrace(TAG, t);
         }
     }
 
@@ -432,7 +436,7 @@ public class AntOrchard extends ModelTask {
             }
 
             boolean inTeam = jo.optBoolean("inTeam", false);
-            Log.record(TAG, inTeam ? "当前为农场 team 模式（合种/帮帮种已开启）" : "当前为普通单人农场模式");
+            Log.record(TAG, inTeam ? "当前为芭芭农场 team 模式（合种/帮帮种已开启）" : "当前为普通单人农场模式");
 
             if (jo.has("signTaskInfo")) {
                 orchardSign(jo.getJSONObject("signTaskInfo"));
@@ -478,9 +482,9 @@ public class AntOrchard extends ModelTask {
                     for (int cnt = 0; cnt < timesToDo; cnt++) {
                         JSONObject finishResponse = new JSONObject(AntOrchardRpcCall.finishTask(userId, sceneCode, taskId));
                         if (finishResponse.optBoolean("success")) {
-                            Log.farm("农场广告任务📺[" + title + "] 第" + (rightsTimes + cnt + 1) + "次");
+                            Log.farm("芭芭农场广告任务📺[" + title + "] 第" + (rightsTimes + cnt + 1) + "次");
                         } else {
-                            Log.record(TAG, "失败：农场广告任务📺[" + title + "] " + finishResponse.optString("desc"));
+                            Log.record(TAG, "失败：芭芭农场广告任务📺[" + title + "] " + finishResponse.optString("desc"));
                             break;
                         }
                         GlobalThreadPools.sleep(executeIntervalInt);
@@ -491,9 +495,9 @@ public class AntOrchard extends ModelTask {
                 if ("TRIGGER".equals(actionType) || "ADD_HOME".equals(actionType) || "PUSH_SUBSCRIBE".equals(actionType)) {
                     JSONObject finishResponse = new JSONObject(AntOrchardRpcCall.finishTask(userId, sceneCode, taskId));
                     if (finishResponse.optBoolean("success")) {
-                        Log.farm("农场任务🧾[" + title + "]");
+                        Log.farm("芭芭农场任务🧾[" + title + "]");
                     } else {
-                        Log.record(TAG, "农场任务🧾[" + title + "]" + finishResponse.optString("desc"));
+                        Log.record(TAG, "芭芭农场任务🧾[" + title + "]" + finishResponse.optString("desc"));
                     }
                 }
             }
@@ -510,12 +514,12 @@ public class AntOrchard extends ModelTask {
                 JSONObject joSign = new JSONObject(AntOrchardRpcCall.orchardSign());
                 if ("100".equals(joSign.getString("resultCode"))) {
                     int awardCount = joSign.getJSONObject("signTaskInfo").getJSONObject("currentSignItem").getInt("awardCount");
-                    Log.farm("农场签到📅[获得肥料]#" + awardCount + "g");
+                    Log.farm("芭芭农场签到📅[获得肥料]#" + awardCount + "g");
                 } else {
                     Log.runtime(TAG, joSign.toString());
                 }
             } else {
-                Log.record(TAG, "农场今日已签到");
+                Log.record(TAG, "芭芭农场今日已签到");
             }
         } catch (Throwable t) {
             Log.runtime(TAG, "orchardSign err:");
@@ -598,7 +602,8 @@ public class AntOrchard extends ModelTask {
                 Log.runtime(TAG, response);
             }
         } catch (Throwable t) {
-            Log.printStackTrace(TAG, "triggerTbTask err:", t);
+            Log.runtime(TAG, "triggerTbTask err:");
+            Log.printStackTrace(TAG, t);
         }
     }
 
@@ -635,7 +640,8 @@ public class AntOrchard extends ModelTask {
             // 修复点 2：使用正确的 Status 调用
             Status.setFlagToday(StatusFlags.FLAG_ANTORCHARD_WIDGET_DAILY_AWARD);
         } catch (Throwable t) {
-            Log.printStackTrace(TAG, "receiveOrchardVisitAward err:", t);
+            Log.runtime(TAG, "receiveOrchardVisitAward err:");
+            Log.printStackTrace(TAG, t);
         }
     }
 
@@ -692,8 +698,8 @@ public class AntOrchard extends ModelTask {
                     Log.forest(TAG, "第 " + currentRound + " 轮 限时任务🎁[肥料 * " + MawardCount + "]");
                 } else {
                     String desc = joo.optString("desc", "未知错误");
-                    Log.record(TAG, "农场 限时任务 错误：" + desc);
-                    Log.runtime(TAG, "农场 限时任务 错误：" + joo.toString());
+                    Log.record(TAG, "芭芭农场 限时任务 错误：" + desc);
+                    Log.runtime(TAG, "芭芭农场 限时任务 错误：" + joo.toString());
                 }
                 return;
             }
@@ -738,7 +744,7 @@ public class AntOrchard extends ModelTask {
                                 Log.record(TAG, "施肥第 " + (j + 1) + " 次结果：" + spreadResultStr);
                                 JSONObject resultJson = new JSONObject(spreadResultStr);
                                 if (!"100".equals(resultJson.optString("resultCode"))) {
-                                    Log.record(TAG, "农场 orchardSpreadManure 错误：" + resultJson.optString("resultDesc"));
+                                    Log.record(TAG, "芭芭农场 orchardSpreadManure 错误：" + resultJson.optString("resultDesc"));
                                     return;
                                 }
                             }
@@ -825,7 +831,8 @@ public class AntOrchard extends ModelTask {
                 }
             }
         } catch (Throwable t) {
-            Log.printStackTrace(TAG, "limitedTimeChallenge err:", t);
+            Log.runtime(TAG, "limitedTimeChallenge err:");
+            Log.printStackTrace(TAG, t);
         }
     }
 
@@ -857,7 +864,7 @@ public class AntOrchard extends ModelTask {
                         if (optionKey != null) {
                             JSONObject jo5 = new JSONObject(AntOrchardRpcCall.triggerSubplotsActivity(activityId, "WISH", optionKey));
                             if ("100".equals(jo5.getString("resultCode"))) {
-                                Log.farm("农场许愿✨[每日施肥" + taskRequire + "次]");
+                                Log.farm("芭芭农场许愿✨[每日施肥" + taskRequire + "次]");
                             } else {
                                 Log.record(TAG, jo5.getString("resultDesc"));
                             }
@@ -880,7 +887,7 @@ public class AntOrchard extends ModelTask {
     private void orchardassistFriend() {
         try {
             if (!Status.canAntOrchardAssistFriendToday()) {
-                Log.record(TAG, "今日已助力，跳过农场助力");
+                Log.record(TAG, "今日已助力，跳过芭芭农场助力");
                 return;
             }
             Set<String> friendSet = assistFriendList.getValue();
@@ -894,14 +901,14 @@ public class AntOrchard extends ModelTask {
                 if (!jsonObject.optBoolean("success")) {
                     String code = jsonObject.optString("code");
                     if ("600000027".equals(code)) {
-                        Log.record(TAG, "农场助力💪今日助力他人次数上限");
+                        Log.record(TAG, "芭芭农场助力💪今日助力他人次数上限");
                         Status.antOrchardAssistFriendToday();
                         return;
                     }
-                    Log.record(TAG, "农场助力😔失败[" + name + "]" + jsonObject.optString("desc"));
+                    Log.record(TAG, "芭芭农场助力😔失败[" + name + "]" + jsonObject.optString("desc"));
                     continue;
                 }
-                Log.farm("农场助力💪[助力:" + name + "]");
+                Log.farm("芭芭农场助力💪[助力:" + name + "]");
             }
             Status.antOrchardAssistFriendToday();
         } catch (Throwable t) {
