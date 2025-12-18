@@ -272,7 +272,7 @@ public class AntForest extends ModelTask {
 
     @Override
     public String getName() {
-        return "森林";
+        return "蚂蚁森林";
     }
 
     @Override
@@ -3168,13 +3168,14 @@ public class AntForest extends ModelTask {
             String propId = propJsonObj.getJSONArray("propIdList").getString(0);
             JSONObject propConfigVO = propJsonObj.getJSONObject("propConfigVO");
             String propType = propConfigVO.getString("propType");
+            int holdsNum = propJsonObj.optInt("holdsNum");
             String propName = propConfigVO.getString("propName");
             String tag = propEmoji(propName);
             JSONObject jo;
             boolean isRenewable = isRenewableProp(propType);
             Log.record(TAG, "道具 " + propName + " (类型: " + propType + "), 是否可续用: " + isRenewable);
             String propGroup = AntForestRpcCall.getPropGroup(propType);
-            if (isRenewable) {
+            if (isRenewable && holdsNum > 1) {
                 // 第一步：发送检查/尝试使用请求 (secondConfirm=false)
                 String checkResponseStr = AntForestRpcCall.consumeProp(propGroup, propId, propType, false);
                 JSONObject checkResponse = new JSONObject(checkResponseStr);
@@ -3405,20 +3406,26 @@ public class AntForest extends ModelTask {
                 Log.record(TAG, "尝试树宝保护罩(shubao3rd_ENERGY_SHIELD)...");
                 jo = findPropBag(bagObject, "shubao3rd_ENERGY_SHIELD");
             }
+
+            // 5. 尝试 LOVE_PLANET_ENERGY_SHIELD
+            if (jo == null) {
+                Log.record(TAG, "尝试真爱保护罩(LOVE_PLANET_ENERGY_SHIELD)...");
+                jo = findPropBag(bagObject, "LOVE_PLANET_ENERGY_SHIELD");
+            }
             
-            // 5. 尝试 ENERGY_SHIELD
+            // 6. 尝试 ENERGY_SHIELD
             if (jo == null) {
                 Log.record(TAG, "尝试普通能量保护罩(ENERGY_SHIELD)...");
                 jo = findPropBag(bagObject, "ENERGY_SHIELD");
             }
 
-            // 6. 最后尝试 PK_SEASON1_ENERGY_SHIELD_TREE
+            // 7. 最后尝试 PK_SEASON1_ENERGY_SHIELD_TREE
             if (jo == null) {
                 Log.record(TAG, "尝试PK赛限定保护罩(PK_SEASON1_ENERGY_SHIELD_TREE)...");
                 jo = findPropBag(bagObject, "PK_SEASON1_ENERGY_SHIELD_TREE");
             }
 
-            // 7. 最后尝试 MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE
+            // 8. 最后尝试 MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE
             if (jo == null) {
                 Log.record(TAG, "尝试敦煌飞天保护罩(MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE)...");
                 jo = findPropBag(bagObject, "MUSEUM_DUNHUANG_ENERGY_SHIELD_NO_EXPIRE");

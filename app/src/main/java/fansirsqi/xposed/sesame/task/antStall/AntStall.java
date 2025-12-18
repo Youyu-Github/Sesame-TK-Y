@@ -77,7 +77,7 @@ public class AntStall extends ModelTask {
     }
     @Override
     public String getName() {
-        return "新村";
+        return "蚂蚁新村";
     }
     @Override
     public ModelGroup getGroup() {
