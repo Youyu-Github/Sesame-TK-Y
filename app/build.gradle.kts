@@ -33,7 +33,7 @@ android {
         }
     }
 
-    val gitCommitCount: Int = runCatching {
+    /*val gitCommitCount: Int = runCatching {
         val process = ProcessBuilder("git", "rev-list", "--count", "HEAD")
             .redirectErrorStream(true)
             .start()
@@ -42,7 +42,12 @@ android {
     }.getOrElse {
         println("获取 git 提交数失败: ${it.message}")
         1
-    }
+    }*/
+    // 使用providers API来支持配置缓存
+    val gitCommitCount: Int = providers.exec {
+        commandLine("git", "rev-list", "--count", "HEAD")
+    }.standardOutput.asText.get().trim().toIntOrNull() ?: 1
+
     defaultConfig {
         vectorDrawables.useSupportLibrary = true
         applicationId = "fansirsqi.xposed.sesame"
@@ -65,7 +70,7 @@ android {
 
         versionCode = gitCommitCount
         val buildTag = "beta"
-        versionName = "v0.2.9.rc$gitCommitCount"
+        versionName = "v0.3.0.rc$gitCommitCount"
         // versionName = "v0.2.9.rc$gitCommitCount-$buildTag"
 
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
