@@ -12,7 +12,7 @@ import fansirsqi.xposed.sesame.task.antSports.AntSports
 import fansirsqi.xposed.sesame.task.antStall.AntStall
 import fansirsqi.xposed.sesame.task.reserve.Reserve
 
-import fansirsqi.xposed.sesame.task.ancientTree.EcologicalProtection
+import fansirsqi.xposed.sesame.task.EcoProtection.EcoProtection
 import fansirsqi.xposed.sesame.task.greenFinance.GreenFinance
 import fansirsqi.xposed.sesame.task.consumeGold.ConsumeGold
 
@@ -29,7 +29,7 @@ object ModelOrder {
         AntSports::class.java,       // 运动
         AntMember::class.java,     // 会员
         AntCooperate::class.java,    // 合种
-        EcologicalProtection::class.java,     // 古树
+        EcoProtection::class.java,     // 古树
         Reserve::class.java,       // 保护地
 //        Antinvoice::class.java,      // 蚂蚁发票
         ConsumeGold::class.java,   // 消费金

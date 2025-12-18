@@ -1,8 +1,8 @@
-package fansirsqi.xposed.sesame.task.ancientTree
+package fansirsqi.xposed.sesame.task.EcoProtection
 
 import fansirsqi.xposed.sesame.hook.RequestManager.requestString
 
-object AncientTreeRpcCall {
+object EcoProtectionRpcCall {
     private const val VERSION = "20230522"
     fun homePage(selectCityCode: String?): String {
         return requestString(
