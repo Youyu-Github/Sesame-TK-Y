@@ -27,11 +27,11 @@ object ModelOrder {
         AntDodo::class.java,       // 神奇物种
         GreenFinance::class.java,  // 绿色经营
         AntSports::class.java,       // 运动
-        EcologicalProtection::class.java,     // 古树
+        AntMember::class.java,     // 会员
         AntCooperate::class.java,    // 合种
+        EcologicalProtection::class.java,     // 古树
         Reserve::class.java,       // 保护地
 //        Antinvoice::class.java,      // 蚂蚁发票
-        AntMember::class.java,     // 会员
         ConsumeGold::class.java,   // 消费金
         AnswerAI::class.java         // AI答题
     )
