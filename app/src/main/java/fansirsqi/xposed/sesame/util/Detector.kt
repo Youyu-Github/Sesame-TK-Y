@@ -62,6 +62,7 @@ object Detector {
                 context.packageName,
                 PackageManager.GET_META_DATA
             )
+            appInfo.metaData?.containsKey("lspatch") == true
             return appInfo.metaData?.containsKey("lspatch") == true
         } catch (e: Exception) {
             Log.error(TAG, "检查LSPatch运行环境时出错: ${e.message}")

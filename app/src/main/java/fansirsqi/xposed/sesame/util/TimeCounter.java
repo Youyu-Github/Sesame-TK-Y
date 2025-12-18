@@ -10,11 +10,11 @@ import java.util.function.Consumer;
 public class TimeCounter {
 
     private final String name;
-    private Instant start;
+    private final Instant start;
     private Instant lastCheckpoint;
     private boolean stopped = false;
     private int unexceptCnt = 0;
-    private StringBuilder resultMsg = new StringBuilder();
+    private final StringBuilder resultMsg = new StringBuilder();
     private Consumer<String> _logger;
 
     public TimeCounter(String name) {
@@ -37,7 +37,7 @@ public class TimeCounter {
         Instant end = Instant.now();
         long durationMs = Duration.between(start, end).toMillis();
         Log.record(name,String.format("========================\n%s 耗时: %d ms (%s)", 
-                name, durationMs, resultMsg.toString()));
+                name, durationMs, resultMsg));
         stopped = true;
     }
 
