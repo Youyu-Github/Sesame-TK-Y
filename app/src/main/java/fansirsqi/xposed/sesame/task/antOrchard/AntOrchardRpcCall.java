@@ -5,7 +5,7 @@ import fansirsqi.xposed.sesame.hook.RequestManager;
 
 public class AntOrchardRpcCall {
         // 保持使用较新版本号
-        private static final String VERSION = "20251128.01";
+        private static final String VERSION = "20251209.01";
 
         public static String orchardIndex() {
                 return RequestManager.requestString("com.alipay.antfarm.orchardIndex",

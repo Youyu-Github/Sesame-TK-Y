@@ -31,7 +31,7 @@ public class AntMember extends ModelTask {
   private static final String TAG = AntMember.class.getSimpleName();
   @Override
   public String getName() {
-    return "会员";
+    return "信用会员";
   }
   @Override
   public ModelGroup getGroup() {

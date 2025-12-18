@@ -35,7 +35,7 @@ public class AntCooperate extends ModelTask {
      */
     @Override
     public String getName() {
-        return "合种";
+        return "森林合种";
     }
 
     /**

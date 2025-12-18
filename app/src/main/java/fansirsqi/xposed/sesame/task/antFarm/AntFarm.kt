@@ -58,7 +58,7 @@ import fansirsqi.xposed.sesame.util.TimeCounter
 class AntFarm : ModelTask() {
 
     override fun getName(): String {
-        return "庄园"
+        return "蚂蚁庄园"
     }
 
     override fun getGroup(): ModelGroup {
