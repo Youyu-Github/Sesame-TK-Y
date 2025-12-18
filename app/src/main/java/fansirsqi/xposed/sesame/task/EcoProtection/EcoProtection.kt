@@ -1,4 +1,4 @@
-package fansirsqi.xposed.sesame.task.ancientTree
+package fansirsqi.xposed.sesame.task.EcoProtection
 
 import fansirsqi.xposed.sesame.data.Status
 import fansirsqi.xposed.sesame.entity.AreaCode
@@ -16,7 +16,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class EcologicalProtection : ModelTask() {
+class EcoProtection : ModelTask() {
     override fun getName(): String {
         return "生态保护"
     }
@@ -26,7 +26,7 @@ class EcologicalProtection : ModelTask() {
     }
 
     override fun getIcon(): String {
-        return "AncientTree.png"
+        return "EcoProtection.png"
     }
 
     private var ancientTreeOnlyWeek: BooleanModelField? = null
@@ -68,7 +68,7 @@ class EcologicalProtection : ModelTask() {
     }
 
     companion object {
-        private val TAG: String = EcologicalProtection::class.java.getSimpleName()
+        private val TAG: String = EcoProtection::class.java.getSimpleName()
         private fun ancientTree(ancientTreeCityCodeList: MutableCollection<String?>) {
             try {
                 for (cityCode in ancientTreeCityCodeList) {
@@ -84,7 +84,7 @@ class EcologicalProtection : ModelTask() {
 
         private fun ancientTreeProtect(cityCode: String?) {
             try {
-                val jo = JSONObject(AncientTreeRpcCall.homePage(cityCode))
+                val jo = JSONObject(EcoProtectionRpcCall.homePage(cityCode))
                 if (ResChecker.checkRes(TAG, jo)) {
                     val data = jo.getJSONObject("data")
                     if (!data.has("districtBriefInfoList")) {
@@ -110,7 +110,7 @@ class EcologicalProtection : ModelTask() {
 
         private fun districtDetail(districtCode: String?) {
             try {
-                var jo = JSONObject(AncientTreeRpcCall.districtDetail(districtCode))
+                var jo = JSONObject(EcoProtectionRpcCall.districtDetail(districtCode))
                 if (ResChecker.checkRes(TAG, jo)) {
                     var data = jo.getJSONObject("data")
                     if (!data.has("ancientTreeList")) {
@@ -129,7 +129,7 @@ class EcologicalProtection : ModelTask() {
                         val useQuota = ancientTreeControlInfo.optInt("useQuota", 0)
                         if (quota <= useQuota) continue
                         val itemId = ancientTreeItem.getString("projectId")
-                        val ancientTreeDetail = JSONObject(AncientTreeRpcCall.projectDetail(itemId, cityCode))
+                        val ancientTreeDetail = JSONObject(EcoProtectionRpcCall.projectDetail(itemId, cityCode))
                         if (ResChecker.checkRes(TAG, ancientTreeDetail)) {
                             data = ancientTreeDetail.getJSONObject("data")
                             if (data.getBoolean("canProtect")) {
@@ -144,7 +144,7 @@ class EcologicalProtection : ModelTask() {
                                 cityCode = ancientTreeInfo.getString("cityCode")
                                 if (currentEnergy < protectExpense) break
                                 GlobalThreadPools.sleep(200)
-                                jo = JSONObject(AncientTreeRpcCall.protect(activityId, projectId, cityCode))
+                                jo = JSONObject(EcoProtectionRpcCall.protect(activityId, projectId, cityCode))
                                 if (ResChecker.checkRes(TAG, jo)) {
                                     Log.forest(
                                         ("保护古树🎐[" + cityName + "-" + districtName
