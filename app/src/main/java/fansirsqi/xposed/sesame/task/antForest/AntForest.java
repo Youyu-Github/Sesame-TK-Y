@@ -652,7 +652,7 @@ public class AntForest extends ModelTask {
                 }
                 //绿色行动
                 if (getRunCents() >= ecoLife.getValue()) {
-                    EcoLife.ecoLife();
+                    EcoLife.INSTANCE.ecoLife();
                     tc.countDebug("绿色行动");
                 }
                 // 浇水列表
