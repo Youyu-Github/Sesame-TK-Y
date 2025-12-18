@@ -164,7 +164,7 @@ public class BaseModel extends Model {
         // 配置已加载，更新验证码Hook状态
         try {
             fansirsqi.xposed.sesame.hook.CaptchaHook.INSTANCE.updateHooks(
-                enableCaptchaUIHook.getValue()
+                enableCaptchaUIHook.value
             );
             Log.record(TAG, "✅ 验证码Hook配置已同步");
         } catch (Throwable t) {
