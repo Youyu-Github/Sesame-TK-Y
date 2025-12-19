@@ -23,8 +23,9 @@ import fansirsqi.xposed.sesame.model.modelFieldExt.IntegerModelField;
 import fansirsqi.xposed.sesame.model.modelFieldExt.SelectModelField;
 import fansirsqi.xposed.sesame.task.ModelTask;
 import fansirsqi.xposed.sesame.task.TaskCommon;
-import fansirsqi.xposed.sesame.task.adexchange.UrlUtil;
-import fansirsqi.xposed.sesame.task.adexchange.XLightRpcCall;
+import fansirsqi.xposed.sesame.task.antOrchard.UrlUtil;
+import fansirsqi.xposed.sesame.task.antOrchard.XLightRpcCall;
+import fansirsqi.xposed.sesame.newutil.TaskBlacklist;
 import fansirsqi.xposed.sesame.util.Detector;
 import fansirsqi.xposed.sesame.util.Files;
 import fansirsqi.xposed.sesame.util.GlobalThreadPools;
@@ -36,23 +37,6 @@ import fansirsqi.xposed.sesame.util.RandomUtil;
 
 public class AntOrchard extends ModelTask {
     private static final String TAG = AntOrchard.class.getSimpleName();
-
-    // 任务黑名单：某些广告/外跳类任务后端不支持 finishTask 或需要前端行为配合
-    private static final Set<String> ORCHARD_TASK_BLACKLIST = new HashSet<>();
-    static {
-        ORCHARD_TASK_BLACKLIST.add("ORCHARD_NORMAL_KUAISHOU_MAX");  // 逛一逛快手
-        ORCHARD_TASK_BLACKLIST.add("ORCHARD_NORMAL_DIAOYU1");       // 钓鱼1次
-        ORCHARD_TASK_BLACKLIST.add("ZHUFANG3IN1");                  // 添加农场小组件并访问
-        ORCHARD_TASK_BLACKLIST.add("12172");                        // 逛助农好货得肥料
-        ORCHARD_TASK_BLACKLIST.add("12173");                        // 买好货
-        ORCHARD_TASK_BLACKLIST.add("70000");                        // 逛好物最高得1500肥料（XLIGHT）
-        ORCHARD_TASK_BLACKLIST.add("TOUTIAO");                      // 逛一逛今日头条
-        ORCHARD_TASK_BLACKLIST.add("ORCHARD_NORMAL_ZADAN10_3000");  // 农场对对碰
-        ORCHARD_TASK_BLACKLIST.add("TAOBAO2");                      // 逛一逛闲鱼
-        ORCHARD_TASK_BLACKLIST.add("ORCHARD_NORMAL_JIUYIHUISHOU_VISIT");  // 旧衣服回收
-        ORCHARD_TASK_BLACKLIST.add("ORCHARD_NORMAL_SHOUJISHUMAHUISHOU");  // 数码回收
-        ORCHARD_TASK_BLACKLIST.add("ORCHARD_NORMAL_AQ_XIAZAI");           // 下载AQ
-    }
 
     private String userId = UserMap.currentUid;
     private String treeLevel;
@@ -456,7 +440,7 @@ public class AntOrchard extends ModelTask {
                 JSONObject displayConfig = task.optJSONObject("taskDisplayConfig");
                 String title = (displayConfig != null) ? displayConfig.optString("title", "未知任务") : "未知任务";
 
-                if (ORCHARD_TASK_BLACKLIST.contains(groupId)) {
+                if (TaskBlacklist.isTaskInBlacklist(groupId)) {
                     Log.record(TAG, "跳过黑名单任务[" + title + "] groupId=" + groupId);
                     continue;
                 }
@@ -485,6 +469,11 @@ public class AntOrchard extends ModelTask {
                             Log.farm("芭芭农场广告任务📺[" + title + "] 第" + (rightsTimes + cnt + 1) + "次");
                         } else {
                             Log.record(TAG, "失败：芭芭农场广告任务📺[" + title + "] " + finishResponse.optString("desc"));
+                            // 自动添加到黑名单
+                            String errorCode = finishResponse.optString("code", "");
+                            if (!errorCode.isEmpty()) {
+                                TaskBlacklist.autoAddToBlacklist(groupId, title, errorCode);
+                            }
                             break;
                         }
                         GlobalThreadPools.sleep(executeIntervalInt);
