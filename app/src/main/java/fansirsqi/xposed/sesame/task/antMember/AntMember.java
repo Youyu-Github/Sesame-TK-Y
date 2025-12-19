@@ -375,7 +375,7 @@ public class AntMember extends ModelTask {
   }
 
   /**
-   * 执行芝麻信用攒进度的主方法（已重构优化）
+   * 执行芝麻信用攒进度的主方法（已修复加速进度计算问题）
    */
   private void doSesameCreditScoreTask() {
       try {
@@ -424,21 +424,19 @@ public class AntMember extends ModelTask {
           if (tasks != null) {
               for (int i = 0; i < tasks.length(); i++) {
                   JSONObject task = tasks.getJSONObject(i);
-                  // 使用新的任务ID "shipingwenda"
                   if ("shipingwenda".equals(task.optString("behaviorId")) && "wait_doing".equals(task.optString("status"))) {
-                      handleDailyQuiz(); // 此方法内部已包含答题和领取逻辑
+                      handleDailyQuiz();
                       quizHandled = true;
                       break;
                   }
               }
           }
           
-          // 如果处理了答题，稍微等待，让最终的一键领取能拿到最新状态
           if(quizHandled) {
               GlobalThreadPools.sleep(2000);
           }
 
-          // 步骤4: 一键领取所有剩余的进度球（作为补充和最终确认）
+          // 步骤4: 一键领取所有剩余的进度球
           Log.record(TAG, "芝麻信用攒进度-开始一键领取所有剩余进度...");
           String progressStr = AntMemberRpcCall.queryScoreProgress();
           JSONObject progressJo = new JSONObject(progressStr);
@@ -448,12 +446,29 @@ public class AntMember extends ModelTask {
                   JSONArray ballIdList = totalWaitVO.optJSONArray("totalProgressIdList");
                   if (ballIdList != null && ballIdList.length() > 0) {
                       Log.record(TAG, "芝麻信用攒进度-发现 " + ballIdList.length() + " 个可一键领取的进度球");
+
+                      // --- 问题修复关键点 1: 在领取前，获取当前的加速倍率和基础进度 ---
+                      JSONObject weekProgressVO = progressJo.optJSONObject("weekProgressVO");
+                      double accelerateValue = 1.0; // 默认加速倍率为1
+                      double baseProgressBefore = 0.0;
+                      if (weekProgressVO != null) {
+                          accelerateValue = weekProgressVO.optDouble("currentAccelerateValue", 1.0);
+                          baseProgressBefore = weekProgressVO.optDouble("progress", 0.0);
+                          Log.record(TAG, "芝麻信用攒进度-当前加速倍率: " + accelerateValue + ", 领取前基础进度: " + baseProgressBefore + "%");
+                      }
+                      // -----------------------------------------------------------------
+
                       String collectResultStr = AntMemberRpcCall.collectProgressBall(ballIdList);
                       JSONObject collectResultJo = new JSONObject(collectResultStr);
                       if (collectResultJo.optBoolean("success")) {
-                          String collectedProgress = collectResultJo.optString("collectedProgress", "?");
-                          String totalProgress = collectResultJo.optString("totalProgress", "?");
-                          Log.other("芝麻信用攒进度-一键领取成功! 本次领取 " + collectedProgress + "%，当前总进度 " + totalProgress + "%");
+                          // --- 问题修复关键点 2: 使用获取到的倍率手动计算最终进度 ---
+                          double baseCollectedProgress = collectResultJo.optDouble("collectedProgress", 0.0);
+                          double actualCollectedProgress = baseCollectedProgress * accelerateValue;
+                          double newTotalBaseProgress = baseProgressBefore + baseCollectedProgress;
+                          double newTotalAcceleratedProgress = newTotalBaseProgress * accelerateValue;
+
+                          Log.other("芝麻信用攒进度-一键领取成功! 本次领取 " + String.format("%.1f", actualCollectedProgress) + "% (基础" + baseCollectedProgress + "%)，当前总进度 " + String.format("%.1f", newTotalAcceleratedProgress) + "%");
+                          // -------------------------------------------------------------
                       } else {
                           Log.record(TAG, "芝麻信用攒进度-一键领取失败: " + collectResultJo.optString("resultView"));
                       }
@@ -465,14 +480,13 @@ public class AntMember extends ModelTask {
               Log.record(TAG, "芝麻信用攒进度-查询进度球信息失败: " + progressJo.optString("resultView"));
           }
 
-          // 步骤5: 最后检查是否所有任务都已完成，如果是，则关闭开关
+          // 步骤5: 最后检查是否所有任务都已完成
           GlobalThreadPools.sleep(2000);
           progressStr = AntMemberRpcCall.queryScoreProgress();
           progressJo = new JSONObject(progressStr);
           if (progressJo.optBoolean("success")) {
               JSONObject totalWaitVO = progressJo.optJSONObject("totalWaitProcessVO");
               if (totalWaitVO != null && totalWaitVO.optInt("totalCollectProcess", -1) == 0) {
-                  // sesameCreditScoreTask.setValue(false); // 取消注释以启用自动关闭开关功能
                   Log.record(TAG, "芝麻信用攒进度-所有任务和进度已完成，可临时关闭开关");
               }
           }
@@ -483,7 +497,7 @@ public class AntMember extends ModelTask {
   }
 
   /**
-   * 处理每日视频答题并收集进度的完整逻辑（已优化）
+   * 处理每日视频答题并收集进度的完整逻辑（已修复加速进度计算问题）
    */
   private void handleDailyQuiz() {
       try {
@@ -544,11 +558,30 @@ public class AntMember extends ModelTask {
                       JSONArray awardIdList = scoreAwardVO.optJSONArray("awardIdList");
                       if (awardIdList != null && awardIdList.length() > 0) {
                           
+                          // --- 新增：在收集前，先查询当前的进度和加速倍率 ---
+                          String progressStr = AntMemberRpcCall.queryScoreProgress();
+                          JSONObject progressJo = new JSONObject(progressStr);
+                          double accelerateValue = 1.0;
+                          double baseProgressBefore = 0.0;
+                          if(progressJo.optBoolean("success")) {
+                              JSONObject weekProgressVO = progressJo.optJSONObject("weekProgressVO");
+                              if (weekProgressVO != null) {
+                                  accelerateValue = weekProgressVO.optDouble("currentAccelerateValue", 1.0);
+                                  baseProgressBefore = weekProgressVO.optDouble("progress", 0.0);
+                                  Log.record(TAG, "芝麻信用攒进度-答题前加速倍率: " + accelerateValue + ", 基础进度: " + baseProgressBefore + "%");
+                              }
+                          }
+                          // ----------------------------------------------------
+
                           // 5. 使用统一的 collectProgressBall 方法收集进度
                           String collectResultStr = AntMemberRpcCall.collectProgressBall(awardIdList);
                           JSONObject collectResultJo = new JSONObject(collectResultStr);
                           if(collectResultJo.optBoolean("success")) {
-                              Log.other("芝麻信用攒进度-成功收集答题进度: " + collectResultJo.optString("collectedProgress") + "%");
+                              // --- 修改：计算并记录加速后的正确进度 ---
+                              double baseCollectedProgress = collectResultJo.optDouble("collectedProgress", 0.0);
+                              double actualCollectedProgress = baseCollectedProgress * accelerateValue;
+                              Log.other("芝麻信用攒进度-成功收集答题进度: " + String.format("%.1f", actualCollectedProgress) + "% (基础" + baseCollectedProgress + "%)");
+                              // -------------------------------------------
                           } else {
                               Log.record(TAG, "芝麻信用攒进度-收集进度失败: " + collectResultJo.optString("resultView"));
                           }
@@ -1094,106 +1127,114 @@ public class AntMember extends ModelTask {
    * 修正：执行芝麻树任务以获取净化值（包含完成和领取两个步骤）
    */
   private void doSesameTreeTasks() {
-    try {
-      Log.record(TAG, "芝麻树-开始攒净化值任务");
-      String taskListStr = AntMemberRpcCall.getSesameTreeTaskList();
-      JSONObject taskListJo = new JSONObject(taskListStr);
-      if (!taskListJo.optBoolean("success") || !taskListJo.has("extInfo")) {
-        Log.record(TAG, "获取芝麻树任务列表失败或结构不符: " + taskListJo.toString());
-        return;
-      }
-
-      JSONArray tasks = taskListJo.getJSONObject("extInfo").getJSONObject("taskDetailList").getJSONArray("taskDetailList");
-      Log.record(TAG, "获取到 " + tasks.length() + " 个芝麻树任务");
-      int unfinishedCount = 0;
-
-      // 第一遍：完成所有可做的浏览任务
-      for (int i = 0; i < tasks.length(); i++) {
-        JSONObject task = tasks.getJSONObject(i);
-        String taskProcessStatus = task.getString("taskProcessStatus");
-        if (!"NOT_DONE".equals(taskProcessStatus)) {
-          continue;
-        }
-
-        JSONObject taskMaterial = task.getJSONObject("taskMaterial");
-        String title = taskMaterial.getString("title");
-        String innerTaskType = task.getJSONObject("taskExtProps").getString("TASK_TYPE");
-
-        if ("COMMON_COUNT_DOWN_VIEW".equals(innerTaskType)) {
-          unfinishedCount++;
-          Log.record("芝麻树🌳[发现可做任务: " + title + "]");
-          String taskId = task.getString("taskId");
-
-          String browseTimeStr = taskMaterial.optString("browseTime", "0");
-          int browseTime = 0;
-          if (!browseTimeStr.isEmpty()) {
-            try {
-              browseTime = Integer.parseInt(browseTimeStr);
-            } catch (NumberFormatException e) { /* ignore */ }
+      try {
+          Log.record(TAG, "芝麻树-开始攒净化值任务");
+          String taskListStr = AntMemberRpcCall.getSesameTreeTaskList();
+          JSONObject taskListJo = new JSONObject(taskListStr);
+          if (!taskListJo.optBoolean("success") || !taskListJo.has("extInfo")) {
+              Log.record(TAG, "获取芝麻树任务列表失败或结构不符: " + taskListJo.toString());
+              return;
           }
 
-          if (browseTime > 0) {
-            Log.record("芝麻树🌳#模拟浏览 " + browseTime + " 秒...");
-            GlobalThreadPools.sleep(browseTime * 1000L);
-          } else {
-            Log.record("芝麻树🌳#模拟点击...");
-            GlobalThreadPools.sleep(2000);
+          JSONArray tasks = taskListJo.getJSONObject("extInfo").getJSONObject("taskDetailList").getJSONArray("taskDetailList");
+          Log.record(TAG, "获取到 " + tasks.length() + " 个芝麻树任务");
+          int unfinishedCount = 0;
+
+          // 第一遍：完成所有可做的浏览任务
+          for (int i = 0; i < tasks.length(); i++) {
+              JSONObject task = tasks.getJSONObject(i);
+              String taskProcessStatus = task.getString("taskProcessStatus");
+              if (!"NOT_DONE".equals(taskProcessStatus)) {
+                  continue;
+              }
+
+              JSONObject taskMaterial = task.getJSONObject("taskMaterial");
+              String title = taskMaterial.getString("title");
+
+              // ############### 已修复的区域 ###############
+              String innerTaskType = ""; // 提供一个安全的默认值
+              JSONObject taskExtProps = task.optJSONObject("taskExtProps"); // 使用 optJSONObject 安全地获取对象
+              if (taskExtProps != null) {
+                  // 如果对象存在，再从中安全地获取 TASK_TYPE 字符串
+                  innerTaskType = taskExtProps.optString("TASK_TYPE", ""); // 如果找不到，返回空字符串
+              }
+              // ############### 修复结束 ###############
+
+              if ("COMMON_COUNT_DOWN_VIEW".equals(innerTaskType)) {
+                  unfinishedCount++;
+                  Log.record("芝麻树🌳[发现可做任务: " + title + "]");
+                  String taskId = task.getString("taskId");
+
+                  String browseTimeStr = taskMaterial.optString("browseTime", "0");
+                  int browseTime = 0;
+                  if (!browseTimeStr.isEmpty()) {
+                      try {
+                          browseTime = Integer.parseInt(browseTimeStr);
+                      } catch (NumberFormatException e) { /* ignore */ }
+                  }
+
+                  if (browseTime > 0) {
+                      Log.record("芝麻树🌳#模拟浏览 " + browseTime + " 秒...");
+                      GlobalThreadPools.sleep(browseTime * 1000L);
+                  } else {
+                      Log.record("芝麻树🌳#模拟点击...");
+                      GlobalThreadPools.sleep(2000);
+                  }
+
+                  // 发送任务完成信号
+                  String finishResultStr = AntMemberRpcCall.finishSesameTreeTask(taskId);
+                  JSONObject finishResultJo = new JSONObject(finishResultStr);
+                  if (finishResultJo.optBoolean("success")) {
+                      Log.record(TAG, "任务'" + title + "'已完成, 准备领取奖励");
+                  } else {
+                      Log.record(TAG, "完成芝麻树任务'" + title + "'失败: " + finishResultJo.toString());
+                  }
+                  GlobalThreadPools.sleep(3000); // 任务间稍作等待
+              }
           }
 
-          // 发送任务完成信号
-          String finishResultStr = AntMemberRpcCall.finishSesameTreeTask(taskId);
-          JSONObject finishResultJo = new JSONObject(finishResultStr);
-          if (finishResultJo.optBoolean("success")) {
-            Log.record(TAG, "任务'" + title + "'已完成, 准备领取奖励");
-          } else {
-            Log.record(TAG, "完成芝麻树任务'" + title + "'失败: " + finishResultJo.toString());
+          // 如果没有可做的任务，则检查是否有可领取的
+          if (unfinishedCount == 0) {
+              Log.record(TAG, "芝麻树🌳[没有需要完成的任务，检查是否有待领取奖励...]");
           }
-          GlobalThreadPools.sleep(3000); // 任务间稍作等待
-        }
-      }
 
-      // 如果没有可做的任务，则检查是否有可领取的
-      if (unfinishedCount == 0) {
-        Log.record(TAG, "芝麻树🌳[没有需要完成的任务，检查是否有待领取奖励...]");
-      }
+          // 第二遍：刷新列表，领取所有已完成的奖励
+          GlobalThreadPools.sleep(3000); // 等待后台状态更新
+          taskListStr = AntMemberRpcCall.getSesameTreeTaskList();
+          taskListJo = new JSONObject(taskListStr);
+          if (!taskListJo.optBoolean("success") || !taskListJo.has("extInfo")) return;
 
-      // 第二遍：刷新列表，领取所有已完成的奖励
-      GlobalThreadPools.sleep(3000); // 等待后台状态更新
-      taskListStr = AntMemberRpcCall.getSesameTreeTaskList();
-      taskListJo = new JSONObject(taskListStr);
-      if (!taskListJo.optBoolean("success") || !taskListJo.has("extInfo")) return;
-      
-      tasks = taskListJo.getJSONObject("extInfo").getJSONObject("taskDetailList").getJSONArray("taskDetailList");
-      boolean hasUnclaimed = false;
-      for (int i = 0; i < tasks.length(); i++) {
-        JSONObject task = tasks.getJSONObject(i);
-        String taskProcessStatus = task.getString("taskProcessStatus");
-        if ("TO_RECEIVE".equals(taskProcessStatus)) {
-          hasUnclaimed = true;
-          String taskId = task.getString("taskId");
-          String title = task.getJSONObject("taskMaterial").getString("title");
-          String reward = task.getJSONObject("taskMaterial").optString("finishOneTaskGetPurificationValue", "未知");
+          tasks = taskListJo.getJSONObject("extInfo").getJSONObject("taskDetailList").getJSONArray("taskDetailList");
+          boolean hasUnclaimed = false;
+          for (int i = 0; i < tasks.length(); i++) {
+              JSONObject task = tasks.getJSONObject(i);
+              String taskProcessStatus = task.getString("taskProcessStatus");
+              if ("TO_RECEIVE".equals(taskProcessStatus)) {
+                  hasUnclaimed = true;
+                  String taskId = task.getString("taskId");
+                  String title = task.getJSONObject("taskMaterial").getString("title");
+                  String reward = task.getJSONObject("taskMaterial").optString("finishOneTaskGetPurificationValue", "未知");
 
-          Log.record("芝麻树🌳[发现可领取奖励的任务: " + title + "]");
-          String receiveResultStr = AntMemberRpcCall.receiveSesameTreeTaskReward(taskId);
-          JSONObject receiveResultJo = new JSONObject(receiveResultStr);
-          if (receiveResultJo.optBoolean("success")) {
-            Log.other("芝麻树🌳[领取奖励: " + title + "]#获得净化值+" + reward);
-          } else {
-            Log.record(TAG, "领取芝麻树奖励'" + title + "'失败: " + receiveResultJo.toString());
+                  Log.record("芝麻树🌳[发现可领取奖励的任务: " + title + "]");
+                  String receiveResultStr = AntMemberRpcCall.receiveSesameTreeTaskReward(taskId);
+                  JSONObject receiveResultJo = new JSONObject(receiveResultStr);
+                  if (receiveResultJo.optBoolean("success")) {
+                      Log.other("芝麻树🌳[领取奖励: " + title + "]#获得净化值+" + reward);
+                  } else {
+                      Log.record(TAG, "领取芝麻树奖励'" + title + "'失败: " + receiveResultJo.toString());
+                  }
+                  GlobalThreadPools.sleep(2000); // 领取之间稍作等待
+              }
           }
-          GlobalThreadPools.sleep(2000); // 领取之间稍作等待
-        }
-      }
-      
-      if (unfinishedCount == 0 && !hasUnclaimed) {
-        sesameTreeTask.setValue(false);
-        Log.record(TAG, "芝麻树🌳[已全部完成且无待领取奖励，临时关闭]");
-      }
 
-    } catch (Throwable t) {
-      Log.printStackTrace(TAG, t);
-    }
+          if (unfinishedCount == 0 && !hasUnclaimed) {
+              sesameTreeTask.setValue(false);
+              Log.record(TAG, "芝麻树🌳[已全部完成且无待领取奖励，临时关闭]");
+          }
+
+      } catch (Throwable t) {
+          Log.printStackTrace(TAG, t);
+      }
   }
 
   /**
