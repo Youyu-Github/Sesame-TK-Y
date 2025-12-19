@@ -771,9 +771,9 @@ public class AntMember extends ModelTask {
         } else {
           Log.record(TAG, "芝麻信用💳[加入任务 '" + title + "' 失败]#" + joinResult);
           // 自动添加到黑名单
-          String errorCode = responseObj.optString("errorCode", "");
+          String errorCode = joinResponse.optString("errorCode", "");
           if (!errorCode.isEmpty()) {
-            TaskBlacklist.INSTANCE.autoAddToBlacklist(taskTitle, taskTitle, errorCode);
+            TaskBlacklist.INSTANCE.autoAddToBlacklist(title, title, errorCode);
           }
           skippedCount++;
           continue;
@@ -803,9 +803,9 @@ public class AntMember extends ModelTask {
       } else {
         Log.record(TAG, "芝麻信用💳[完成任务 '" + title + "' 失败]#" + finishResult);
         // 自动添加到黑名单
-        String errorCode = responseObj.optString("errorCode", "");
+        String errorCode = finishResponse.optString("errorCode", "");
         if (!errorCode.isEmpty()) {
-          TaskBlacklist.INSTANCE.autoAddToBlacklist(taskTitle, taskTitle, errorCode);
+          TaskBlacklist.INSTANCE.autoAddToBlacklist(title, title, errorCode);
         }
         skippedCount++;
       }
