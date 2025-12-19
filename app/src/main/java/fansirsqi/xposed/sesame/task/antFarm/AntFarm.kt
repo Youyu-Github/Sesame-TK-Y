@@ -21,6 +21,7 @@ import fansirsqi.xposed.sesame.model.modelFieldExt.StringModelField
 import fansirsqi.xposed.sesame.newutil.DataStore
 import fansirsqi.xposed.sesame.newutil.DataStore.getOrCreate
 import fansirsqi.xposed.sesame.newutil.DataStore.put
+import fansirsqi.xposed.sesame.newutil.TaskBlacklist
 import fansirsqi.xposed.sesame.task.AnswerAI.AnswerAI
 import fansirsqi.xposed.sesame.task.ModelTask
 import fansirsqi.xposed.sesame.task.TaskCommon
@@ -1442,20 +1443,9 @@ class AntFarm : ModelTask() {
      */
     private fun doFarmTasks() {
         try {
-            //手动屏蔽以下任务，防止死循环
-            val presetBad: Set<String> = setOf( // 优化: 使用 setOf 创建不可变集合
-                "HEART_DONATION_ADVANCED_FOOD_V2",  //香草芒果冰糕任务
-                "HEART_DONATE",  //爱心捐赠
-                "SHANGOU_xiadan",  //去买秋天第一杯奶茶
-                "HUABEI_MAP_180", //用花呗完成一笔支付
-                "OFFLINE_PAY",  //到店付款,线下支付
-                "ONLINE_PAY",  //在线支付
-                "xincun2023"
-            )
+            // 使用统一的任务黑名单管理器
+            val badTaskSet: Set<String> = TaskBlacklist.getBlacklist()
 
-            val badTaskSet = DataStore.getOrCreate<MutableSet<String>>("badFarmTaskSet")
-            badTaskSet.addAll(presetBad)
-            put("badFarmTaskSet", badTaskSet)
             val jo = JSONObject(AntFarmRpcCall.listFarmTask())
             if (ResChecker.checkRes(TAG + "查询庄园任务失败:", jo)) {
                 val farmTaskList = jo.getJSONArray("farmTaskList")
@@ -1487,7 +1477,7 @@ class AntFarm : ModelTask() {
                                     GlobalThreadPools.sleep(15 * 1000L)
                                     val resultVideojo = JSONObject(AntFarmRpcCall.videoTrigger(contentId))
                                     if (ResChecker.checkRes(TAG + "视频触发失败:", resultVideojo)) {
-                                        Log.farm("庄园任务🧾[$title]")
+                                        Log.farm("庄园任务🧾[$resultVideojo]")
                                     }
                                 }
                                 GlobalThreadPools.sleep(1000)
@@ -1507,8 +1497,10 @@ class AntFarm : ModelTask() {
                             if (count > 2) {
                                 // 超过 2 次视为失败任务
                                 Log.error("庄园任务(超过2次)标记失败：$title\n$taskDetailjo")
-                                badTaskSet.add(bizKey)
-                                put("badFarmTaskSet", badTaskSet)
+                                // badTaskSet.add(bizKey)
+                                // ("badFarmTaskSet", badTaskSet)
+                                // 使用统一黑名单管理器自动处理
+                                TaskBlacklist.autoAddToBlacklist(bizKey, title, resultCode)
                             } else {
                                 Log.farm("庄园任务🧾[$title]")
                             }
