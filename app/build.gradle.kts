@@ -70,7 +70,7 @@ android {
 
         versionCode = gitCommitCount
         val buildTag = "beta"
-        versionName = "v0.3.0.rc$gitCommitCount"
+        versionName = "v0.4.4.rc$gitCommitCount"
         // versionName = "v0.2.9.rc$gitCommitCount-$buildTag"
 
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
