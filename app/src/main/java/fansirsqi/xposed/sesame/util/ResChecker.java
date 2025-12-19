@@ -37,9 +37,14 @@ public class ResChecker {
             // 特殊情况：如果是"人数过多"或"小鸡睡觉"等系统状态，我们认为这不是一个需要记录的"失败"
             String resultDesc = jo.optString("resultDesc", "");
             String memo = jo.optString("memo", "");
-            if (resultDesc.contains("当前参与人数过多") || resultDesc.contains("请稍后再试") ||
-                    resultDesc.contains("手速太快") || resultDesc.contains("频繁") ||
+            String desc = jo.optString("desc", "");
+            if (resultDesc.contains("当前参与人数过多") ||
+                    resultDesc.contains("请稍后再试") ||
+                    resultDesc.contains("手速太快") ||
+                    resultDesc.contains("频繁") ||
                     resultDesc.contains("操作过于频繁") ||
+                    desc.contains("任务全局配置不存在") ||
+                    desc.contains("不支持rpc完成的任务") ||
                     memo.contains("我的小鸡在睡觉中") ||
                     memo.contains("小鸡在睡觉") ||
                     memo.contains("无法操作") ||
@@ -56,8 +61,8 @@ public class ResChecker {
                     memo.contains("收摊成功，快回我的新村看看吧") ||
                     memo.contains("快回我的新村看看吧") ||
                     memo.contains("蚂蚁新村收摊失败") ||
-                    memo.contains("不支持rpc完成的任务") ||
                     memo.contains("饲料槽已满") ||
+                    memo.contains("不支持rpc调用") ||
                     memo.contains("已经在限时挑战玩法里啦") ||
                     memo.contains("二级能量类目未生效") ||
                     memo.contains("手速太快")) {

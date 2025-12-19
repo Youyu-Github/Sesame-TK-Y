@@ -26,6 +26,7 @@ import fansirsqi.xposed.sesame.data.Status;
 import fansirsqi.xposed.sesame.data.StatusFlags;
 import fansirsqi.xposed.sesame.util.TimeUtil;
 import fansirsqi.xposed.sesame.util.TimeCounter;
+import fansirsqi.xposed.sesame.newutil.TaskBlacklist;
 
 public class AntMember extends ModelTask {
   private static final String TAG = AntMember.class.getSimpleName();
@@ -663,39 +664,6 @@ public class AntMember extends ModelTask {
       Log.printStackTrace(TAG + ".doAllAvailableSesameTask", t);
     }
   }
-    
-  /**
-   * 不能完成的任务黑名单（根据title关键词匹配）
-   */
-  private static final String[] TASK_BLACKLIST = {
-    "每日施肥领水果",           // 需要淘宝操作
-    "坚持种水果",               // 需要淘宝操作  
-    "坚持去玩休闲小游戏",        // 需要游戏操作
-    "去AQapp提问",              // 需要下载APP
-    "去AQ提问",                 // 需要下载APP
-    "去AQApp对话一次",          // 需要下载APP
-    "坚持看直播领福利",          // 需要淘宝直播
-    "去淘金币逛一逛",            // 需要淘宝操作
-    "浏览租赁商家小程序",        // 需要小程序操作
-    "坚持攒保障金",
-    "坚持攒保障",
-    "芝麻租赁下单得芝麻粒",
-    "订阅小组件",
-    "邀请好友助力",
-    "去玩小游戏",
-    "雇佣芝麻大表鸽",
-    "订阅炼金签到提醒",
-    "订阅芝麻粒签到提醒",
-    "开通淘宝先用后付",
-    "坚持逛裹酱领福利",
-    "芝麻租赁下单得芝麻粒",
-    "去订阅芝麻小组件",
-    "租游戏账号得芝麻粒",
-    "完成旧衣回收得现金",
-    "租会员下单得芝麻粒",
-    "逛淘宝签到",              // 需要淘宝操作
-    "坚持签到领奖励"            // 需要淘宝操作
-  };
 
   /**
    * 检查任务是否在黑名单中
@@ -703,13 +671,7 @@ public class AntMember extends ModelTask {
    * @return true表示在黑名单中，应该跳过
    */
   private static boolean isTaskInBlacklist(String taskTitle) {
-    if (taskTitle == null) return false;
-    for (String blacklistItem : TASK_BLACKLIST) {
-        if (taskTitle.contains(blacklistItem)) {
-            return true;
-        }
-    }
-    return false;
+    return TaskBlacklist.INSTANCE.isTaskInBlacklistFuzzy(taskTitle);
   }
 
   /**
@@ -782,6 +744,7 @@ public class AntMember extends ModelTask {
         skippedCount++;
         continue;
       }
+
       if (isTaskInBlacklist(title)) {
         Log.record(TAG, "芝麻信用💳[跳过黑名单任务]#" + title);
         skippedCount++;
@@ -807,6 +770,11 @@ public class AntMember extends ModelTask {
           Log.record(TAG, "芝麻信用💳[加入成功，获得recordId]");
         } else {
           Log.record(TAG, "芝麻信用💳[加入任务 '" + title + "' 失败]#" + joinResult);
+          // 自动添加到黑名单
+          String errorCode = responseObj.optString("errorCode", "");
+          if (!errorCode.isEmpty()) {
+            TaskBlacklist.INSTANCE.autoAddToBlacklist(taskTitle, taskTitle, errorCode);
+          }
           skippedCount++;
           continue;
         }
@@ -834,6 +802,11 @@ public class AntMember extends ModelTask {
         completedCount++;
       } else {
         Log.record(TAG, "芝麻信用💳[完成任务 '" + title + "' 失败]#" + finishResult);
+        // 自动添加到黑名单
+        String errorCode = responseObj.optString("errorCode", "");
+        if (!errorCode.isEmpty()) {
+          TaskBlacklist.INSTANCE.autoAddToBlacklist(taskTitle, taskTitle, errorCode);
+        }
         skippedCount++;
       }
       GlobalThreadPools.sleep(3000); // 任务间等待
