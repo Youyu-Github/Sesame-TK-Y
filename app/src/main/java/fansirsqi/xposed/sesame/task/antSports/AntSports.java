@@ -394,7 +394,7 @@ public class AntSports extends ModelTask {
 
             if (ResChecker.checkRes(TAG, jo)) {
                 JSONObject data = jo.getJSONObject("data");
-                JSONArray taskList = data.getJSONArray("taskList");
+                JSONArray taskList = data.optJSONArray("taskList");
 
                 int totalTasks = 0;
                 int completedTasks = 0;

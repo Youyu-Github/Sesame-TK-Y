@@ -187,9 +187,9 @@ public class WhackMole {
             }
             
             // 打印该局能量信息到森林日志
-            Log.forest("森林能量⚡️[6秒拼手速第" + round + "局 打地鼠能量+" + totalEnergy + "g]");
+            Log.record("森林能量⚡️[6秒拼手速第" + round + "局 打地鼠能量+" + totalEnergy + "g]");
             
-            Log.forest(TAG, "第" + round + "局完成，总耗时" + (System.currentTimeMillis() - startTime) + "ms");
+            Log.record(TAG, "第" + round + "局完成，总耗时" + (System.currentTimeMillis() - startTime) + "ms");
             
             // 返回会话信息
             return new GameSession(token, remainingMoleIds, totalEnergy, round);
