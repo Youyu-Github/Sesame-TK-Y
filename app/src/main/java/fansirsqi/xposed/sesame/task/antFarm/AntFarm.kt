@@ -1498,10 +1498,15 @@ class AntFarm : ModelTask() {
                         } else {
                             // 安全计数，避免 NPE 警告
                             val count = farmTaskTryCount.computeIfAbsent(bizKey) { AtomicInteger(0) }!!.incrementAndGet()
-                            val taskDetailjo = JSONObject(AntFarmRpcCall.doFarmTask(bizKey))
-                            if (count > 1) {
-                                // 超过 1 次视为失败任务
-                                Log.error("庄园任务(超过1次)标记失败：$title\n$taskDetailjo")
+                            val taskDetailResult = AntFarmRpcCall.doFarmTask(bizKey)
+                            if (taskDetailResult.isNullOrEmpty()) {
+                                Log.error(TAG, "庄园任务[$title]执行失败：API返回空结果")
+                                return
+                            }
+                            val taskDetailjo = JSONObject(taskDetailResult)
+                            if (count > 2) {
+                                // 超过 2 次视为失败任务
+                                Log.error("庄园任务(超过2次)标记失败：$title\n$taskDetailjo")
                                 badTaskSet.add(bizKey)
                                 put("badFarmTaskSet", badTaskSet)
                             } else {
