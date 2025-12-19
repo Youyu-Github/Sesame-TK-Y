@@ -15,11 +15,31 @@ object TaskBlacklist {
      * 获取黑名单列表
      * @return 黑名单任务集合
      */
-    fun getBlacklist(): Set<String> {
+    /*fun getBlacklist(): Set<String> {
         return try {
             DataStore.getOrCreate(BLACKLIST_KEY, object : TypeReference<Set<String>>() {})
         } catch (e: Exception) {
             Log.printStackTrace(TAG, "获取黑名单失败，使用默认黑名单", e)
+            defaultBlacklist
+        }
+    }*/
+    /**
+    * 获取黑名单列表
+    * @return 黑名单任务集合（合并了默认黑名单和用户动态添加的黑名单）
+    */
+    fun getBlacklist(): Set<String> {
+        return try {
+            // 1. 使用您原来正确的 getOrCreate 方法获取用户动态添加的黑名单
+            // 如果存储中没有，它会返回一个空的 Set，而不是 null。
+            val userAddedBlacklist = DataStore.getOrCreate(BLACKLIST_KEY, object : TypeReference<Set<String>>() {})
+
+            // 2. 将 'defaultBlacklist' 和用户动态添加的黑名单合并后返回
+            // Kotlin 中 Set 的 '+' 操作符会返回两个集合的并集
+            defaultBlacklist + userAddedBlacklist
+            
+        } catch (e: Exception) {
+            Log.printStackTrace(TAG, "获取自定义黑名单失败，仅使用默认黑名单", e)
+            // 3. 如果读取 DataStore 出现异常，保证默认黑名单依然生效
             defaultBlacklist
         }
     }

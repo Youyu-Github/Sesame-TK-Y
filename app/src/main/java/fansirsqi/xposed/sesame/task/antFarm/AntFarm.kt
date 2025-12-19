@@ -1504,9 +1504,11 @@ class AntFarm : ModelTask() {
                                     // 任务达到当日上限，标记今日不再执行
                                     Status.setFlagToday("farm::task::limit::$bizKey")
                                     Log.record(TAG, "庄园任务[$title]今日已达上限，跳过后续执行")
+                                } else {
+                                // 对于其他所有失败情况，强制将其加入黑名单
+                                Log.record(TAG, "任务[$title]重试超限，强制加入黑名单")
+                                TaskBlacklist.addToBlacklist(bizKey) // <--- 使用 addToBlacklist
                                 }
-                                // 使用统一黑名单管理器自动处理
-                                TaskBlacklist.autoAddToBlacklist(bizKey, title, resultCode)
                             } else {
                                 Log.farm("庄园任务🧾[$title]")
                             }

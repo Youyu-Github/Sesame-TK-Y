@@ -24,6 +24,7 @@ import fansirsqi.xposed.sesame.entity.AlipayUser;
 import fansirsqi.xposed.sesame.hook.ApplicationHook;
 import fansirsqi.xposed.sesame.model.BaseModel;
 import fansirsqi.xposed.sesame.newutil.DataStore;
+import fansirsqi.xposed.sesame.newutil.TaskBlacklist;
 import fansirsqi.xposed.sesame.model.ModelFields;
 import fansirsqi.xposed.sesame.model.ModelGroup;
 import fansirsqi.xposed.sesame.model.modelFieldExt.BooleanModelField;
@@ -40,6 +41,7 @@ import fansirsqi.xposed.sesame.util.ResChecker;
 import fansirsqi.xposed.sesame.util.TimeUtil;
 import fansirsqi.xposed.sesame.util.maps.UserMap;
 import fansirsqi.xposed.sesame.util.TimeCounter;
+
 
 
 public class AntSports extends ModelTask {
@@ -72,9 +74,6 @@ public class AntSports extends ModelTask {
 
     // 记录训练好友获得0金币的次数
     private int zeroTrainCoinCount = 0;
-
-    // 运动任务黑名单
-    private StringModelField sportsTaskBlacklist;
 
     //健康岛任务
     private BooleanModelField neverlandTask;  //健康岛任务
@@ -129,7 +128,6 @@ public class AntSports extends ModelTask {
         modelFields.addField(walkCustomPathId = new StringModelField("walkCustomPathId", "行走路线 | 自定义路线代码(debug)", "p0002023122214520001"));
         modelFields.addField(openTreasureBox = new BooleanModelField("openTreasureBox", "开启宝箱", false));
         modelFields.addField(sportsTasks = new BooleanModelField("sportsTasks", "开启运动任务", false));
-        // modelFields.addField(sportsTaskBlacklist = new StringModelField("sportsTaskBlacklist", "运动任务黑名单 | 任务名称(用,分隔)", "开通包裹查询服务,添加支付宝小组件,领取价值1.7万元配置,支付宝积分可兑券"));
         modelFields.addField(receiveCoinAsset = new BooleanModelField("receiveCoinAsset", "收能量🎈", false));
         modelFields.addField(donateCharityCoin = new BooleanModelField("donateCharityCoin", "捐能量🎈 | 开启", false));
         modelFields.addField(donateCharityCoinType = new ChoiceModelField("donateCharityCoinType", "捐能量🎈 | 方式", DonateCharityCoinType.ONE, DonateCharityCoinType.nickNames));
@@ -396,59 +394,66 @@ public class AntSports extends ModelTask {
                 JSONObject data = jo.getJSONObject("data");
                 JSONArray taskList = data.optJSONArray("taskList");
 
-                int totalTasks = 0;
-                int completedTasks = 0;
-                int availableTasks = 0;
+                // ############### 关键修复点 ###############
+                // 在使用 taskList 之前，必须检查它是否为 null
+                if (taskList != null) {
+                    int totalTasks = 0;
+                    int completedTasks = 0;
+                    int availableTasks = 0;
 
-                for (int i = 0; i < taskList.length(); i++) {
-                    JSONObject taskDetail = taskList.getJSONObject(i);
-                    String taskId = taskDetail.getString("taskId");
-                    String taskName = taskDetail.getString("taskName");
-                    String taskStatus = taskDetail.getString("taskStatus");
-                    String taskType = taskDetail.optString("taskType", "");
+                    for (int i = 0; i < taskList.length(); i++) {
+                        JSONObject taskDetail = taskList.getJSONObject(i);
+                        String taskId = taskDetail.getString("taskId");
+                        String taskName = taskDetail.getString("taskName");
+                        String taskStatus = taskDetail.getString("taskStatus");
+                        String taskType = taskDetail.optString("taskType", "");
 
-                    // 排除自动结算类型任务
-                    if (taskType.equals("SETTLEMENT")) {
-                        continue;
+                        // 排除自动结算类型任务
+                        if (taskType.equals("SETTLEMENT")) {
+                            continue;
+                        }
+
+                        totalTasks++;
+
+                        // 处理不同任务状态
+                        switch (taskStatus) {
+                            case "HAS_RECEIVED":
+                                completedTasks++;
+                                break;
+
+                            case "WAIT_RECEIVE":
+                                if (receiveTaskReward(taskDetail, taskName)) {
+                                    completedTasks++;
+                                }
+                                break;
+
+                            case "WAIT_COMPLETE":
+                                availableTasks++;
+                                if (completeTask(taskDetail, taskName)) {
+                                    completedTasks++;
+                                }
+                                break;
+
+                            default:
+                                Log.record(TAG, "做任务得能量🎈[未知状态：" + taskName + "，状态：" + taskStatus + "]");
+                                break;
+                        }
                     }
 
-                    totalTasks++;
+                    Log.record(TAG, "运动任务完成情况：" + completedTasks + "/" + totalTasks + "，可执行任务：" + availableTasks);
 
-                    // 处理不同任务状态
-                    switch (taskStatus) {
-                        case "HAS_RECEIVED":
-                            // Log.record(TAG, "做任务得能量🎈[任务已完成：" + taskName + "]");
-                            completedTasks++;
-                            break;
-
-                        case "WAIT_RECEIVE":
-                            // 需要领取奖励
-                            if (receiveTaskReward(taskDetail, taskName)) {
-                                completedTasks++;
-                            }
-                            break;
-
-                        case "WAIT_COMPLETE":
-                            // 需要完成任务
-                            availableTasks++;
-                            if (completeTask(taskDetail, taskName)) {
-                                completedTasks++;
-                            }
-                            break;
-
-                        default:
-                            Log.record(TAG, "做任务得能量🎈[未知状态：" + taskName + "，状态：" + taskStatus + "]");
-                            break;
+                    // 所有任务完成后标记今日完成
+                    if (totalTasks > 0 && completedTasks >= totalTasks && availableTasks == 0) {
+                        String today = TimeUtil.getDateStr2();
+                        DataStore.INSTANCE.put(SPORTS_TASKS_COMPLETED_DATE, today);
+                        Log.record(TAG, "✅ 所有运动任务已完成，今日不再执行");
                     }
-                }
-
-                Log.record(TAG, "运动任务完成情况：" + completedTasks + "/" + totalTasks + "，可执行任务：" + availableTasks);
-
-                // 所有任务完成后标记今日完成
-                if (totalTasks > 0 && completedTasks >= totalTasks && availableTasks == 0) {
+                } else {
+                    Log.record(TAG, "运动任务列表(taskList)为空，无需处理。");
+                    // 如果任务列表不存在，也可以认为当天任务已完成
                     String today = TimeUtil.getDateStr2();
                     DataStore.INSTANCE.put(SPORTS_TASKS_COMPLETED_DATE, today);
-                    Log.record(TAG, "✅ 所有运动任务已完成，今日不再执行");
+                    Log.record(TAG, "✅ 运动任务列表为空，标记为今日已完成");
                 }
             }
         } catch (Exception e) {
@@ -1921,8 +1926,8 @@ public class AntSports extends ModelTask {
          * 只处理 PROMOKERNEL_TASK 和 LIGHT_TASK
          */
         private void loopHandleTaskCenter() {
-            int errorCount = 0; // 累计失败次数
-            int emptyTaskCount = 0; // 连续获取到空待完成任务的次数（连续2次则退出）
+            int errorCount = 3; // 累计失败次数
+            int emptyTaskCount = 2; // 连续获取到空待完成任务的次数（连续2次则退出）
 
             Log.record(TAG, "开始循环处理任务大厅（失败限制：" + MAX_ERROR_COUNT + "次）");
 
@@ -1930,7 +1935,7 @@ public class AntSports extends ModelTask {
                 try {
                     // 1. 检查失败次数是否超限
                     if (errorCount >= MAX_ERROR_COUNT) {
-                        Log.error(TAG, "任务处理失败次数达到上限（" + MAX_ERROR_COUNT + "次），停止循环并设置今日不再执行");
+                        Log.record(TAG, "任务处理失败次数达到上限（" + MAX_ERROR_COUNT + "次），停止循环并设置今日不再执行");
                         Status.setFlagToday(StatusFlags.FLAG_ANTSPORTS_TASKCENTER_DONE); // 标记今日不再执行
                         break;
                     }
@@ -1940,7 +1945,7 @@ public class AntSports extends ModelTask {
                     if (!ResChecker.checkRes(TAG + "获取任务列表失败:", taskCenterResp)
                             || !ResChecker.checkRes(TAG, taskCenterResp)
                             || taskCenterResp.optJSONObject("data") == null) {
-                        Log.error(TAG, "queryTaskCenter raw=" + taskCenterResp);
+                        Log.record(TAG, "queryTaskCenter raw=" + taskCenterResp);
                         errorCount++;
                         Log.record(TAG, "获取任务列表失败，累计失败次数：" + errorCount);
                         Thread.sleep(TASK_LOOP_DELAY); // 失败后延时重试
@@ -1959,6 +1964,17 @@ public class AntSports extends ModelTask {
                         JSONObject task = taskList.optJSONObject(i);
                         if (task == null) continue;
                         String type = task.optString("taskType", "");
+                        String title = task.optString("taskTitle", "未知任务"); // 获取任务标题用于黑名单判断
+                        String taskId = task.optString("taskId", ""); // 获取任务ID作为黑名单的唯一标识
+
+                        // ************* 黑名单逻辑开始 *************
+                        // 优先使用 taskId，如果为空则用 title 作为黑名单键
+                        String blacklistKey = !taskId.isEmpty() ? taskId : title;
+                        if (TaskBlacklist.INSTANCE.isTaskInBlacklistFuzzy(blacklistKey)) {
+                            Log.record(TAG, "跳过黑名单任务: " + title);
+                            continue; // 跳过当前任务
+                        }
+                        // ************* 黑名单逻辑结束 *************
                         if ("PROMOKERNEL_TASK".equals(type) || "LIGHT_TASK".equals(type)) {
                             pendingTasks.add(task);
                         }
@@ -1980,6 +1996,14 @@ public class AntSports extends ModelTask {
                         boolean handleSuccess = handleSingleTask(task);
                         if (!handleSuccess) {
                             currentBatchError++;
+                            // ************* 强制加入黑名单逻辑开始 *************
+                            String title = task.optString("taskTitle", "未知任务");
+                            String taskId = task.optString("taskId", "");
+                            String blacklistKey = !taskId.isEmpty() ? taskId : title;
+                            
+                            Log.record(TAG, "任务处理失败，强制将其加入黑名单: " + title);
+                            TaskBlacklist.INSTANCE.addToBlacklist(blacklistKey); // 直接调用 addToBlacklist
+                            // ************* 强制加入黑名单逻辑结束 *************
                         }
                         GlobalThreadPools.sleep(3000); // 任务间隔
                     }
@@ -1989,7 +2013,7 @@ public class AntSports extends ModelTask {
                         errorCount += currentBatchError;
                         // 如果失败次数达到上限，也设置今日不再执行
                         if (errorCount >= MAX_ERROR_COUNT) {
-                            Log.error(TAG, "任务处理失败次数达到上限，设置今日不再执行");
+                            Log.record(TAG, "任务处理失败次数达到上限，设置今日不再执行");
                             Status.setFlagToday(StatusFlags.FLAG_ANTSPORTS_TASKCENTER_DONE);
                             break;
                         }
@@ -2009,7 +2033,7 @@ public class AntSports extends ModelTask {
                     errorCount++;
                     // 如果异常导致累计失败次数达到上限，也设置今日不再执行
                     if (errorCount >= MAX_ERROR_COUNT) {
-                        Log.error(TAG, "任务循环异常累计失败次数达到上限，设置今日不再执行");
+                        Log.record(TAG, "任务循环异常累计失败次数达到上限，设置今日不再执行");
                         Status.setFlagToday(StatusFlags.FLAG_ANTSPORTS_TASKCENTER_DONE);
                         break;
                     }
@@ -2160,7 +2184,7 @@ public class AntSports extends ModelTask {
                     Log.other(TAG, "✔ 活动任务完成：" + title);
                     return true;
                 } else {
-                    Log.error(TAG, "taskSend 失败: " + title + res);
+                    Log.record(TAG, "taskSend 失败: " + title + res);
                     return false;
                 }
             } catch (Exception e) {
@@ -2176,7 +2200,7 @@ public class AntSports extends ModelTask {
             try {
                 String bizId = extractBizIdFromJumpLink(jumpLink);
                 if (bizId == null || bizId.isEmpty()) {
-                    Log.error(TAG, "LIGHT_TASK 未找到 bizId：" + title + " jumpLink=" + jumpLink);
+                    Log.record(TAG, "LIGHT_TASK 未找到 bizId：" + title + " jumpLink=" + jumpLink);
                     return false;
                 }
 

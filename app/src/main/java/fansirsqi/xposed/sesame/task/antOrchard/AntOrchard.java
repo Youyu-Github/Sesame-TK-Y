@@ -707,7 +707,7 @@ public class AntOrchard extends ModelTask {
                             Log.record(TAG, "施肥任务需补充 " + need + " 次");
                             for (int j = 0; j < need; j++) {
                                 String spreadResultStr = AntOrchardRpcCall.orchardSpreadManure("", "ch_appcenter__chsub_9patch");
-                                Log.record(TAG, "施肥第 " + (j + 1) + " 次结果：" + spreadResultStr);
+                                // Log.record(TAG, "施肥第 " + (j + 1) + " 次结果：" + spreadResultStr);
                                 JSONObject resultJson = new JSONObject(spreadResultStr);
                                 if (!"100".equals(resultJson.optString("resultCode"))) {
                                     Log.record(TAG, "芭芭农场 orchardSpreadManure 错误：" + resultJson.optString("resultDesc"));
