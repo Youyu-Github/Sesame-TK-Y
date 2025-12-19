@@ -1,10 +1,10 @@
-package fansirsqi.xposed.sesame.task.adexchange
+package fansirsqi.xposed.sesame.task.antOrchard
 
 import fansirsqi.xposed.sesame.hook.RequestManager
-import fansirsqi.xposed.sesame.util.RandomUtil
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLDecoder
+
 object XLightRpcCall {
 
     // 固定 SDK 信息
@@ -77,8 +77,6 @@ object XLightRpcCall {
         }
     }
 
-
-
     /**
      * 完成广告任务（新版，支持 extendInfo）
      * @param playBizId 广告任务业务 ID
@@ -125,10 +123,6 @@ object XLightRpcCall {
     }
 
 }
-
-
-
-
 
 object UrlUtil {
     /**

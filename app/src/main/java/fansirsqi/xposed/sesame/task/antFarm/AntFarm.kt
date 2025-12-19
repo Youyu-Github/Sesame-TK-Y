@@ -1444,7 +1444,7 @@ class AntFarm : ModelTask() {
     private fun doFarmTasks() {
         try {
             // 使用统一的任务黑名单管理器
-            val badTaskSet: Set<String> = TaskBlacklist.getBlacklist()
+            // val badTaskSet: Set<String> = TaskBlacklist.getBlacklist()
 
             val jo = JSONObject(AntFarmRpcCall.listFarmTask())
             if (ResChecker.checkRes(TAG + "查询庄园任务失败:", jo)) {
@@ -1456,7 +1456,7 @@ class AntFarm : ModelTask() {
                     val bizKey = task.getString("bizKey")
                     
                     // 优化: 逻辑合并和卫语句
-                    if (badTaskSet.contains(bizKey)) {
+                    if (TaskBlacklist.isTaskInBlacklist(bizKey)) {
                         Log.runtime(TAG, "跳过屏蔽的任务：$title")
                         continue
                     }
@@ -1499,6 +1499,12 @@ class AntFarm : ModelTask() {
                                 Log.error("庄园任务(超过2次)标记失败：$title\n$taskDetailjo")
                                 // badTaskSet.add(bizKey)
                                 // ("badFarmTaskSet", badTaskSet)
+                                val resultCode = taskDetailjo.optString("resultCode", "")
+                                if (resultCode == "309") {
+                                    // 任务达到当日上限，标记今日不再执行
+                                    Status.setFlagToday("farm::task::limit::$bizKey")
+                                    Log.record(TAG, "庄园任务[$title]今日已达上限，跳过后续执行")
+                                }
                                 // 使用统一黑名单管理器自动处理
                                 TaskBlacklist.autoAddToBlacklist(bizKey, title, resultCode)
                             } else {

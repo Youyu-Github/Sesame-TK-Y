@@ -211,25 +211,6 @@ public class AntOrchard extends ModelTask {
         }
     }
 
-    /**
-     * 获取 Wua，同步Kotlin逻辑：文件 -> null (Detector已移除)
-     */
-    private String getWua() {
-        if (wuaList == null) {
-            try {
-                String content = Files.readFromFile(Files.getWuaFile());
-                wuaList = content.split("\n");
-            } catch (Throwable ignored) {
-                wuaList = new String[0];
-            }
-        }
-        if (wuaList.length > 0) {
-            return wuaList[RandomUtil.nextInt(0, wuaList.length - 1)];
-        }
-        // Detector.genWua() 已移除，返回 null
-        return null;
-    }
-
     private boolean canSpreadManureContinue(int stageBefore, int stageAfter) {
         if (stageAfter - stageBefore > 1) {
             return true;
@@ -312,14 +293,10 @@ public class AntOrchard extends ModelTask {
                     }
 
                     if ((200 - wateringLeftTimes) < orchardSpreadManureCount.getValue()) {
-                        String wua = getWua();
-                        if (wua != null) {
-                            Log.runtime(TAG, "set Wua " + wua);
-                        }
 
                         String randomSource = sourceList.get(new Random().nextInt(sourceList.size()));
 
-                        JSONObject spreadManureData = new JSONObject(AntOrchardRpcCall.orchardSpreadManure(wua, randomSource));
+                        JSONObject spreadManureData = new JSONObject(AntOrchardRpcCall.orchardSpreadManure(null, randomSource));
 
                         if (!"100".equals(spreadManureData.getString("resultCode"))) {
                             Log.record(TAG, "芭芭农场 orchardSpreadManure 错误：" + spreadManureData.getString("resultDesc"));
@@ -440,7 +417,7 @@ public class AntOrchard extends ModelTask {
                 JSONObject displayConfig = task.optJSONObject("taskDisplayConfig");
                 String title = (displayConfig != null) ? displayConfig.optString("title", "未知任务") : "未知任务";
 
-                if (TaskBlacklist.isTaskInBlacklist(groupId)) {
+                if (TaskBlacklist.INSTANCE.isTaskInBlacklist(groupId)) {
                     Log.record(TAG, "跳过黑名单任务[" + title + "] groupId=" + groupId);
                     continue;
                 }
@@ -472,7 +449,7 @@ public class AntOrchard extends ModelTask {
                             // 自动添加到黑名单
                             String errorCode = finishResponse.optString("code", "");
                             if (!errorCode.isEmpty()) {
-                                TaskBlacklist.autoAddToBlacklist(groupId, title, errorCode);
+                                TaskBlacklist.INSTANCE.autoAddToBlacklist(groupId, title, errorCode);
                             }
                             break;
                         }

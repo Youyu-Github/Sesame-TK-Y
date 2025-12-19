@@ -63,7 +63,7 @@ val defaultBlacklist = setOf(
     "租游戏账号得芝麻粒",
     "租会员下单得芝麻粒",
     "逛淘宝签到",              // 需要淘宝操作
-    "坚持签到领奖励"            // 需要淘宝操作
+    "坚持签到领奖励",            // 需要淘宝操作
 
     // 农场任务
     "ORCHARD_NORMAL_KUAISHOU_MAX",  // 逛一逛快手
@@ -79,7 +79,7 @@ val defaultBlacklist = setOf(
     "ORCHARD_NORMAL_JIUYIHUISHOU_VISIT", // 旧衣服回收
     "ORCHARD_NORMAL_SHOUJISHUMAHUISHOU", // 数码回收
     "ORCHARD_NORMAL_TAB3_ZHIFA",    // 看视频领肥料
-    "ORCHARD_NORMAL_AQ_XIAZAI"      // 下载AQApp
+    "ORCHARD_NORMAL_AQ_XIAZAI",     // 下载AQApp
 
     // 庄园任务
     "HEART_DONATION_ADVANCED_FOOD_V2",  //香草芒果冰糕任务

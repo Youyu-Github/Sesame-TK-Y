@@ -164,16 +164,15 @@ class MainActivity : BaseActivity() {
                     userNameList.add(userName)
                     userEntityList.add(userEntity)
                 }
+                userNameList.add(0, "默认")
+                userEntityList.add(0, null)
+                userNameArray = userNameList.toTypedArray<String>()
+                userEntityArray = userEntityList.toTypedArray<UserEntity?>()
+            } catch (e: Exception) {
+                userNameArray = arrayOf("默认")
+                userEntityArray = arrayOf(null)
+                Log.printStackTrace(e)
             }
-            userNameList.add(0, "默认")
-            userEntityList.add(0, null)
-            userNameArray = userNameList.toTypedArray<String>()
-            userEntityArray = userEntityList.toTypedArray<UserEntity?>()
-        } catch (e: Exception) {
-            userNameArray = arrayOf("默认")
-            userEntityArray = arrayOf(null)
-            Log.printStackTrace(e)
-        }
         // updateSubTitle(RunType.LOADED.nickName)
         Log.runtime(TAG, "isModuleActivated: ${ServiceManager.isModuleActivated}")
         val activedUser = DataStore.get("activedUser", UserEntity::class.java)
