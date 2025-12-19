@@ -156,8 +156,7 @@ object EcoLife {
             val typeRef: TypeReference<MutableList<MutableMap<String?, String?>>> =
                 object : TypeReference<MutableList<MutableMap<String?, String?>>>() {
                 }
-            val allPhotos: MutableList<MutableMap<String?, String?>> =
-                DataStore.getOrCreate("plate", typeRef)
+            val allPhotos: MutableList<MutableMap<String?, String?>> = DataStore.getOrCreate("plate", typeRef)
             Log.runtime("$TAG [DEBUG] guangPanPhoto 数据内容: $allPhotos")
             // 查询今日任务状态
             var str = AntForestRpcCall.ecolifeQueryDish(source, dayPoint)
@@ -181,11 +180,11 @@ object EcoLife {
                     val pattern = Pattern.compile("img/(.*)/original")
                     val beforeMatcher = pattern.matcher(beforeMealsImageUrl)
                     if (beforeMatcher.find()) {
-                        photo!!.put("before", beforeMatcher.group(1))
+                        photo!!["before"] = beforeMatcher.group(1)
                     }
                     val afterMatcher = pattern.matcher(afterMealsImageUrl)
                     if (afterMatcher.find()) {
-                        photo!!.put("after", afterMatcher.group(1))
+                        photo!!["after"] = afterMatcher.group(1)
                     }
                     // 避免重复添加相同的照片信息
                     var exists = false

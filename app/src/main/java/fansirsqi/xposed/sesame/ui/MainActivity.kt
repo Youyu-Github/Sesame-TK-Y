@@ -35,6 +35,7 @@ import fansirsqi.xposed.sesame.net.SecureApiClient
 import fansirsqi.xposed.sesame.newui.DeviceInfoCard
 import fansirsqi.xposed.sesame.newui.DeviceInfoUtil
 import fansirsqi.xposed.sesame.newui.WatermarkView
+import fansirsqi.xposed.sesame.newutil.DataStore
 import fansirsqi.xposed.sesame.util.AssetUtil
 import fansirsqi.xposed.sesame.util.Detector
 import fansirsqi.xposed.sesame.util.Detector.getRandomApi
@@ -150,21 +151,18 @@ class MainActivity : BaseActivity() {
         try {
             val userNameList: MutableList<String> = ArrayList()
             val userEntityList: MutableList<UserEntity?> = ArrayList()
-            val configFiles = Files.CONFIG_DIR.listFiles()
-            if (configFiles != null) {
-                for (configDir in configFiles) {
-                    if (configDir.isDirectory) {
-                        val userId = configDir.name
-                        UserMap.loadSelf(userId)
-                        val userEntity = UserMap.get(userId)
-                        val userName = if (userEntity == null) {
-                            userId
-                        } else {
-                            userEntity.showName + ": " + userEntity.account
-                        }
-                        userNameList.add(userName)
-                        userEntityList.add(userEntity)
+            val configFiles = FansirsqiUtil.getFolderList(Files.CONFIG_DIR.absolutePath)
+                for (userId in configFiles) {
+                    UserMap.loadSelf(userId)
+                    Log.runtime(TAG, "userId: $userId")
+                    val userEntity = UserMap.get(userId)
+                    val userName = if (userEntity == null) {
+                        userId
+                    } else {
+                        userEntity.showName + ": " + userEntity.account
                     }
+                    userNameList.add(userName)
+                    userEntityList.add(userEntity)
                 }
             }
             userNameList.add(0, "默认")
@@ -178,10 +176,11 @@ class MainActivity : BaseActivity() {
         }
         // updateSubTitle(RunType.LOADED.nickName)
         Log.runtime(TAG, "isModuleActivated: ${ServiceManager.isModuleActivated}")
+        val activedUser = DataStore.get("activedUser", UserEntity::class.java)
         if (ServiceManager.isModuleActivated) {
-            updateSubTitle(RunType.ACTIVE.nickName)
+            updateSubTitle(RunType.ACTIVE.nickName, activedUser)
         } else {
-            updateSubTitle(RunType.LOADED.nickName)
+            updateSubTitle(RunType.LOADED.nickName, activedUser)
         }
     }
 
@@ -534,9 +533,10 @@ class MainActivity : BaseActivity() {
     }
     */
 
-    fun updateSubTitle(runType: String) {
+    fun updateSubTitle(runType: String = RunType.LOADED.nickName, currentUserEntity: UserEntity?) {
         baseTitle = ViewAppInfo.appTitle + "[" + runType + "]"
 //        baseTitle = ViewAppInfo.appTitle + "[" + runType + "]" + userNickName
+        baseSubtitle = "当前载入: ${currentUserEntity?.showName ?: "未载入^o^ 重启支付宝看看👀"}"
         Log.runtime("updateSubTitle: $baseTitle")
         when (runType) {
             RunType.DISABLE.nickName -> setBaseTitleTextColor(
