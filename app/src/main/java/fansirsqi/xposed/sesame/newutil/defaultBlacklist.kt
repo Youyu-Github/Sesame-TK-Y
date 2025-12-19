@@ -80,4 +80,13 @@ val defaultBlacklist = setOf(
     "ORCHARD_NORMAL_SHOUJISHUMAHUISHOU", // 数码回收
     "ORCHARD_NORMAL_TAB3_ZHIFA",    // 看视频领肥料
     "ORCHARD_NORMAL_AQ_XIAZAI"      // 下载AQApp
+
+    // 庄园任务
+    "HEART_DONATION_ADVANCED_FOOD_V2",  //香草芒果冰糕任务
+    "HEART_DONATE",  //爱心捐赠
+    "SHANGOU_xiadan",  //去买秋天第一杯奶茶
+    "HUABEI_MAP_180", //用花呗完成一笔支付
+    "OFFLINE_PAY",  //到店付款,线下支付
+    "ONLINE_PAY",  //在线支付
+    "xincun2023"
 )
