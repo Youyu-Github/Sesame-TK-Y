@@ -190,7 +190,7 @@ object HookUtil {
 
     /**
      * 突破支付宝最大可登录账号数量限制
-     * @param lpparam 加载包参数
+     * @param classLoader 加载包参数
      */
     fun fuckAccounLimit(classLoader: ClassLoader) {
         Log.runtime(TAG, "Hook AccountManagerListAdapter#getCount")

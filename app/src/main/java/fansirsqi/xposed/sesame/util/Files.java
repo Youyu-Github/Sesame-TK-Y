@@ -294,8 +294,8 @@ public class Files {
         return getTargetFileofUser(userId, "friendWatch.json");
     }
 
-    public static File getWuaFile() {
-        return getTargetFileofDir(MAIN_DIR, "wua.list");
+    public static File getappConfigFile() {
+        return getTargetFileofDir(CONFIG_DIR, "appConfig.json");
     }
 
     /**

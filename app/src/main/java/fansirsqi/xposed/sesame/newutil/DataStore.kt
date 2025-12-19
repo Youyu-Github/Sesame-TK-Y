@@ -30,6 +30,12 @@ object DataStore {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startWatcherNio() else startWatcher()
     }
 
+    private var onChangeListener: (() -> Unit)? = null
+
+    fun setOnChangeListener(listener: () -> Unit) {
+        onChangeListener = listener
+    }
+
     inline fun <reified T : Any> DataStore.getOrCreate(key: String) = getOrCreate(key, object : TypeReference<T>() {})
 
     private fun checkInit() {
@@ -86,8 +92,7 @@ object DataStore {
     @Suppress("UNCHECKED_CAST")
     private fun <T> createDefault(typeRef: TypeReference<T>): T {
         mapper.typeFactory.constructType(typeRef)
-        val raw = mapper.typeFactory.constructType(typeRef).rawClass
-        return when (raw) {
+        return when (val raw = mapper.typeFactory.constructType(typeRef).rawClass) {
             java.util.List::class.java -> mutableListOf<Any>() as T
             java.util.Set::class.java -> mutableSetOf<Any>() as T
             java.util.Map::class.java -> mutableMapOf<String, Any>() as T
