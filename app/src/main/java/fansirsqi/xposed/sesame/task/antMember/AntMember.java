@@ -447,28 +447,38 @@ public class AntMember extends ModelTask {
                   if (ballIdList != null && ballIdList.length() > 0) {
                       Log.record(TAG, "芝麻信用攒进度-发现 " + ballIdList.length() + " 个可一键领取的进度球");
 
-                      // --- 问题修复关键点 1: 在领取前，获取当前的加速倍率和基础进度 ---
+                      // --- 问题修复关键点 1: 在领取前，获取当前的加速总进度 ---
+                      double acceleratedProgressBefore = 0.0;
                       JSONObject weekProgressVO = progressJo.optJSONObject("weekProgressVO");
-                      double accelerateValue = 1.0; // 默认加速倍率为1
-                      double baseProgressBefore = 0.0;
                       if (weekProgressVO != null) {
-                          accelerateValue = weekProgressVO.optDouble("currentAccelerateValue", 1.0);
-                          baseProgressBefore = weekProgressVO.optDouble("progress", 0.0);
-                          Log.record(TAG, "芝麻信用攒进度-当前加速倍率: " + accelerateValue + ", 领取前基础进度: " + baseProgressBefore + "%");
+                          acceleratedProgressBefore = weekProgressVO.optDouble("progressAccelerateValue", 0.0);
+                          Log.record(TAG, "芝麻信用攒进度-领取前总进度: " + String.format("%.1f", acceleratedProgressBefore) + "%");
                       }
                       // -----------------------------------------------------------------
 
                       String collectResultStr = AntMemberRpcCall.collectProgressBall(ballIdList);
                       JSONObject collectResultJo = new JSONObject(collectResultStr);
                       if (collectResultJo.optBoolean("success")) {
-                          // --- 问题修复关键点 2: 使用获取到的倍率手动计算最终进度 ---
-                          double baseCollectedProgress = collectResultJo.optDouble("collectedProgress", 0.0);
-                          double actualCollectedProgress = baseCollectedProgress * accelerateValue;
-                          double newTotalBaseProgress = baseProgressBefore + baseCollectedProgress;
-                          double newTotalAcceleratedProgress = newTotalBaseProgress * accelerateValue;
+                          // --- 问题修复关键点 2: 领取后，再次查询服务器以获取最准确的进度 ---
+                          GlobalThreadPools.sleep(1500); // 短暂等待，确保服务器状态已更新
+                          String progressStrAfter = AntMemberRpcCall.queryScoreProgress();
+                          JSONObject progressJoAfter = new JSONObject(progressStrAfter);
+                          
+                          if (progressJoAfter.optBoolean("success")) {
+                              JSONObject weekProgressVOAfter = progressJoAfter.optJSONObject("weekProgressVO");
+                              if (weekProgressVOAfter != null) {
+                                  double acceleratedProgressAfter = weekProgressVOAfter.optDouble("progressAccelerateValue", 0.0);
+                                  double actualCollectedProgress = acceleratedProgressAfter - acceleratedProgressBefore;
+                                  double baseCollectedProgress = collectResultJo.optDouble("collectedProgress", 0.0); // 基础进度仍从领取结果获取
 
-                          Log.other("芝麻信用攒进度-一键领取成功! 本次领取 " + String.format("%.1f", actualCollectedProgress) + "% (基础" + baseCollectedProgress + "%)，当前总进度 " + String.format("%.1f", newTotalAcceleratedProgress) + "%");
-                          // -------------------------------------------------------------
+                                  Log.other("芝麻信用攒进度-一键领取成功! 本次领取 " + String.format("%.1f", actualCollectedProgress) + "% (基础" + baseCollectedProgress + "%)，当前总进度 " + String.format("%.1f", acceleratedProgressAfter) + "%");
+                              } else {
+                                  Log.other("芝麻信用攒进度-一键领取成功! 但无法获取最新的总进度。");
+                              }
+                          } else {
+                              Log.other("芝麻信用攒进度-一键领取成功! 但查询最新进度失败: " + progressJoAfter.optString("resultView"));
+                          }
+                          // -----------------------------------------------------------------
                       } else {
                           Log.record(TAG, "芝麻信用攒进度-一键领取失败: " + collectResultJo.optString("resultView"));
                       }
@@ -558,17 +568,15 @@ public class AntMember extends ModelTask {
                       JSONArray awardIdList = scoreAwardVO.optJSONArray("awardIdList");
                       if (awardIdList != null && awardIdList.length() > 0) {
                           
-                          // --- 新增：在收集前，先查询当前的进度和加速倍率 ---
+                          // --- 新增：在收集前，先查询当前的加速总进度 ---
                           String progressStr = AntMemberRpcCall.queryScoreProgress();
                           JSONObject progressJo = new JSONObject(progressStr);
-                          double accelerateValue = 1.0;
-                          double baseProgressBefore = 0.0;
+                          double acceleratedProgressBefore = 0.0;
                           if(progressJo.optBoolean("success")) {
                               JSONObject weekProgressVO = progressJo.optJSONObject("weekProgressVO");
                               if (weekProgressVO != null) {
-                                  accelerateValue = weekProgressVO.optDouble("currentAccelerateValue", 1.0);
-                                  baseProgressBefore = weekProgressVO.optDouble("progress", 0.0);
-                                  Log.record(TAG, "芝麻信用攒进度-答题前加速倍率: " + accelerateValue + ", 基础进度: " + baseProgressBefore + "%");
+                                  acceleratedProgressBefore = weekProgressVO.optDouble("progressAccelerateValue", 0.0);
+                                  Log.record(TAG, "芝麻信用攒进度-答题领取前总进度: " + String.format("%.1f", acceleratedProgressBefore) + "%");
                               }
                           }
                           // ----------------------------------------------------
@@ -577,10 +585,24 @@ public class AntMember extends ModelTask {
                           String collectResultStr = AntMemberRpcCall.collectProgressBall(awardIdList);
                           JSONObject collectResultJo = new JSONObject(collectResultStr);
                           if(collectResultJo.optBoolean("success")) {
-                              // --- 修改：计算并记录加速后的正确进度 ---
-                              double baseCollectedProgress = collectResultJo.optDouble("collectedProgress", 0.0);
-                              double actualCollectedProgress = baseCollectedProgress * accelerateValue;
-                              Log.other("芝麻信用攒进度-成功收集答题进度: " + String.format("%.1f", actualCollectedProgress) + "% (基础" + baseCollectedProgress + "%)");
+                              // --- 修改：领取后再次查询服务器，计算并记录准确的进度 ---
+                              GlobalThreadPools.sleep(1500); // 短暂等待
+                              String progressStrAfter = AntMemberRpcCall.queryScoreProgress();
+                              JSONObject progressJoAfter = new JSONObject(progressStrAfter);
+                              
+                              if (progressJoAfter.optBoolean("success")) {
+                                  JSONObject weekProgressVOAfter = progressJoAfter.optJSONObject("weekProgressVO");
+                                  if (weekProgressVOAfter != null) {
+                                      double acceleratedProgressAfter = weekProgressVOAfter.optDouble("progressAccelerateValue", 0.0);
+                                      double actualCollectedProgress = acceleratedProgressAfter - acceleratedProgressBefore;
+                                      double baseCollectedProgress = collectResultJo.optDouble("collectedProgress", 0.0);
+                                      Log.other("芝麻信用攒进度-成功收集答题进度: " + String.format("%.1f", actualCollectedProgress) + "% (基础" + baseCollectedProgress + "%)");
+                                  } else {
+                                      Log.other("芝麻信用攒进度-成功收集答题进度! 但无法获取最新的总进度。");
+                                  }
+                              } else {
+                                    Log.other("芝麻信用攒进度-成功收集答题进度! 但查询最新进度失败: " + progressJoAfter.optString("resultView"));
+                              }
                               // -------------------------------------------
                           } else {
                               Log.record(TAG, "芝麻信用攒进度-收集进度失败: " + collectResultJo.optString("resultView"));
