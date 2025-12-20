@@ -216,12 +216,15 @@ public class AntSports extends ModelTask {
 
             sportSyncStepSchedule();
 
-            if (sportsTasks.getValue()) {
+            // 运动任务
+            if (!Status.hasFlagToday("sport::dailyTasks") && sportsTasks.getValue()) {
                 // 先执行原有运动任务面板逻辑
                 sportsTasks();
-                // 再处理首页推荐能量球对应的任务
-                sportsEnergyBubbleTask();
+                Status.setFlagToday("sport::dailyTasks");
             }
+
+            // 运动球任务
+            sportsEnergyBubbleTask();
 
             ClassLoader loader = ApplicationHook.getClassLoader();
 
@@ -269,7 +272,7 @@ public class AntSports extends ModelTask {
         }
     }
 
-    private void coinExchangeItem(String itemId) {
+    /*private void coinExchangeItem(String itemId) {
         try {
             JSONObject jo = new JSONObject(AntSportsRpcCall.queryItemDetail(itemId));
             if (!ResChecker.checkRes(TAG, jo)) {
@@ -294,7 +297,7 @@ public class AntSports extends ModelTask {
             Log.error(TAG, "trainMember err:");
             Log.printStackTrace(TAG, t);
         }
-    }
+    }*/
 
 
     /**
