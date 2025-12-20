@@ -35,14 +35,16 @@ public class AntOrchardRpcCall {
 
         /**
          * 批量雇佣小动物
-         * [OPTIMIZED] 修复了原先 String.join 导致的 JSON 数组格式错误 (e.g., [id1,id2])
+         * [FIXED] 修复了原先 String.join 导致的 JSON 数组格式错误 (e.g., [id1,id2])
          * 修正为生成标准的 JSON 字符串数组 (e.g., ["id1","id2"])
          */
         public static String batchHireAnimal(List<String> recommendGroupList) {
+                // [FIXED] 手动构建带引号的JSON字符串数组
                 StringBuilder quotedGroups = new StringBuilder();
                 if (recommendGroupList != null && !recommendGroupList.isEmpty()) {
                         for (int i = 0; i < recommendGroupList.size(); i++) {
-                                quotedGroups.append("\"").append(recommendGroupList.get(i)).append("\"");
+                                // 将每个JSON字符串用双引号包裹
+                                quotedGroups.append("\"").append(recommendGroupList.get(i).replace("\"", "\\\"")).append("\"");
                                 if (i < recommendGroupList.size() - 1) {
                                         quotedGroups.append(",");
                                 }
@@ -61,8 +63,9 @@ public class AntOrchardRpcCall {
         }
 
         public static String querySubplotsActivity(String treeLevel) {
+                // [FIXED] 根据抓包日志，增加了 LIMITED_TIME_CHALLENGE 和 LOTTERY_PLUS
                 return RequestManager.requestString("com.alipay.antorchard.querySubplotsActivity",
-                        "[{\"activityType\":[\"WISH\",\"BATTLE\",\"HELP_FARMER\",\"DEFOLIATION\",\"CAMP_TAKEOVER\"],\"inHomepage\":false,\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"treeLevel\":\""
+                        "[{\"activityType\":[\"WISH\",\"BATTLE\",\"HELP_FARMER\",\"DEFOLIATION\",\"CAMP_TAKEOVER\",\"LIMITED_TIME_CHALLENGE\",\"LOTTERY_PLUS\"],\"inHomepage\":false,\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"treeLevel\":\""
                                 + treeLevel + "\",\"version\":\"" + VERSION + "\"}]");
         }
 
@@ -87,12 +90,12 @@ public class AntOrchardRpcCall {
                                 + VERSION + "\"}]");
         }
 
-        public static String orchardSyncIndex() {
+        // [REVISED] 此方法不再使用，由 orchardSyncIndex(wua, syncIndexTypes) 替代
+        /*public static String orchardSyncIndex() {
                 return RequestManager.requestString("com.alipay.antorchard.orchardSyncIndex",
                         "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"syncIndexTypes\":\"QUERY_MAIN_ACCOUNT_INFO\",\"version\":\""
                                 + VERSION + "\"}]");
-        }
-
+        }*/
         /**
          * 施肥
          * 注意：Kotlin代码中 "version":$VERSION (无引号)，此处严格同步
@@ -101,24 +104,24 @@ public class AntOrchardRpcCall {
                 return RequestManager.requestString("com.alipay.antfarm.orchardSpreadManure",
                         "[{\"plantScene\":\"main\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"" + source + "\",\"useBatchSpread\":false,\"version\":"
                                 + VERSION + ",\"wua\":\"" + wua + "\"}]");
-        }*/
+
         /**
          * 施肥
          * @param wua 用户标识
          * @param source 来源标识，可自定义
          * @return 服务器返回的响应字符串
+         * [FIXED] 修复了version未加引号的问题，并与日志保持一致的参数结构
          */
         public static String orchardSpreadManure(String wua, String source) {
-                // 通过字符串拼接构建 JSON，以避免 String.format 的区域设置（Locale）问题
-                // 这种方式能确保浮点数的小数点始终是 '.'，符合 JSON 规范
-                String jsonPayload = "[{\"plantScene\":\"main\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\""
-                                + source + "\",\"useBatchSpread\":false,\"version\":"
-                                + VERSION + ",\"wua\":\""
-                                + wua + "\"}]";
+            String wuaValue = (wua == null) ? "" : wua;
+            String jsonPayload = "[{\"plantScene\":\"main\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\""
+                            + source + "\",\"useBatchSpread\":false,\"version\":\""
+                            + VERSION + "\",\"wua\":\""
+                            + wuaValue + "\"}]";
 
-                return RequestManager.requestString(
-                                "com.alipay.antfarm.orchardSpreadManure",
-                                jsonPayload);
+            return RequestManager.requestString(
+                            "com.alipay.antfarm.orchardSpreadManure",
+                            jsonPayload);
         }
 
         /**
@@ -127,7 +130,6 @@ public class AntOrchardRpcCall {
          * @return 服务器返回的响应字符串
          */
         public static String smashedGoldenEgg(int count) {
-                // [FIXED] 使用字符串拼接，避免 String.format 因区域设置问题导致 JSON 格式错误
                 String jsonArgs = "[{\"batchSmashCount\":" + count
                                 + ",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
                                 + VERSION + "\"}]";
@@ -142,7 +144,6 @@ public class AntOrchardRpcCall {
          * @return RPC 调用返回的字符串
          */
         public static String receiveOrchardVisitAward() {
-                // [FIXED] 使用字符串拼接，避免 String.format 因区域设置问题导致 JSON 格式错误
                 String args = "[{\"diversionSource\":\"widget\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"widget_shoufei\",\"version\":\""
                                 + VERSION + "\"}]";
 
@@ -152,12 +153,15 @@ public class AntOrchardRpcCall {
         /**
          * 同步农场索引数据，用于获取限时挑战等信息
          * @param wua 环境参数 Wua
+         * @param syncIndexTypes 需要同步的数据类型
          * @return RPC 调用返回的字符串
          */
-        public static String orchardSyncIndex(String wua) {
-                // [FIXED] 使用字符串拼接，避免 String.format 和 replace('\'', '\"') 带来的风险和性能开销
-                String args = "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"syncIndexTypes\":\"LIMITED_TIME_CHALLENGE\",\"useWua\":true,\"version\":\""
-                                + VERSION + "\",\"wua\":\"" + wua + "\"}]";
+        // [REVISED] 修改方法签名以支持不同的 syncIndexTypes
+        public static String orchardSyncIndex(String wua, String syncIndexTypes) {
+                String wuaValue = (wua == null) ? "" : wua;
+                String args = "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"syncIndexTypes\":\""
+                                + syncIndexTypes + "\",\"useWua\":true,\"version\":\""
+                                + VERSION + "\",\"wua\":\"" + wuaValue + "\"}]";
 
                 return RequestManager.requestString("com.alipay.antorchard.orchardSyncIndex", args);
         }
@@ -168,7 +172,6 @@ public class AntOrchardRpcCall {
          * @return RPC 调用返回的字符串
          */
         public static String noticeGame(String appId) {
-                // [FIXED] 使用字符串拼接，避免 String.format 和 replace('\'', '\"') 带来的风险
                 String args = "[{\"appId\":\"" + appId
                                 + "\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
                                 + VERSION + "\"}]";
@@ -235,12 +238,14 @@ public class AntOrchardRpcCall {
                                 + "\",\"statisticTag\":\"\"}]");
         }
 
+        /* [DEPRECATED] This method is not used and the new one with a parameter is preferred.
         public static String smashedGoldenEgg() {
                 return RequestManager.requestString("com.alipay.antorchard.smashedGoldenEgg",
                         "[{\"requestType\":\"NORMAL\",\"seneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
                                 + VERSION
                                 + "\"}]");
         }
+        */
 
         public static String achieveBeShareP2P(String shareId) {
                 return RequestManager.requestString("com.alipay.antiep.achieveBeShareP2P",
