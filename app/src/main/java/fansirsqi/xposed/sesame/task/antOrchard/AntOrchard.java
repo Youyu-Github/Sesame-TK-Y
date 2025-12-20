@@ -295,8 +295,9 @@ public class AntOrchard extends ModelTask {
                     if ((200 - wateringLeftTimes) < orchardSpreadManureCount.getValue()) {
 
                         String randomSource = sourceList.get(new Random().nextInt(sourceList.size()));
-
-                        JSONObject spreadManureData = new JSONObject(AntOrchardRpcCall.orchardSpreadManure(null, randomSource));
+                        
+                        // [FIXED] 传入空的wua字符串，而不是null
+                        JSONObject spreadManureData = new JSONObject(AntOrchardRpcCall.orchardSpreadManure("", randomSource));
 
                         if (!"100".equals(spreadManureData.getString("resultCode"))) {
                             Log.record(TAG, "芭芭农场 orchardSpreadManure 错误：" + spreadManureData.getString("resultDesc"));
@@ -510,8 +511,9 @@ public class AntOrchard extends ModelTask {
                     JSONObject smashedItem = batchSmashedList.getJSONObject(i);
                     int manureCount = smashedItem.optInt("manureCount", 0);
                     boolean jackpot = smashedItem.optBoolean("jackpot", false);
+                    // [FIXED] 修正日志输出变量名
                     String jackpotMessage = jackpot ? "（触发大奖）" : "";
-                    Log.forest(TAG, "砸出肥料 🎖️: " + manureCount + " g" + jackpotMessage);
+                    Log.farm("砸金蛋🥚[" + manureCount + "g肥料]" + jackpotMessage);
                 }
                 /*
                  // 可选：输出 goldenEggInfoVO 状态
@@ -519,7 +521,7 @@ public class AntOrchard extends ModelTask {
                  if (goldenEggInfo != null) {
                      int smashedGoldenEggs = goldenEggInfo.optInt("smashedGoldenEggs", 0);
                      int unsmashedGoldenEggs = goldenEggInfo.optInt("unsmashedGoldenEggs", 0);
-                     Log.forest(TAG, "已砸蛋: " + smashedGoldenEggs + ", 剩余可砸蛋: " + unsmashedGoldenEggs);
+                     Log.farm(TAG, "已砸蛋: " + smashedGoldenEggs + ", 剩余可砸蛋: " + unsmashedGoldenEggs);
                  }
                  */
             } else {
@@ -557,7 +559,7 @@ public class AntOrchard extends ModelTask {
                     JSONObject jo3 = new JSONObject(triggerResponse);
 
                     if ("100".equals(jo3.getString("resultCode"))) {
-                        Log.forest(TAG, "领取奖励🎖️[" + title + "]#" + awardCount + "g肥料");
+                        Log.farm(TAG, "领取奖励🎖️[" + title + "]#" + awardCount + "g肥料");
                     } else {
                         Log.record(TAG, jo3.toString());
                         Log.runtime(TAG, jo3.toString());
@@ -583,27 +585,26 @@ public class AntOrchard extends ModelTask {
 
             if (!jo.optBoolean("success", false)) {
                 Log.error(TAG, "领取回访奖励失败: " + response);
+                // [FIXED] 即使失败（比如已经领取），也标记为当天完成，避免重复调用
+                Status.setFlagToday(StatusFlags.FLAG_ANTORCHARD_WIDGET_DAILY_AWARD);
                 return;
             }
 
             JSONArray awardList = jo.optJSONArray("orchardVisitAwardList");
             if (awardList == null || awardList.length() == 0) {
                 Log.record(TAG, "领取回访奖励失败: 无奖励，可能已领取过");
-                // 修复点 2：使用正确的 Status 调用
-                Status.setFlagToday(StatusFlags.FLAG_ANTORCHARD_WIDGET_DAILY_AWARD);
-                return;
+            } else {
+                for (int i = 0; i < awardList.length(); i++) {
+                    JSONObject awardObj = awardList.optJSONObject(i);
+                    if (awardObj == null) continue;
+    
+                    int awardCount = awardObj.optInt("awardCount", 0);
+                    String awardDesc = awardObj.optString("awardDesc", "");
+    
+                    Log.farm(TAG, "回访奖励[" + awardDesc + "] " + awardCount + " g肥料");
+                }
             }
-
-            for (int i = 0; i < awardList.length(); i++) {
-                JSONObject awardObj = awardList.optJSONObject(i);
-                if (awardObj == null) continue;
-
-                int awardCount = awardObj.optInt("awardCount", 0);
-                String awardDesc = awardObj.optString("awardDesc", "");
-
-                Log.forest(TAG, "回访奖励[" + awardDesc + "] " + awardCount + " g肥料");
-            }
-            // 修复点 2：使用正确的 Status 调用
+            // [FIXED] 无论成功与否，都标记为已执行
             Status.setFlagToday(StatusFlags.FLAG_ANTORCHARD_WIDGET_DAILY_AWARD);
         } catch (Throwable t) {
             Log.runtime(TAG, "receiveOrchardVisitAward err:");
@@ -613,7 +614,8 @@ public class AntOrchard extends ModelTask {
 
     private void limitedTimeChallenge() {
         try {
-            String response = AntOrchardRpcCall.orchardSyncIndex("");
+            // [FIXED] 使用新的RPC方法签名，传入正确的syncIndexTypes
+            String response = AntOrchardRpcCall.orchardSyncIndex("", "LIMITED_TIME_CHALLENGE");
             JSONObject root = new JSONObject(response);
 
             if (!ResChecker.checkRes(TAG, root)) {
@@ -661,7 +663,7 @@ public class AntOrchard extends ModelTask {
                 String awardResp = AntOrchardRpcCall.receiveTaskAward("ORCHARD_LIMITED_TIME_CHALLENGE", MtaskId);
                 JSONObject joo = new JSONObject(awardResp);
                 if (joo.optBoolean("success")) {
-                    Log.forest(TAG, "第 " + currentRound + " 轮 限时任务🎁[肥料 * " + MawardCount + "]");
+                    Log.farm(TAG, "第 " + currentRound + " 轮 限时任务🎁[肥料 * " + MawardCount + "]");
                 } else {
                     String desc = joo.optString("desc", "未知错误");
                     Log.record(TAG, "芭芭农场 限时任务 错误：" + desc);
@@ -706,13 +708,14 @@ public class AntOrchard extends ModelTask {
                         if (need > 0) {
                             Log.record(TAG, "施肥任务需补充 " + need + " 次");
                             for (int j = 0; j < need; j++) {
+                                // [FIXED] 传入空的wua字符串
                                 String spreadResultStr = AntOrchardRpcCall.orchardSpreadManure("", "ch_appcenter__chsub_9patch");
-                                // Log.record(TAG, "施肥第 " + (j + 1) + " 次结果：" + spreadResultStr);
                                 JSONObject resultJson = new JSONObject(spreadResultStr);
                                 if (!"100".equals(resultJson.optString("resultCode"))) {
                                     Log.record(TAG, "芭芭农场 orchardSpreadManure 错误：" + resultJson.optString("resultDesc"));
                                     return;
                                 }
+                                GlobalThreadPools.sleep(executeIntervalInt); // 每次施肥后等待一下
                             }
                             Log.record(TAG, "施肥任务成功完成 " + need + " 次");
                         }
@@ -735,19 +738,16 @@ public class AntOrchard extends ModelTask {
                             continue;
                         }
                         String targetUrl = displayCfg.optString("targetUrl");
-                        
-                        // 修复点 3：使用 getParamValue
+
                         String finalUrl = UrlUtil.INSTANCE.getParamValue(targetUrl, "url");
                         if (finalUrl == null) finalUrl = "";
                         Log.record(TAG, "解析到完整落地页 url = " + finalUrl);
-                        
-                        // 修复点 3：使用 getParamValue
+
                         String spaceCodeFeeds = (!finalUrl.isEmpty()) ? UrlUtil.INSTANCE.getParamValue(finalUrl, "spaceCodeFeeds") : null;
                         Log.record(TAG, "解析到 spaceCodeFeeds = " + (spaceCodeFeeds != null ? spaceCodeFeeds : "null"));
                         
                         String finalSpaceCode = spaceCodeFeeds;
                         if (finalSpaceCode == null) {
-                             // 修复点 3：使用 getParamValue
                              finalSpaceCode = UrlUtil.INSTANCE.getParamValue(targetUrl, "spaceCodeFeeds");
                         }
                         if (finalSpaceCode == null || finalSpaceCode.isEmpty()) {
@@ -795,6 +795,7 @@ public class AntOrchard extends ModelTask {
                         Log.record(TAG, "无法处理的任务类型：" + childTaskId + " | actionType=" + actionType);
                         break;
                 }
+                GlobalThreadPools.sleep(executeIntervalInt); // 每个子任务后等待
             }
         } catch (Throwable t) {
             Log.runtime(TAG, "limitedTimeChallenge err:");
