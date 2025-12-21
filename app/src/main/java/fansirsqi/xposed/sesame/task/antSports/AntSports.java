@@ -597,8 +597,14 @@ public class AntSports extends ModelTask {
                 }
 
                 // 只处理有 channel 字段的记录（广告任务），引导/订阅等不处理
+                String id=bubble.optString("id");
                 String taskId = bubble.optString("channel", "");
                 if (taskId.isEmpty()) {
+                    continue;
+                }
+
+                // 黑名单过滤
+                if(TaskBlacklist.INSTANCE.isTaskInBlacklist(id)) {
                     continue;
                 }
 
@@ -621,11 +627,15 @@ public class AntSports extends ModelTask {
                 } else {
                     String errorCode = completeRes.optString("errorCode", "");
                     String errorMsg = completeRes.optString("errorMsg", "");
-                    Log.record(TAG, "运动球任务❌[" + sourceName + "]#" + errorCode + " - " + errorMsg);
+                    Log.error(TAG, "运动球任务❌[" + sourceName + "]#" + completeRes+" 任务："+ bubble);
+
+                    if(!id.isEmpty()) {
+                        TaskBlacklist.INSTANCE.addToBlacklist(id, sourceName);
+                    }
                 }
 
-                // 每处理一个任务随机休息 1-3 秒
-                int sleepMs = RandomUtil.nextInt(1000, 3000);
+                // 每处理一个任务随机休息 1-5 秒
+                int sleepMs = RandomUtil.nextInt(1000, 5000);
                 GlobalThreadPools.sleep(sleepMs);
             }
 

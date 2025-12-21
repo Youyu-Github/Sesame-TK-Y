@@ -125,9 +125,12 @@ object TaskBlacklist {
     
     /**
      * 根据错误码自动添加任务到黑名单
-     * @param taskId 任务ID
-     * @param taskTitle 任务标题（可选，用于日志）
-     * @param errorCode 错误码
+     * 当任务执行失败时，如果错误码属于预定义的无法恢复的错误类型，
+     * 系统会自动将该任务加入黑名单，避免重复执行失败的任务
+     * 
+     * @param taskId 任务ID，用于标识具体任务
+     * @param taskTitle 任务标题（可选），用于显示和模糊匹配
+     * @param errorCode 错误码，用于判断是否需要自动加入黑名单
      */
     fun autoAddToBlacklist(taskId: String, taskTitle: String = "", errorCode: String) {
         if (taskId.isBlank()) return
@@ -135,18 +138,24 @@ object TaskBlacklist {
         // 检查是否是应该自动加入黑名单的错误码
         val shouldAutoAdd = when (errorCode) {
             "400000040" -> true // "不支持rpc调用" - 仅农场任务
-            "OP_REPEAT_CHECK", "ILLEGAL_ARGUMENT", "PROMISE_HAS_PROCESSING_TEMPLATE" -> true
-            else -> false
+            "CAMP_TRIGGER_ERROR", // 以下错误码都会导致任务自动加入黑名单：
+            "104",
+            "OP_REPEAT_CHECK",               // 操作频率过高，被系统限制
+            "ILLEGAL_ARGUMENT",              // 参数不合法或格式错误
+            "PROMISE_HAS_PROCESSING_TEMPLATE" -> true // 存在进行中的生活记录
+            else -> false                    // 其他错误码不自动加入黑名单
         }
         
         if (shouldAutoAdd) {
             addToBlacklist(taskId)
             val reason = when (errorCode) {
                 "400000040" -> "不支持rpc调用"
+                "CAMP_TRIGGER_ERROR" -> "海豚活动触发错误"
                 "OP_REPEAT_CHECK" -> "操作太频繁"
                 "ILLEGAL_ARGUMENT" -> "参数错误"
+                "104",
                 "PROMISE_HAS_PROCESSING_TEMPLATE" -> "存在进行中的生活记录"
-                else -> "未知错误"
+                else -> "未知错误"  // 理论上不会执行到此处
             }
             val taskInfo = if (taskTitle.isNotBlank()) "$taskId - $taskTitle" else taskId
             Log.record(TAG, "任务[$taskInfo]因$reason 自动加入黑名单")

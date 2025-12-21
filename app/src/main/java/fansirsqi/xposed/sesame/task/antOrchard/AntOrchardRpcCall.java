@@ -90,21 +90,6 @@ public class AntOrchardRpcCall {
                                 + VERSION + "\"}]");
         }
 
-        // [REVISED] 此方法不再使用，由 orchardSyncIndex(wua, syncIndexTypes) 替代
-        /*public static String orchardSyncIndex() {
-                return RequestManager.requestString("com.alipay.antorchard.orchardSyncIndex",
-                        "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"syncIndexTypes\":\"QUERY_MAIN_ACCOUNT_INFO\",\"version\":\""
-                                + VERSION + "\"}]");
-        }*/
-        /**
-         * 施肥
-         * 注意：Kotlin代码中 "version":$VERSION (无引号)，此处严格同步
-         */
-        /*public static String orchardSpreadManure(String wua, String source) {
-                return RequestManager.requestString("com.alipay.antfarm.orchardSpreadManure",
-                        "[{\"plantScene\":\"main\",\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"" + source + "\",\"useBatchSpread\":false,\"version\":"
-                                + VERSION + ",\"wua\":\"" + wua + "\"}]");
-
         /**
          * 施肥
          * @param wua 用户标识
@@ -213,39 +198,6 @@ public class AntOrchardRpcCall {
                                 + taskId + "\",\"taskPlantType\":\"" + taskPlantType
                                 + "\",\"version\":\"" + VERSION + "\"}]");
         }
-
-        public static String orchardSelectSeed() {
-                return RequestManager.requestString("com.alipay.antfarm.orchardSelectSeed",
-                        "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"seedCode\":\"rp\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
-                                + VERSION + "\"}]");
-        }
-
-        public static String queryGameCenter() {
-                return RequestManager.requestString("com.alipay.antorchard.queryGameCenter",
-                        "[{\"requestType\":\"NORMAL\",\"sceneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
-                                + VERSION + "\"}]");
-        }
-
-        public static String submitUserAction(String gameId) {
-                return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.v3.submitUserAction",
-                        "[{\"actionCode\":\"enterGame\",\"gameId\":\"" + gameId
-                                + "\",\"paladinxVersion\":\"2.0.13\",\"source\":\"gameFramework\"}]");
-        }
-
-        public static String submitUserPlayDurationAction(String gameAppId, String source) {
-                return RequestManager.requestString("com.alipay.gamecenteruprod.biz.rpc.v3.submitUserPlayDurationAction",
-                        "[{\"gameAppId\":\"" + gameAppId + "\",\"playTime\":32,\"source\":\"" + source
-                                + "\",\"statisticTag\":\"\"}]");
-        }
-
-        /* [DEPRECATED] This method is not used and the new one with a parameter is preferred.
-        public static String smashedGoldenEgg() {
-                return RequestManager.requestString("com.alipay.antorchard.smashedGoldenEgg",
-                        "[{\"requestType\":\"NORMAL\",\"seneCode\":\"ORCHARD\",\"source\":\"ch_appcenter__chsub_9patch\",\"version\":\""
-                                + VERSION
-                                + "\"}]");
-        }
-        */
 
         public static String achieveBeShareP2P(String shareId) {
                 return RequestManager.requestString("com.alipay.antiep.achieveBeShareP2P",
