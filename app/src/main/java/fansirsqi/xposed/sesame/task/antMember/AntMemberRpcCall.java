@@ -920,4 +920,193 @@ public class AntMemberRpcCall {
             return null;
         }
     }
+
+    // 中文注释: --- 信用2101 功能RPC调用 (已根据新日志修复地理位置和游戏逻辑) ---
+    /**
+     * 中文注释: 查询信用2101游戏主页信息
+     * @return RPC响应
+     */
+    public static String queryGameHome() {
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.queryGameHome", "[{}]");
+    }
+
+    /**
+     * 中文注释: 查询信用2101游戏账户资产信息 (包括探测次数、抽奖次数等)
+     * @return RPC响应
+     */
+    public static String queryAccountAsset() {
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.queryAccountAsset", "[{}]");
+    }
+
+    /**
+     * 中文注释: 查询信用2101日常任务列表
+     * @return RPC响应
+     */
+    public static String queryUserTask() {
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.queryUserTask", "[{}]");
+    }
+
+    /**
+     * 中文注释: 领取信用2101已完成的任务奖励
+     * @param taskConfigId 任务ID
+     * @return RPC响应
+     */
+    public static String awardTask(String taskConfigId) {
+        String requestData = "[{\"taskConfigId\":\"" + taskConfigId + "\"}]";
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.awardTask", requestData);
+    }
+
+    /**
+     * 中文注释: 操作信用2101任务 (如接受任务 TASK_CLAIM 或 分享任务 TASK_PUSH)
+     * @param taskConfigId 任务ID
+     * @param taskAction 操作类型
+     * @return RPC响应
+     */
+    public static String operateTask(String taskConfigId, String taskAction) {
+        String requestData = "[{\"taskConfigId\":\"" + taskConfigId + "\",\"taskAction\":\"" + taskAction + "\"}]";
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.operateTask", requestData);
+    }
+
+    /**
+     * 中文注释: 查询信用2101签到数据
+     * @return RPC响应
+     */
+    public static String querySignInData() {
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.querySignInData", "[{}]");
+    }
+
+    /**
+     * 中文注释: 执行信用2101签到
+     * @param day 签到的天数 (星期几)
+     * @return RPC响应
+     */
+    public static String userSignIn(int day) {
+        String requestData = "[{\"day\":" + day + "}]";
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.userSignIn", requestData);
+    }
+
+    // 中文注释: 定义一个私有的辅助方法来构建包含地理位置的extParams
+    private static String getExtParamsWithLocation() {
+        // 使用北京故宫的地理位置作为硬编码值
+        return "{\"cityCode\":\"110000\",\"latitude\":39.915,\"longitude\":116.397}";
+    }
+
+    /**
+     * 中文注释: 信用2101探测新事件 (已修复地理位置)
+     * @return RPC响应
+     */
+    public static String exploreGridEvent() {
+        String requestData = "[{\"extParams\":" + getExtParamsWithLocation() + "}]";
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.exploreGridEvent", requestData);
+    }
+
+    /**
+     * 中文注释: 信用2101采集信用印记 (金色印记) (已修复地理位置)
+     * @param batchNo 批次号
+     * @param eventId 事件ID
+     * @return RPC响应
+     */
+    public static String collectCredit(String batchNo, String eventId) {
+        String requestData = "[{\"batchNo\":\"" + batchNo + "\",\"eventId\":\"" + eventId + "\",\"extParams\":" + getExtParamsWithLocation() + "}]";
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.collectCredit", requestData);
+    }
+
+    /**
+     * 中文注释: 查询信用2101地图事件 (用于查找黑色印记、小游戏等) (已修复地理位置)
+     * @return RPC响应
+     */
+    public static String queryGridEvent() {
+        String requestData = "[{\"extParams\":" + getExtParamsWithLocation() + ",\"guideState\":false}]";
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.queryGridEvent", requestData);
+    }
+
+    /**
+     * 中文注释: 查询信用2101天赋树信息
+     * @return RPC响应
+     */
+    public static String queryRelationTalent() {
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.queryRelationTalent", "[{}]");
+    }
+
+    /**
+     * 中文注释: 升级信用2101天赋
+     * @param talentAttributeType 天赋属性类型 (e.g., EXPLORE_RADIUS)
+     * @param targetAttributeLevel 目标等级
+     * @param talentTreeType 天赋树类型 (e.g., EXPLORE, ENERGY)
+     * @return RPC响应
+     */
+    public static String upgradeTalentAttribute(String talentAttributeType, String targetAttributeLevel, String talentTreeType) {
+        String requestData = "[{\"roleId\":\"\",\"talentAttributeType\":\"" + talentAttributeType + "\",\"talentTreeType\":\"" + talentTreeType + "\",\"targetAttributeLevel\":\"" + targetAttributeLevel + "\"}]";
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.upgradeTalentAttribute", requestData);
+    }
+
+    /**
+     * 中文注释: 查询信用2101时空收集挑战进度
+     * @return RPC响应
+     */
+    public static String queryChapterProgress() {
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.queryChapterProgress", "[{}]");
+    }
+
+    /**
+     * 中文注释: 加入黑色印记修复小队
+     * @param eventId 黑色印记的事件ID
+     * @return RPC响应
+     */
+    public static String joinBlackMarkEvent(String eventId) {
+        String requestData = "[{\"creditEnergy\":10,\"eventId\":\"" + eventId + "\"}]";
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.joinBlackMarkEvent", requestData);
+    }
+
+    /**
+     * 中文注释: 注入能量到黑色印记
+     * @param eventId 黑色印记的事件ID
+     * @param creditEnergy 注入的能量值
+     * @return RPC响应
+     */
+    public static String chargeBlackMarkEvent(String eventId, int creditEnergy) {
+        String requestData = "[{\"creditEnergy\":" + creditEnergy + ",\"eventId\":\"" + eventId + "\"}]";
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.chargeBlackMarkEvent", requestData);
+    }
+
+    /**
+     * 中文注释: 开始小游戏
+     * @param batchNo 批次号
+     * @param eventId 事件ID
+     * @param stageId 关卡ID
+     * @return RPC响应
+     */
+    public static String eventGameStart(String batchNo, String eventId, String stageId) {
+        String requestData = "[{\"batchNo\":\"" + batchNo + "\",\"eventId\":\"" + eventId + "\",\"miniGameStageId\":\"" + stageId + "\"}]";
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.eventGameStart", requestData);
+    }
+
+    /**
+     * 中文注释: 完成小游戏 (支持自定义扩展参数)
+     * @param batchNo 批次号
+     * @param eventId 事件ID
+     * @param stageId 关卡ID
+     * @param extParams 包含游戏结果的JSONObject，如果为null则不添加
+     * @return RPC响应
+     */
+    public static String eventGameComplete(String batchNo, String eventId, String stageId, JSONObject extParams) throws JSONException {
+        JSONObject requestData = new JSONObject();
+        requestData.put("batchNo", batchNo);
+        requestData.put("eventId", eventId);
+        requestData.put("miniGameStageId", stageId);
+        // 中文注释: 根据抓包日志，即使没完成游戏(passed:0)，也能获得部分奖励，所以固定传1即可
+        requestData.put("passed", 1);
+        if (extParams != null && extParams.length() > 0) {
+            requestData.put("extParams", extParams);
+        }
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.eventGameComplete", "[" + requestData.toString() + "]");
+    }
+
+    /**
+     * 中文注释: 打开宝箱/抽奖
+     * @return RPC响应
+     */
+    public static String triggerBenefit() {
+        return RequestManager.requestString("com.alipay.innovationprod.biz.rpc.triggerBenefit", "[{}]");
+    }
 }
