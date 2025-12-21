@@ -855,6 +855,13 @@ public class AntSportsRpcCall {
             );
         }
 
+        public static String taskReceive(JSONObject taskObj) {
+            return RequestManager.requestString(
+                    "com.alipay.neverland.biz.rpc.taskReceive",
+                    "[" + taskObj.toString() + "]"
+            );
+        }
+
         /**
          * 广告任务 - 完成任务
          * <p>

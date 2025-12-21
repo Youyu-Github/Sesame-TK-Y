@@ -630,7 +630,7 @@ public class AntSports extends ModelTask {
                     Log.error(TAG, "运动球任务❌[" + sourceName + "]#" + completeRes+" 任务："+ bubble);
 
                     if(!id.isEmpty()) {
-                        TaskBlacklist.INSTANCE.addToBlacklist(id, sourceName);
+                        TaskBlacklist.INSTANCE.addToBlacklist(id);
                     }
                 }
 
@@ -1842,6 +1842,7 @@ public class AntSports extends ModelTask {
     public class NeverlandTaskHandler {
 
         private static final String TAG = "Neverland";
+
         // 失败次数限制（优先从 BaseModel 获取，无则默认5次）
         private static final int MAX_ERROR_COUNT = BaseModel.getSetMaxErrorCount().getValue() > 0
                 ? BaseModel.getSetMaxErrorCount().getValue()
@@ -1939,8 +1940,8 @@ public class AntSports extends ModelTask {
          * 只处理 PROMOKERNEL_TASK 和 LIGHT_TASK
          */
         private void loopHandleTaskCenter() {
-            int errorCount = 3; // 累计失败次数
-            int emptyTaskCount = 2; // 连续获取到空待完成任务的次数（连续2次则退出）
+
+            int errorCount = 0;
 
             Log.record(TAG, "开始循环处理任务大厅（失败限制：" + MAX_ERROR_COUNT + "次）");
 
@@ -1948,20 +1949,16 @@ public class AntSports extends ModelTask {
                 try {
                     // 1. 检查失败次数是否超限
                     if (errorCount >= MAX_ERROR_COUNT) {
-                        Log.record(TAG, "任务处理失败次数达到上限（" + MAX_ERROR_COUNT + "次），停止循环并设置今日不再执行");
-                        Status.setFlagToday(StatusFlags.FLAG_ANTSPORTS_TASKCENTER_DONE); // 标记今日不再执行
+                        Log.record(TAG, "任务处理失败次数达到上限，停止循环");
+                        Status.setFlagToday(StatusFlags.FLAG_ANTSPORTS_TASKCENTER_DONE);
                         break;
                     }
 
                     // 2. 获取最新任务列表
                     JSONObject taskCenterResp = new JSONObject(AntSportsRpcCall.NeverlandRpcCall.queryTaskCenter());
-                    if (!ResChecker.checkRes(TAG + "获取任务列表失败:", taskCenterResp)
-                            || !ResChecker.checkRes(TAG, taskCenterResp)
-                            || taskCenterResp.optJSONObject("data") == null) {
-                        Log.record(TAG, "queryTaskCenter raw=" + taskCenterResp);
+                    if (!ResChecker.checkRes(TAG, taskCenterResp) || taskCenterResp.optJSONObject("data") == null) {
                         errorCount++;
-                        Log.record(TAG, "获取任务列表失败，累计失败次数：" + errorCount);
-                        Thread.sleep(TASK_LOOP_DELAY); // 失败后延时重试
+                        Thread.sleep(TASK_LOOP_DELAY);
                         continue;
                     }
 
@@ -1971,7 +1968,7 @@ public class AntSports extends ModelTask {
                         break;
                     }
 
-                    // 3. 筛选出待完成的任务，只保留 PROMOKERNEL_TASK 和 LIGHT_TASK
+                    // 3. 筛选：只要是 PROMOKERNEL_TASK 或 LIGHT_TASK，且状态不是“已完成(FINISHED)”的任务
                     List<JSONObject> pendingTasks = new ArrayList<>();
                     for (int i = 0; i < taskList.length(); i++) {
                         JSONObject task = taskList.optJSONObject(i);
@@ -1988,20 +1985,22 @@ public class AntSports extends ModelTask {
                             continue; // 跳过当前任务
                         }
                         // ************* 黑名单逻辑结束 *************
-                        if ("PROMOKERNEL_TASK".equals(type) || "LIGHT_TASK".equals(type)) {
+                        String status = task.optString("taskStatus", "");
+
+                        // 过滤类型，且排除掉已经彻底完成的状态（假设 FINISHED 是终态）
+                        if (("PROMOKERNEL_TASK".equals(type) || "LIGHT_TASK".equals(type))
+                                && !"FINISHED".equals(status)) {
                             pendingTasks.add(task);
                         }
                     }
 
                     // 4. 如果本次获取到的任务中没有可处理任务，则认为后续也无法执行，直接退出
                     if (pendingTasks.isEmpty()) {
-                        Log.record(TAG, "本次获取到的任务中没有可处理的 PROMOKERNEL_TASK 或 LIGHT_TASK，停止循环");
+                        Log.record(TAG, "没有可处理或领取的任务，退出循环");
                         break;
                     }
 
-                    // 重置连续空任务计数（有可处理任务）
-                    emptyTaskCount = 0;
-                    Log.record(TAG, "本次获取到 " + pendingTasks.size() + " 个待完成任务，开始处理");
+                    Log.record(TAG, "本次发现 " + pendingTasks.size() + " 个可处理任务（含待领取）");
 
                     // 5. 处理当前批次的待完成任务
                     int currentBatchError = 0;
@@ -2021,45 +2020,102 @@ public class AntSports extends ModelTask {
                         GlobalThreadPools.sleep(3000); // 任务间隔
                     }
 
-                    // 6. 统计当前批次失败情况
-                    if (currentBatchError > 0) {
-                        errorCount += currentBatchError;
-                        // 如果失败次数达到上限，也设置今日不再执行
-                        if (errorCount >= MAX_ERROR_COUNT) {
-                            Log.record(TAG, "任务处理失败次数达到上限，设置今日不再执行");
-                            Status.setFlagToday(StatusFlags.FLAG_ANTSPORTS_TASKCENTER_DONE);
-                            break;
-                        }
-                    } else {
-                        Log.record(TAG, "本次批次任务全部处理成功");
-                    }
+                    errorCount += currentBatchError;
 
-                    // 7. 任务批次处理完成，延时后重新获取列表
-                    Log.record(TAG, "当前批次任务处理完毕，" + TASK_LOOP_DELAY + "ms后重新获取任务列表");
+                    Log.record(TAG, "当前批次执行完毕，准备下一次刷新检查");
                     Thread.sleep(TASK_LOOP_DELAY);
 
                 } catch (InterruptedException e) {
-                    Log.printStackTrace(TAG, "任务循环被中断", e);
-                    Thread.currentThread().interrupt(); // 恢复中断状态
+                    Thread.currentThread().interrupt();
                     break;
                 } catch (Throwable t) {
                     errorCount++;
-                    // 如果异常导致累计失败次数达到上限，也设置今日不再执行
-                    if (errorCount >= MAX_ERROR_COUNT) {
-                        Log.record(TAG, "任务循环异常累计失败次数达到上限，设置今日不再执行");
-                        Status.setFlagToday(StatusFlags.FLAG_ANTSPORTS_TASKCENTER_DONE);
-                        break;
-                    }
-                    try {
-                        Thread.sleep(TASK_LOOP_DELAY);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
+                    Log.printStackTrace(TAG, "循环异常", t);
                 }
             }
+        }
 
-            Log.record(TAG, "任务大厅循环处理结束");
+        private boolean handleSingleTask(JSONObject task) {
+            try {
+                String title = task.optString("title", "未知任务");
+                String type = task.optString("taskType", "");
+                String status = task.optString("taskStatus", "");
+                String jumpLink = task.optString("jumpLink", "");
+
+                Log.record(TAG, "任务：[" + title + "] 状态：" + status + " 类型：" + type);
+
+                // --- 核心修复：优先判断是否需要领取奖励 ---
+                if ("TO_RECEIVE".equals(status)) {
+                    Log.record(TAG, "检测到任务已完成，开始领取奖励...");
+                    try {
+                        // --- 1. 注入必要参数 ---
+                        task.put("scene", "MED_TASK_HALL");
+                        if (!task.has("source")) {
+                            task.put("source", "jkdsportcard");
+                        }
+
+                        // --- 2. 发起 RPC 请求 ---
+                        String res = AntSportsRpcCall.NeverlandRpcCall.taskReceive(task);
+                        JSONObject resObj = new JSONObject(res);
+
+                        // --- 3. 解析响应结果 ---
+                        if (resObj.optBoolean("success", false)) {
+                            // 提取数据层
+                            JSONObject data = resObj.optJSONObject("data");
+                            String rewardDetail = "";
+
+                            if (data != null && data.has("userItems")) {
+                                org.json.JSONArray items = data.getJSONArray("userItems");
+                                StringBuilder sb = new StringBuilder();
+
+                                for (int i = 0; i < items.length(); i++) {
+                                    JSONObject item = items.getJSONObject(i);
+                                    String name = item.optString("name", "未知奖励");
+                                    // modifyCount 是本次领取的数量 (例如 15)
+                                    int amount = item.optInt("modifyCount", 0);
+                                    // count 是领取后的总余额 (例如 37131)
+                                    int total = item.optInt("count", 0);
+
+                                    sb.append("[").append(name).append(" +").append(amount).append(" (余:").append(total).append(")] ");
+                                }
+                                rewardDetail = sb.toString();
+                            }
+
+                            Log.record(TAG, "完成["+title+"]✔" + rewardDetail);
+                            return true;
+                        } else {
+                            // 错误处理逻辑
+                            String errorMsg = resObj.optString("errorMsg", "未知错误");
+                            String errorCode = resObj.optString("errorCode", "UNKNOWN");
+                            Log.error(TAG, "❌ 奖励领取失败 [" + errorCode + "]: " + errorMsg);
+                            return false;
+                        }
+                    } catch (Exception e) {
+                        Log.error(TAG, "领取流程异常: " + e.getMessage());
+                        return false;
+                    }
+                }
+                // --- 如果状态是待完成，则执行去完成逻辑 ---
+                if ("SIGNUP_COMPLETE".equals(status) || "INIT".equals(status)) {
+                    switch (type) {
+                        case "PROMOKERNEL_TASK":
+                            return handlePromoKernelTask(task, title);
+                        case "LIGHT_TASK":
+                            return handleLightTask(task, title, jumpLink);
+                        default:
+                            Log.error(TAG, "未处理的任务类型：" + type);
+                            return false;
+                    }
+                }
+
+                // 其他状态（如 FINISHED）
+                Log.record(TAG, "任务状态为 " + status + "，跳过执行");
+                return true;
+
+            } catch (Exception e) {
+                Log.printStackTrace(TAG, "handleSingleTask 异常", e);
+                return false;
+            }
         }
 
         /**
@@ -2089,7 +2145,7 @@ public class AntSports extends ModelTask {
 
                     // 如果没有任务，跳出循环
                     if (taskInfos == null || taskInfos.length() == 0) {
-                        Log.runtime(TAG, "健康岛浏览任务列表为空");
+                        Log.record(TAG, "健康岛浏览任务列表为空");
                         hasTask = false;  // 停止循环
                         continue;
                     }
@@ -2133,57 +2189,6 @@ public class AntSports extends ModelTask {
             }
         }
 
-
-        /**
-         * 筛选待完成的任务（状态为 SIGNUP_COMPLETE）
-         */
-        private List<JSONObject> filterPendingTasks(JSONArray taskList) {
-            List<JSONObject> pendingTasks = new ArrayList<>();
-            try {
-                for (int i = 0; i < taskList.length(); i++) {
-                    JSONObject task = taskList.getJSONObject(i);
-                    if ("SIGNUP_COMPLETE".equals(task.optString("taskStatus"))) {
-                        pendingTasks.add(task);
-                    }
-                }
-            } catch (Exception e) {
-                Log.printStackTrace(TAG, "筛选待完成任务失败", e);
-            }
-            return pendingTasks;
-        }
-
-        /**
-         * 处理单个任务（提取原 doNeverlandTasks 核心逻辑）
-         *
-         * @return true：处理成功；false：处理失败
-         */
-        private boolean handleSingleTask(JSONObject task) {
-            try {
-                String title = task.optString("title", "未知任务");
-                String type = task.optString("taskType", "");
-                String jumpLink = task.optString("jumpLink", "");
-
-                Log.record(TAG, "开始处理任务：" + title + "  类型=" + type);
-
-                // 按任务类型处理
-                switch (type) {
-                    case "PROMOKERNEL_TASK":
-                        return handlePromoKernelTask(task, title);
-                    case "LIGHT_TASK":
-                        return handleLightTask(task, title, jumpLink);
-                    case "GAME_TASK":
-                        Log.record(TAG, "跳过 GAME_TASK：" + title);
-                        return true; // 跳过不算失败
-                    default:
-                        Log.error(TAG, "未处理的任务类型：" + type + " 任务名：" + title);
-                        return false; // 未知类型算失败
-                }
-            } catch (Exception e) {
-                Log.printStackTrace(TAG, "处理单个任务失败（任务名：" + task.optString("title") + "）", e);
-                return false;
-            }
-        }
-
         /**
          * 处理 PROMOKERNEL_TASK（活动类任务）
          */
@@ -2197,7 +2202,7 @@ public class AntSports extends ModelTask {
                     Log.other(TAG, "✔ 活动任务完成：" + title);
                     return true;
                 } else {
-                    Log.record(TAG, "taskSend 失败: " + title + res);
+                    Log.record(TAG, "taskSend 失败: " + task + " 响应：" + res);
                     return false;
                 }
             } catch (Exception e) {
@@ -2208,12 +2213,12 @@ public class AntSports extends ModelTask {
 
         /**
          * 处理 LIGHT_TASK（浏览类任务）
-         */
-        private boolean handleLightTask(JSONObject task, String title, String jumpLink) {
+        */
+        /*private boolean handleLightTask(JSONObject task, String title, String jumpLink) {
             try {
                 String bizId = extractBizIdFromJumpLink(jumpLink);
                 if (bizId == null || bizId.isEmpty()) {
-                    Log.record(TAG, "LIGHT_TASK 未找到 bizId：" + title + " jumpLink=" + jumpLink);
+                    Log.error(TAG, "LIGHT_TASK 未找到 bizId：" + title + " jumpLink=" + jumpLink);
                     return false;
                 }
 
@@ -2222,7 +2227,54 @@ public class AntSports extends ModelTask {
                     Log.other(TAG, "✔ 浏览任务完成：" + title);
                     return true;
                 } else {
-                    Log.error(TAG, "完成 LIGHT_TASK 失败: " + title + res);
+                    Log.error(TAG, "完成 LIGHT_TASK "+task+"失败: "+title + res);
+                    return false;
+                }
+            } catch (Exception e) {
+                Log.printStackTrace(TAG, "handleLightTask 处理 LIGHT_TASK 异常（" + title + "）", e);
+                return false;
+            }
+        }*/
+
+        /**
+         * 处理 LIGHT_TASK（浏览类任务）
+         */
+        private boolean handleLightTask(JSONObject task, String title, String jumpLink) {
+            try {
+                // 1. 提取 bizId (优先从根部取，其次从 logExtMap 取)
+                String bizId = task.optString("bizId", "");
+                if (bizId.isEmpty()) {
+                    JSONObject logExtMap = task.optJSONObject("logExtMap");
+                    if (logExtMap != null) {
+                        bizId = logExtMap.optString("bizId", "");
+                    }
+                }
+                if (bizId == null || bizId.isEmpty()) {
+                    Log.record(TAG, "LIGHT_TASK 未找到 bizId：" + title + " jumpLink=" + jumpLink);
+                    return false;
+                }
+
+                //Log.record(TAG, "正在执行 LIGHT_TASK 浏览任务: " + title + " [bizId=" + bizId + "]");
+
+                // 2. 调用完成接口
+                JSONObject res = new JSONObject(AntSportsRpcCall.NeverlandRpcCall.finish(bizId));
+                // 3. 校验结果
+                if (res.optBoolean("success", false) || "0".equals(res.optString("errCode", ""))) {
+                    // 解析奖励信息
+                    String rewardMsg = "";
+                    JSONObject extendInfo = res.optJSONObject("extendInfo");
+                    if (extendInfo != null) {
+                        JSONObject rewardInfo = extendInfo.optJSONObject("rewardInfo");
+                        if (rewardInfo != null) {
+                            String amount = rewardInfo.optString("rewardAmount", "0");
+                            rewardMsg = " (获得奖励: " + amount + " 能量)";
+                        }
+                    }
+
+                    Log.other(TAG, "✔ 浏览任务完成：" + title + rewardMsg);
+                    return true;
+                } else {
+                    Log.record(TAG, "完成 LIGHT_TASK 失败: " + title + " 返回: " + res.toString());
                     return false;
                 }
             } catch (Exception e) {

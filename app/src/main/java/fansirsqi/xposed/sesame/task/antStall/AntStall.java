@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import fansirsqi.xposed.sesame.data.StatusFlags;
 import fansirsqi.xposed.sesame.entity.AlipayUser;
 import fansirsqi.xposed.sesame.model.BaseModel;
 import fansirsqi.xposed.sesame.model.ModelFields;
@@ -30,6 +31,7 @@ import fansirsqi.xposed.sesame.data.Status;
 import fansirsqi.xposed.sesame.util.StringUtil;
 import fansirsqi.xposed.sesame.util.TimeUtil;
 import fansirsqi.xposed.sesame.util.TimeCounter;
+
 /**
  * @author Constanline
  * @since 2023/08/22
@@ -947,13 +949,27 @@ public class AntStall extends ModelTask {
         }
     }
     private void throwManure(JSONArray dynamicList) {
+        // 1. 前置检查：如果今日已达上限，直接跳过
+        if (Status.hasFlagToday(StatusFlags.FLAG_ANTSTALL_THROW_MANURE_LIMIT)) {
+            return;
+        }
         try {
             String s = AntStallRpcCall.throwManure(dynamicList);
             JSONObject jo = new JSONObject(s);
-            if (ResChecker.checkRes(TAG + "蚂蚁新村扔肥料失败:", jo)) {
-                Log.farm("蚂蚁新村⛪扔肥料");
+            // 2. 先于 ResChecker 判断特定业务错误码
+            String resultCode = jo.optString("resultCode");
+            if ("B_OVER_LIMIT_COUNT_OF_THROW_TO_FRIEND".equals(resultCode)) {
+                Log.record(TAG, "检测到今日丢肥料次数已达上限，停止后续尝试");
+                Status.setFlagToday(StatusFlags.FLAG_ANTSTALL_THROW_MANURE_LIMIT);
+                return; // 既然已经上限，直接返回，不再走 ResChecker
+            }
+
+            // 3. 正常的响应检查（处理 success: true/false）
+            if (ResChecker.checkRes(TAG, jo)) {
+                Log.farm("蚂蚁新村⛪扔肥料成功");
             }
         } catch (Throwable th) {
+            // 这样即使 ResChecker 抛出异常，th 也能捕获到，但我们上面的 return 已经避开了大部分情况
             Log.runtime(TAG, "throwManure err:");
             Log.printStackTrace(TAG, th);
         } finally {
