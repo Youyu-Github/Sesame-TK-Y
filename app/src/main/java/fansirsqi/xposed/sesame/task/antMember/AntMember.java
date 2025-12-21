@@ -21,6 +21,7 @@ import fansirsqi.xposed.sesame.util.Log;
 import fansirsqi.xposed.sesame.util.maps.IdMapManager;
 import fansirsqi.xposed.sesame.util.maps.MemberBenefitsMap;
 import fansirsqi.xposed.sesame.util.maps.UserMap;
+import fansirsqi.xposed.sesame.util.RandomUtil;
 import fansirsqi.xposed.sesame.util.ResChecker;
 import fansirsqi.xposed.sesame.data.Status;
 import fansirsqi.xposed.sesame.data.StatusFlags;
@@ -68,6 +69,9 @@ public class AntMember extends ModelTask {
   private BooleanModelField enableGoldTicket;
   // 黄金票配置 - 提取/兑换
   private BooleanModelField enableGoldTicketConsume;
+  // 中文注释: 信用2101开关
+  private BooleanModelField credit2101;
+  private SelectModelField credit2101Options;
 
   @Override
   public ModelFields getFields() {
@@ -86,6 +90,8 @@ public class AntMember extends ModelTask {
     // 新增：芝麻树开关
     modelFields.addField(sesameTreeTask = new BooleanModelField("sesameTreeTask", "芝麻树 | 攒净化值", false));
     modelFields.addField(purifySesameTree = new BooleanModelField("purifySesameTree", "芝麻树 | 净化芝麻树", false));
+     modelFields.addField(credit2101 = new BooleanModelField("credit2101", "信用2101 | 开关", false));
+    modelFields.addField(credit2101Options = new SelectModelField("credit2101Options", "信用2101 | 选项", new LinkedHashSet<>(), AntMember::listCredit2101Options, "信用2101部分功能需要打开定位功能"));
     modelFields.addField(collectInsuredGold = new BooleanModelField("collectInsuredGold", "蚂蚁保 | 保障金领取", false));
     modelFields.addField(enableGoldTicket = new BooleanModelField("enableGoldTicket", "黄金票签到", false));
     modelFields.addField(enableGoldTicketConsume = new BooleanModelField("enableGoldTicketConsume", "黄金票提取(兑换黄金)", false));
@@ -162,6 +168,11 @@ public class AntMember extends ModelTask {
           handleSesameTree();
           tc.countDebug("芝麻树");
         }
+      }
+      // 中文注释: 执行信用2101主逻辑
+      if (credit2101.getValue()) {
+          handleCredit2101();
+          tc.countDebug("信用2101");
       }
       if (collectInsuredGold.getValue()) {
         collectInsuredGold();
@@ -2467,5 +2478,442 @@ public class AntMember extends ModelTask {
       Log.runtime(TAG, "beanExchangeBubbleBoost err:");
       Log.printStackTrace(TAG, t);
     }
+  }
+
+  // 中文注释: 提供信用2101的选项列表 (已修正返回类型)
+  private static java.util.List<MemberBenefit> listCredit2101Options() {
+      java.util.List<MemberBenefit> options = new java.util.ArrayList<>();
+      options.add(new MemberBenefit("DAILY_TASKS", "日常任务"));
+      options.add(new MemberBenefit("EXPLORATION", "探测与采集"));
+      options.add(new MemberBenefit("AUTO_UPGRADE_TALENT", "自动升级天赋"));
+      options.add(new MemberBenefit("COLLECTION_CHALLENGE", "时空收集挑战"));
+      options.add(new MemberBenefit("BLACK_MARK_REPAIR", "黑色印记修复小队"));
+      return options;
+  }
+
+  // 中文注释: 信用2101主处理函数 (重构版)
+  private void handleCredit2101() {
+      Log.record(TAG, "开始执行信用2101任务...");
+      java.util.Set<String> options = credit2101Options.getValue();
+
+      // 中文注释: 步骤1: 优先处理所有可自动完成和领取的日常任务
+      if (options.contains("DAILY_TASKS")) {
+          doCredit2101DailyTasks();
+      }
+
+      // 中文注释: 步骤2: 如果开启，则进行天赋升级
+      if (options.contains("AUTO_UPGRADE_TALENT")) {
+          doCredit2101TalentUpgrade();
+      }
+
+      // 中文注释: 步骤3: 执行探测、采集、小游戏和黑格修复等核心玩法
+      if (options.contains("EXPLORATION")) {
+          doCredit2101Exploration();
+      }
+
+      // 中文注释: 步骤4: 在核心玩法之后，再次检查日常任务，以领取因玩法而完成的任务奖励（如采集任务）
+      if (options.contains("DAILY_TASKS")) {
+          Log.record(TAG, "信用2101-进行第二轮任务奖励检查...");
+          doCredit2101DailyTasks();
+      }
+      
+      // 中文注释: 步骤5: 检查时空挑战
+      if (options.contains("COLLECTION_CHALLENGE")) {
+          doCredit2101CollectionChallenge();
+      }
+
+      // 中文注释: 步骤6: 打开所有抽奖宝箱
+      doCredit2101TriggerBenefit();
+
+      Log.record(TAG, "信用2101任务执行完毕.");
+  }
+
+  // 中文注释: 信用2101-执行日常任务和签到 (重构版)
+  private void doCredit2101DailyTasks() {
+      try {
+          // 中文注释: 1. 签到
+          Log.record(TAG, "信用2101-开始检查每日签到...");
+          String signInDataStr = AntMemberRpcCall.querySignInData();
+          JSONObject signInDataJo = new JSONObject(signInDataStr);
+          if (signInDataJo.optBoolean("success")) {
+              int today = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK); // 星期日是1, 星期六是7
+              // 接口中day: 1-7对应周一到周日
+              int apiToday = (today == 1) ? 7 : today - 1;
+
+              JSONArray signInDays = signInDataJo.optJSONArray("signInDays");
+              boolean signedToday = false;
+              if (signInDays != null) {
+                  for (int i = 0; i < signInDays.length(); i++) {
+                      if (signInDays.getInt(i) == apiToday) {
+                          signedToday = true;
+                          break;
+                      }
+                  }
+              }
+              if (!signedToday) {
+                  String signInResultStr = AntMemberRpcCall.userSignIn(apiToday);
+                  if (new JSONObject(signInResultStr).optBoolean("success")) {
+                      Log.other("信用2101🎮[签到成功]");
+                  }
+              } else {
+                  Log.record(TAG, "信用2101-今日已签到");
+              }
+          }
+          GlobalThreadPools.sleep(1500);
+
+          // 中文注释: 2. 循环处理任务，直到没有新状态变化
+          boolean hasTaskChanged;
+          int maxLoops = 5; // 防止死循环
+          do {
+              hasTaskChanged = false;
+              maxLoops--;
+
+              Log.record(TAG, "信用2101-检查任务状态...");
+              String tasksStr = AntMemberRpcCall.queryUserTask();
+              JSONObject tasksJo = new JSONObject(tasksStr);
+              if (!tasksJo.optBoolean("success")) break;
+
+              JSONArray taskList = tasksJo.optJSONArray("taskList");
+              if (taskList == null || taskList.length() == 0) break;
+              
+              // 中文注释: 2.1 接受新任务 (INIT -> RUNNING)
+              for (int i = 0; i < taskList.length(); i++) {
+                  JSONObject task = taskList.getJSONObject(i);
+                  if ("INIT".equals(task.optString("taskStatus"))) {
+                      String taskId = task.getString("taskConfigId");
+                      Log.record(TAG, "信用2101-接受任务[" + task.optString("taskName") + "]");
+                      AntMemberRpcCall.operateTask(taskId, "TASK_CLAIM");
+                      hasTaskChanged = true;
+                      GlobalThreadPools.sleep(1500);
+                  }
+              }
+              
+              // 中文注释: 如果接受了新任务，需要重新查询列表以获取最新状态
+              if (hasTaskChanged) {
+                  GlobalThreadPools.sleep(2000);
+                  tasksStr = AntMemberRpcCall.queryUserTask();
+                  tasksJo = new JSONObject(tasksStr);
+                  taskList = tasksJo.optJSONArray("taskList");
+                  if (taskList == null) continue;
+              }
+
+              // 中文注释: 2.2 完成简单任务 (RUNNING -> FINISH)
+              for (int i = 0; i < taskList.length(); i++) {
+                    JSONObject task = taskList.getJSONObject(i);
+                    if ("GAME_SHARE".equals(task.optString("taskConfigId")) && "RUNNING".equals(task.optString("taskStatus"))) {
+                        Log.record(TAG, "信用2101-完成任务[" + task.optString("taskName") + "]");
+                        AntMemberRpcCall.operateTask(task.getString("taskConfigId"), "TASK_PUSH");
+                        hasTaskChanged = true;
+                        GlobalThreadPools.sleep(1500);
+                    }
+              }
+              
+              // 中文注释: 2.3 领取已完成任务的奖励 (FINISH -> CLAIMED)
+              for (int i = 0; i < taskList.length(); i++) {
+                  JSONObject task = taskList.getJSONObject(i);
+                  if ("UNLOCKED".equals(task.optString("awardStatus")) && "FINISH".equals(task.optString("taskStatus"))) {
+                      String taskId = task.getString("taskConfigId");
+                      Log.other("信用2101🎮[领取奖励] " + task.optString("taskName"));
+                      AntMemberRpcCall.awardTask(taskId);
+                      hasTaskChanged = true;
+                      GlobalThreadPools.sleep(1500);
+                  }
+              }
+          } while (hasTaskChanged && maxLoops > 0);
+
+      } catch (Exception e) {
+          Log.printStackTrace(TAG, e);
+      }
+  }
+
+  // 中文注释: 信用2101-探测、采集和处理动态事件 (进一步优化版)
+  private void doCredit2101Exploration() {
+      try {
+          Log.record(TAG, "信用2101-开始探测与事件处理循环...");
+          int maxExploreLoops = 20; // 防止无限循环
+          while (maxExploreLoops-- > 0) {
+              // 中文注释: 1. 检查探测次数和能量
+              String assetStr = AntMemberRpcCall.queryAccountAsset();
+              JSONObject assetJo = new JSONObject(assetStr);
+              if (!assetJo.optBoolean("success")) break;
+
+              int exploreStamina = assetJo.getJSONObject("exploreStaminaVO").getInt("staminaAvailable");
+              int currentEnergy = assetJo.getJSONObject("energyStaminaVO").getInt("staminaAvailable");
+              
+              if (exploreStamina <= 0) {
+                  Log.record(TAG, "信用2101-探测次数已用完");
+                  break;
+              }
+
+              // 中文注释: 新增逻辑 - 如果能量低于最低消耗（5点），则停止探测
+              if (currentEnergy < 5) {
+                  Log.record(TAG, "信用2101-能量不足(" + currentEnergy + ")，暂停探测以节省次数");
+                  break;
+              }
+              
+              Log.record(TAG, "信用2101-剩余探测次数: " + exploreStamina + "，能量: " + currentEnergy + "。执行一次探测...");
+
+              // 中文注释: 2. 执行探测
+              AntMemberRpcCall.exploreGridEvent();
+              GlobalThreadPools.sleep(2000);
+
+              // 中文注释: 3. 探测后检查并处理所有可交互事件
+              handleImmediateEvents();
+          }
+      } catch (Exception e) {
+          Log.printStackTrace(TAG, e);
+      }
+  }
+  
+  // 中文注释: 信用2101-处理当前地图上的所有可交互事件 (增加能量判断逻辑)
+  private boolean handleImmediateEvents() throws Exception {
+      boolean hasAction = false;
+      String gridEventStr = AntMemberRpcCall.queryGridEvent();
+      JSONObject gridEventJo = new JSONObject(gridEventStr);
+      if (!gridEventJo.optBoolean("success")) return false;
+
+      JSONArray events = gridEventJo.optJSONArray("gridEventVOList");
+      if (events == null || events.length() == 0) return false;
+
+      // 中文注释: 在处理事件前，先获取一次当前的能量值
+      String assetStr = AntMemberRpcCall.queryAccountAsset();
+      JSONObject assetJo = new JSONObject(assetStr);
+      if (!assetJo.optBoolean("success")) return false;
+      int currentEnergy = assetJo.getJSONObject("energyStaminaVO").getInt("staminaAvailable");
+      Log.record(TAG, "信用2101-当前可用能量: " + currentEnergy);
+
+      for (int i = 0; i < events.length(); i++) {
+          JSONObject event = events.getJSONObject(i);
+          String eventType = event.getString("eventType");
+          String eventStatus = event.optString("eventStatus");
+
+          if ("UN_FINISHED".equals(eventStatus)) {
+              hasAction = true; // 发现未完成事件
+              if (eventType.startsWith("MINI_GAME")) {
+                  int cost = event.getJSONObject("eventConfig").optInt("cost", 5); // 默认消耗5
+                  if (currentEnergy >= cost) {
+                      handleMiniGame(event);
+                      currentEnergy -= cost; // 本地扣减能量值
+                  } else {
+                      Log.record(TAG, "信用2101-能量不足(" + currentEnergy + "/" + cost + ")，无法开始小游戏: " + eventType);
+                  }
+              } else if ("GOLD_MARK".equals(eventType)) {
+                  // 中文注释: 金色印记采集也消耗能量，从抓包看是5点
+                  int cost = 5;
+                  if (currentEnergy >= cost) {
+                      String eventId = event.getString("eventId");
+                      String batchNo = event.getString("batchNo");
+                      String collectStr = AntMemberRpcCall.collectCredit(batchNo, eventId);
+                      if (new JSONObject(collectStr).optBoolean("success")) {
+                          Log.other("信用2101🎮[采集信用印记] 成功");
+                          currentEnergy -= cost; // 本地扣减
+                      }
+                      GlobalThreadPools.sleep(1500);
+                  } else {
+                        Log.record(TAG, "信用2101-能量不足(" + currentEnergy + "/" + cost + ")，无法采集金色印记");
+                  }
+              } else if ("BLACK_MARK".equals(eventType)) {
+                  // 中文注释: 加入修复小队消耗10能量
+                  int cost = 10;
+                  if (currentEnergy >= cost) {
+                      String eventId = event.getString("eventId");
+                      Log.record(TAG, "信用2101-发现新黑色印记，开始修复...");
+                      String joinStr = AntMemberRpcCall.joinBlackMarkEvent(eventId);
+                      if(new JSONObject(joinStr).optBoolean("success")) {
+                          Log.other("信用2101🎮[加入黑色印记修复小队] 成功");
+                          currentEnergy -= cost; // 本地扣减
+                      }
+                      GlobalThreadPools.sleep(1500);
+                  } else {
+                      Log.record(TAG, "信用2101-能量不足(" + currentEnergy + "/" + cost + ")，无法加入黑色印记修复");
+                  }
+              }
+          }
+      }
+      return hasAction;
+  }
+
+  // 中文注释: 信用2101-处理小游戏 (优化版)
+  private void handleMiniGame(JSONObject event) throws Exception {
+      String eventId = event.getString("eventId");
+      String batchNo = event.getString("batchNo");
+      String stageId = event.getJSONObject("eventConfig").getString("id");
+      String gameName = event.getString("eventType");
+
+      Log.record(TAG, "信用2101-开始小游戏: " + gameName);
+      AntMemberRpcCall.eventGameStart(batchNo, eventId, stageId);
+      
+      int waitTime = 5000;
+      if (gameName.contains("COLLECTYJ")) {
+          waitTime = 20000 + RandomUtil.nextInt(1000, 3000); 
+      } else if (gameName.contains("MATCH3")) {
+          waitTime = 30000 + RandomUtil.nextInt(2000, 5000);
+      } else if (gameName.contains("ELIMINATE")) {
+            waitTime = 15000 + RandomUtil.nextInt(1000, 2000);
+      } else {
+          waitTime += RandomUtil.nextInt(1000, 3000);
+      }
+      Log.record(TAG, "信用2101-模拟游戏时间 " + waitTime/1000 + " 秒...");
+      GlobalThreadPools.sleep(waitTime);
+
+      JSONObject extParams = new JSONObject();
+      if (gameName.contains("COLLECTYJ")) {
+          // 根据日志，即使passed为0也能获得奖励
+          extParams.put("collectedYJ", 50 + RandomUtil.nextInt(10,30));
+      } else if (gameName.contains("MATCH3")) {
+          extParams.put("YJ_PRIZE", 120); // 模拟固定奖励值
+          extParams.put("killCount", 3 + RandomUtil.nextInt(0, 2));
+      } else {
+          extParams = null; // 其他游戏或不需要参数的游戏
+      }
+
+      String completeStr = AntMemberRpcCall.eventGameComplete(batchNo, eventId, stageId, extParams);
+      if (new JSONObject(completeStr).optBoolean("success")) {
+          Log.other("信用2101🎮[完成小游戏] " + gameName);
+      }
+      GlobalThreadPools.sleep(2000);
+  }
+
+  // 中文注释: 信用2101-修复已加入的黑色印记
+  private void doCredit2101BlackMarkRepair() {
+      java.util.Set<String> options = credit2101Options.getValue();
+      if(!options.contains("BLACK_MARK_REPAIR")) return;
+      try {
+          Log.record(TAG, "信用2101-查找正在修复的黑色印记...");
+          String gridEventStr = AntMemberRpcCall.queryGridEvent();
+          JSONObject gridEventJo = new JSONObject(gridEventStr);
+          if (!gridEventJo.optBoolean("success")) return;
+          
+          JSONArray events = gridEventJo.optJSONArray("gridEventVOList");
+          if (events == null) return;
+
+          for (int i = 0; i < events.length(); i++) {
+              JSONObject event = events.getJSONObject(i);
+              if ("BLACK_MARK".equals(event.getString("eventType")) && "REPAIR_ING".equals(event.optString("eventStatus"))) {
+                  String eventId = event.getString("eventId");
+                  Log.other("信用2101🎮[修复黑色印记] 注入10能量");
+                  AntMemberRpcCall.chargeBlackMarkEvent(eventId, 10);
+                  GlobalThreadPools.sleep(1500);
+                  // 假设每次只修复一个
+                  break;
+              }
+          }
+      } catch (Exception e) {
+          Log.printStackTrace(TAG, e);
+      }
+  }
+  
+  // 中文注释: 信用2101-打开所有可用的宝箱/抽奖
+  private void doCredit2101TriggerBenefit() {
+      try {
+          Log.record(TAG, "信用2101-检查可开启的宝箱...");
+          while (true) {
+              String assetStr = AntMemberRpcCall.queryAccountAsset();
+              JSONObject assetJo = new JSONObject(assetStr);
+              if (!assetJo.optBoolean("success")) break;
+
+              int lotteryNo = assetJo.optInt("lotteryNo", 0);
+              if (lotteryNo <= 0) {
+                  Log.record(TAG, "信用2101-没有可开启的宝箱");
+                  break;
+              }
+              
+              Log.other("信用2101🎮[开启宝箱] 剩余 " + lotteryNo + " 个");
+              String triggerStr = AntMemberRpcCall.triggerBenefit();
+              if(new JSONObject(triggerStr).optBoolean("success")) {
+                  // 日志已经在RPC调用中打印，这里仅做延时
+              }
+              GlobalThreadPools.sleep(2000);
+          }
+      } catch (Exception e) {
+          Log.printStackTrace(TAG, e);
+      }
+  }
+  
+  // 中文注释: 信用2101-自动升级天赋
+  private void doCredit2101TalentUpgrade() {
+      java.util.Set<String> options = credit2101Options.getValue();
+      if(!options.contains("AUTO_UPGRADE_TALENT")) return;
+      try {
+          Log.record(TAG, "信用2101-检查天赋点...");
+          String talentStr = AntMemberRpcCall.queryRelationTalent();
+          JSONObject talentJo = new JSONObject(talentStr);
+          if (!talentJo.optBoolean("success")) return;
+
+          int availablePoint = talentJo.optInt("availablePoint", 0);
+          if (availablePoint <= 0) {
+              Log.record(TAG, "信用2101-无可用天赋点");
+              return;
+          }
+
+          Log.record(TAG, "信用2101-发现可用天赋点: " + availablePoint);
+          String[] priority = {"EXPLORE_RADIUS", "EXPLORE_COUNT", "EXPLORE_RECOVER", "ENERGY_COUNT", "ENERGY_RECOVER"};
+          String[] treeType = {"EXPLORE", "EXPLORE", "EXPLORE", "ENERGY", "ENERGY"};
+          
+          for (int p = 0; p < availablePoint; p++) {
+                // 每次循环都重新获取最新的天赋列表
+              talentStr = AntMemberRpcCall.queryRelationTalent();
+              talentJo = new JSONObject(talentStr);
+              if (!talentJo.optBoolean("success")) break;
+              JSONArray talentList = talentJo.getJSONArray("talentAttributeVOList");
+              
+              boolean upgraded = false;
+              for (int i = 0; i < priority.length; i++) {
+                  String talentToUpgrade = priority[i];
+                  for (int j = 0; j < talentList.length(); j++) {
+                      JSONObject talent = talentList.getJSONObject(j);
+                      if (talentToUpgrade.equals(talent.getString("attributeType"))) {
+                          int currentLevel = talent.getInt("attributeLevel");
+                          // 假设每个天赋有等级上限，这里简化为5
+                          if (currentLevel < 5) {
+                              Log.other("信用2101🎮[升级天赋] " + talentToUpgrade + " -> " + (currentLevel + 1));
+                              AntMemberRpcCall.upgradeTalentAttribute(talentToUpgrade, String.valueOf(currentLevel + 1), treeType[i]);
+                              upgraded = true;
+                              GlobalThreadPools.sleep(2000);
+                              break; // 升级一个后跳出内层循环
+                          }
+                      }
+                  }
+                  if(upgraded) break; // 跳出外层优先级循环
+              }
+              if (!upgraded) {
+                    // 如果所有天赋都达到上限或无法升级，则退出
+                  Log.record(TAG, "信用2101-所有优先天赋已达上限或无法升级");
+                  break;
+              }
+          }
+      } catch (Exception e) {
+          Log.printStackTrace(TAG, e);
+      }
+  }
+  
+  // 中文注释: 信用2101-检查并领取时空收集挑战奖励
+  private void doCredit2101CollectionChallenge() {
+      java.util.Set<String> options = credit2101Options.getValue();
+      if(!options.contains("COLLECTION_CHALLENGE")) return;
+      try {
+          Log.record(TAG, "信用2101-检查时空收集挑战进度...");
+          String progressStr = AntMemberRpcCall.queryChapterProgress();
+          JSONObject progressJo = new JSONObject(progressStr);
+          if (!progressJo.optBoolean("success")) return;
+
+          JSONArray progressList = progressJo.optJSONArray("charterProgress");
+          if (progressList != null) {
+              int total = 0;
+              int obtained = 0;
+              for (int i = 0; i < progressList.length(); i++) {
+                  JSONObject chapter = progressList.getJSONObject(i);
+                  total += chapter.getInt("cardCount");
+                  obtained += chapter.getInt("obtainedCardCount");
+                  if ("UNLOCKED".equals(chapter.optString("awardStatus"))) {
+                      Log.other("信用2101🎮[发现可领取的时空收集奖励] 章节: " + chapter.optString("chapter"));
+                      // 抓包数据中未找到领取接口，暂时只记录日志
+                  }
+              }
+              Log.record(TAG, "信用2101-时空卡片收集进度: " + obtained + "/" + total);
+          }
+      } catch (Exception e) {
+          Log.printStackTrace(TAG, e);
+      }
   }
 }
