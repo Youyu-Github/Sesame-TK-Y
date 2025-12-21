@@ -2,11 +2,15 @@ package fansirsqi.xposed.sesame.task.antDodo;
 import fansirsqi.xposed.sesame.hook.RequestManager;
 import fansirsqi.xposed.sesame.util.RandomUtil;
 
+import org.json.JSONObject;
+
 /**
  * 神奇物种RPC调用类
  * 负责封装所有与支付宝神奇物种相关的网络请求
  */
 public class AntDodoRpcCall {
+
+    private static final String VERSION = "20241203";
     
     /**
      * 查询动物收集状态
@@ -45,7 +49,7 @@ public class AntDodoRpcCall {
      */
     public static String taskList() {
         return RequestManager.requestString("alipay.antdodo.rpc.h5.taskList",
-                "[{}]");
+                "[{\"version\":\"" + VERSION + "\"}]");
     }
     
     /**
@@ -103,9 +107,29 @@ public class AntDodoRpcCall {
      * @param propType 道具类型
      * @return 使用道具的结果响应
      */
-    public static String consumeProp(String propId, String propType) {
-        return RequestManager.requestString("alipay.antdodo.rpc.h5.consumeProp",
-                "[{\"propId\":\"" + propId + "\",\"propType\":\"" + propType + "\"}]");
+    //使用道具
+    public static String consumeProp(String propId, String propType, String animalId) {
+        String params = "[{" +
+                "\"extendInfo\":{" +
+                "\"animalId\":\"" + animalId + "\"" +
+                "}," +
+                "\"propId\":\"" + propId + "\"," +
+                "\"propType\":\"" + propType + "\"" +
+                "}]";
+        return RequestManager.requestString("alipay.antdodo.rpc.h5.consumeProp", params);
+    }
+
+    /**
+     * 专门用于：抽好友卡道具 的消耗请求
+     * 参数格式：[{"propId":"...","propType":"..."}]
+     */
+    public static String consumePropForFriend(String propId, String propType) {
+        // 构造不含 extendInfo 的参数
+        String params = "[{" +
+                "\"propId\":\"" + propId + "\"," +
+                "\"propType\":\"" + propType + "\"" +
+                "}]";
+        return RequestManager.requestString("alipay.antdodo.rpc.h5.consumeProp", params);
     }
     
     /**
@@ -162,18 +186,22 @@ public class AntDodoRpcCall {
      * @return 包含图鉴列表的JSON响应
      */
     public static String queryBookList(int pageSize, String pageStart) {
-        StringBuilder argsBuilder = new StringBuilder();
-        argsBuilder.append("{\"pageSize\":").append(pageSize).append(",\"v2\":\"true\"");
+        try {
+            // 使用 JSONObject 构造可以避免手动拼接字符串导致的转义和逗号错误
+            JSONObject params = new JSONObject();
+            params.put("pageSize", pageSize);
+            params.put("v2", "true");
 
-        if (pageStart != null && !pageStart.isEmpty()) {
-            argsBuilder.append(",\"pageStart\":\"").append(pageStart).append("\"");
+            // 仅在 pageStart 不为空时才添加该字段
+            if (pageStart != null && !pageStart.isEmpty()) {
+                params.put("pageStart", pageStart);
+            }
+
+            return RequestManager.requestString("alipay.antdodo.rpc.h5.queryBookList", "[" + params.toString() + "]");
+
+        } catch (Exception e) {
+            return "";
         }
-
-        argsBuilder.append("}");
-
-        // 注意这里是单个 JSON 对象，不再是数组，如果接口需要数组可以包一下 []
-        String args = "[" + argsBuilder.toString() + "]";
-        return RequestManager.requestString("alipay.antdodo.rpc.h5.queryBookList", args);
     }
     
     /**

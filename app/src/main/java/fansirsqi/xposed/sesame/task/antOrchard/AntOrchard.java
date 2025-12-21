@@ -614,7 +614,7 @@ public class AntOrchard extends ModelTask {
 
     private void limitedTimeChallenge() {
         try {
-            // [FIXED] 使用新的RPC方法签名，传入正确的syncIndexTypes
+            // 使用新的RPC方法签名，传入正确的syncIndexTypes
             String response = AntOrchardRpcCall.orchardSyncIndex("", "LIMITED_TIME_CHALLENGE");
             JSONObject root = new JSONObject(response);
 
@@ -695,8 +695,11 @@ public class AntOrchard extends ModelTask {
                 String actionType = child.optString("actionType");
                 String groupId = child.optString("groupId");
                 String sceneCode = child.optString("sceneCode");
-
-                if ("GROUP_1_STEP_3_GAME_WZZT_30s".equals(groupId)) continue;
+                
+                // 跳过无法自动完成的游戏任务
+                if ("GROUP_1_STEP_3_GAME_WZZT_30s".equals(groupId) || "GROUP_1_STEP_2_GAME_WZZT_30s".equals(groupId)) {
+                    continue;
+                }
 
                 Log.record(TAG, "------ 开始处理子任务 " + i + " | ID=" + childTaskId + " ------");
 
@@ -708,14 +711,14 @@ public class AntOrchard extends ModelTask {
                         if (need > 0) {
                             Log.record(TAG, "施肥任务需补充 " + need + " 次");
                             for (int j = 0; j < need; j++) {
-                                // [FIXED] 传入空的wua字符串
+                                // 传入空的wua字符串
                                 String spreadResultStr = AntOrchardRpcCall.orchardSpreadManure("", "ch_appcenter__chsub_9patch");
                                 JSONObject resultJson = new JSONObject(spreadResultStr);
                                 if (!"100".equals(resultJson.optString("resultCode"))) {
                                     Log.record(TAG, "芭芭农场 orchardSpreadManure 错误：" + resultJson.optString("resultDesc"));
-                                    return;
+                                    return; // 施肥失败，直接退出
                                 }
-                                GlobalThreadPools.sleep(executeIntervalInt); // 每次施肥后等待一下
+                                GlobalThreadPools.sleep(executeIntervalInt); // 每次施肥后等待
                             }
                             Log.record(TAG, "施肥任务成功完成 " + need + " 次");
                         }
@@ -731,6 +734,7 @@ public class AntOrchard extends ModelTask {
                         }
                         break;
 
+                    // ########## 修复的广告任务逻辑 START ##########
                     case "VISIT":
                         JSONObject displayCfg = child.optJSONObject("taskDisplayConfig");
                         if (displayCfg == null || displayCfg.optString("targetUrl", "").isEmpty()) {
@@ -739,28 +743,38 @@ public class AntOrchard extends ModelTask {
                         }
                         String targetUrl = displayCfg.optString("targetUrl");
 
-                        String finalUrl = UrlUtil.INSTANCE.getParamValue(targetUrl, "url");
-                        if (finalUrl == null) finalUrl = "";
-                        Log.record(TAG, "解析到完整落地页 url = " + finalUrl);
+                        // ① 调用 Kotlin UrlUtil.INSTANCE.getFullNestedUrl
+                        String finalUrl = UrlUtil.INSTANCE.getFullNestedUrl(targetUrl, "url");
+                        if (finalUrl == null) finalUrl = ""; // 防止空指针
 
-                        String spaceCodeFeeds = (!finalUrl.isEmpty()) ? UrlUtil.INSTANCE.getParamValue(finalUrl, "spaceCodeFeeds") : null;
-                        Log.record(TAG, "解析到 spaceCodeFeeds = " + (spaceCodeFeeds != null ? spaceCodeFeeds : "null"));
-                        
+                        // ② 调用 Kotlin UrlUtil.INSTANCE.extractParamFromUrl
+                        String spaceCodeFeeds = (!finalUrl.isEmpty()) ? UrlUtil.INSTANCE.extractParamFromUrl(finalUrl, "spaceCodeFeeds") : null;
+
+                        // ③ 容错处理
                         String finalSpaceCode = spaceCodeFeeds;
                         if (finalSpaceCode == null) {
-                             finalSpaceCode = UrlUtil.INSTANCE.getParamValue(targetUrl, "spaceCodeFeeds");
+                            // 调用 Kotlin UrlUtil.INSTANCE.getParamValue
+                            finalSpaceCode = UrlUtil.INSTANCE.getParamValue(targetUrl, "spaceCodeFeeds");
                         }
                         if (finalSpaceCode == null || finalSpaceCode.isEmpty()) {
                             Log.record(TAG, "spaceCodeFeeds 解析失败，跳过此任务");
                             continue;
                         }
                         
-                        String xlightResponse = XLightRpcCall.INSTANCE.xlightPlugin(finalUrl, "ch_url-https://render.alipay.com/p/yuyan/180020010001263018/game.html", "u_41ba1_2f33e", finalSpaceCode);
-                        
+                        // ④ 调用 Kotlin XLightRpcCall.INSTANCE.xlightPlugin
+                        String xlightResponse = XLightRpcCall.INSTANCE.xlightPlugin(
+                            finalUrl,
+                            "ch_url-https://render.alipay.com/p/yuyan/180020010001263018/game.html",
+                            "u_41ba1_2f33e",
+                            finalSpaceCode
+                        );
                         JSONObject xlightJo = new JSONObject(xlightResponse);
                         Log.record(TAG, "广告任务触发成功 → 即将调用 finishTask() 完成任务");
 
-                        JSONObject playingResult = xlightJo.optJSONObject("resData") != null ? xlightJo.optJSONObject("resData").optJSONObject("playingResult") : xlightJo.optJSONObject("playingResult");
+                        // ⑤ 自动完成任务（兼容两种JSON结构）
+                        JSONObject playingResult = xlightJo.optJSONObject("resData") != null 
+                            ? xlightJo.optJSONObject("resData").optJSONObject("playingResult") 
+                            : xlightJo.optJSONObject("playingResult");
 
                         if (playingResult == null) {
                             Log.record(TAG, "playingResult 为空，无法 finishTask");
@@ -768,7 +782,7 @@ public class AntOrchard extends ModelTask {
                         }
                         String playingBizId = playingResult.optString("playingBizId", "");
                         if (playingBizId.isEmpty()) {
-                             Log.record(TAG, "playingBizId 为空，无法 finishTask");
+                            Log.record(TAG, "playingBizId 为空，无法 finishTask");
                             continue;
                         }
 
@@ -781,15 +795,17 @@ public class AntOrchard extends ModelTask {
                         }
                         JSONObject playEventInfo = infoListArray.getJSONObject(0);
                         
+                        // ⑥ 调用 Kotlin XLightRpcCall.INSTANCE.finishTask
                         String finishResultStr = XLightRpcCall.INSTANCE.finishTask(playingBizId, playEventInfo, sceneCode, groupId);
                         JSONObject fr = new JSONObject(finishResultStr);
 
                         if (fr.optBoolean("success")) {
                             Log.record(TAG, "finishTask 完成成功 → 浏览广告任务完成");
                         } else {
-                             Log.record(TAG, "finishTask 完成失败: " + finishResultStr);
+                            Log.record(TAG, "finishTask 完成失败: " + finishResultStr);
                         }
                         break;
+                    // ########## 修复的广告任务逻辑 END ##########
                         
                     default:
                         Log.record(TAG, "无法处理的任务类型：" + childTaskId + " | actionType=" + actionType);

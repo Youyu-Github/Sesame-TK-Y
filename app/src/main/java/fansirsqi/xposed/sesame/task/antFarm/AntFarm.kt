@@ -1456,6 +1456,12 @@ class AntFarm : ModelTask() {
                 val title = task.optString("title", "未知任务")
                 val taskStatus = task.getString("taskStatus")
                 val bizKey = task.getString("bizKey")
+                val taskMode = task.optString("taskMode")
+
+                if(taskMode=="TRIGGER") {
+                    Log.runtime(TAG, "跳过事件任务：$title")
+                    continue
+                }
 
                 // 1. 预检查：黑名单与每日上限
                 if (TaskBlacklist.isTaskInBlacklist(bizKey)) {
