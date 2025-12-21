@@ -27,4 +27,7 @@ public final class StatusFlags {
     // --------------------------------------------
     public static final String FLAG_ANTORCHARD_WIDGET_DAILY_AWARD = "Flag_Antorchard_Widget_Daily_Award";  // 农场小组件每日奖励领取
 
+    // 蚂蚁新村-今日丢肥料是否已达上限
+    public static final String FLAG_ANTSTALL_THROW_MANURE_LIMIT = "Flag_AntStall_Throw_Manure_Limit";
+
 }
